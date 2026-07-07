@@ -316,8 +316,7 @@ async function setupKickSubscriptions(req, options = {}) {
 }
 
 async function ensureStoredWebhookSubscriptions(options = {}) {
-  const broadcasterId = DEFAULT_BROADCASTER_ID;
-  const token = tokenStore.getBroadcasterToken(broadcasterId);
+  const token = tokenStore.getBroadcasterToken(DEFAULT_BROADCASTER_ID);
   if (!token?.accessToken) {
     if (options.webhookUrlChanged) {
       console.warn(
@@ -327,32 +326,53 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
     return;
   }
 
-  const force = Boolean(options.webhookUrlChanged);
-  if (!webhookSubscription.shouldAttempt(broadcasterId, { force })) {
-    if (webhookSubscription.isRateLimited(broadcasterId)) {
-      console.warn("[webhooks] boot subscribe skipped — Kick API rate limit");
-    }
+  let accessToken;
+  try {
+    accessToken = await kickApi.ensureAccessTokenForBroadcaster(
+      DEFAULT_BROADCASTER_ID,
+      config.kick
+    );
+  } catch (error) {
+    console.warn("[webhooks] boot subscribe failed — no access token:", error.message);
     return;
   }
 
-  try {
-    const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
-      broadcasterId,
-      config.kick
-    );
-    const subs = force
-      ? await kickApi.resubscribeChannelEvents(accessToken, broadcasterId)
-      : await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
-    const events = subscriptionEventsFromList(subs);
-    const chatActive = events.includes("chat.message.sent");
-    webhookSubscription.noteResult(broadcasterId, { events, chatActive });
-    console.log(
-      `[webhooks] boot ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
-    );
-  } catch (error) {
-    webhookSubscription.noteResult(broadcasterId, { error: error.message });
-    console.warn("[webhooks] boot subscribe failed:", error.message);
+  const broadcasterIds = kickRewardsStore.getMonitoredBroadcasterIds();
+  const force = Boolean(options.webhookUrlChanged);
+
+  for (const broadcasterId of broadcasterIds) {
+    if (!broadcasterId) continue;
+    if (!webhookSubscription.shouldAttempt(broadcasterId, { force })) {
+      if (webhookSubscription.isRateLimited(broadcasterId)) {
+        console.warn(`[webhooks] boot subscribe skipped for ${broadcasterId} — rate limit`);
+      }
+      continue;
+    }
+
+    try {
+      const subs = force
+        ? await kickApi.resubscribeChannelEvents(accessToken, broadcasterId)
+        : await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+      const events = subscriptionEventsFromList(subs);
+      const chatActive = events.includes("chat.message.sent");
+      webhookSubscription.noteResult(broadcasterId, { events, chatActive });
+      console.log(
+        `[webhooks] boot ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
+      );
+    } catch (error) {
+      webhookSubscription.noteResult(broadcasterId, { error: error.message });
+      console.warn(`[webhooks] boot subscribe failed for ${broadcasterId}:`, error.message);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
   }
+}
+
+async function subscribeMonitoredStreamerWebhooks(broadcasterId) {
+  return require("./lib/monitored-webhooks").subscribeMonitoredStreamerWebhooks(
+    broadcasterId,
+    config
+  );
 }
 
 function resolveWebhookBroadcasterId(payload) {
@@ -2010,14 +2030,21 @@ app.post("/webhooks/kick", (req, res) => {
       stored: true,
     });
     console.log(`Chat webhook: [${channelId}] ${payload.sender?.username || "?"}: ${(payload.content || "").slice(0, 80)}`);
-    const rewardsStreamer = kickRewardsStore.broadcasterIdToStreamer(channelId);
-    if (rewardsStreamer && payload.sender?.username) {
+    const resolved = kickRewardsStore.resolveStreamerForWebhook(payload, channelId);
+    if (resolved?.slug && payload.sender?.username) {
+      if (resolved.broadcasterId) {
+        kickRewardsStore.upsertMonitoredStreamer(resolved.slug, resolved.broadcasterId);
+      }
       kickRewardsStore.recordChatMessage({
-        streamer: rewardsStreamer,
+        streamer: resolved.slug,
         username: payload.sender.username,
         content: payload.content || "",
         createdAt: payload.created_at || new Date().toISOString(),
       });
+    } else if (payload.sender?.username) {
+      console.warn(
+        `[kick-rewards] chat ignored — unknown monitored streamer for channel ${channelId}`
+      );
     }
     botEngine
       .handleChatMessage(channelId, payload, config.kick)
