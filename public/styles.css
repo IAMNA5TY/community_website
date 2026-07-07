@@ -131,7 +131,11 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   border-color: rgba(83, 252, 24, 0.25);
 }
 
-.content { display: grid; gap: 16px; }
+.content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
 
 .page-view { display: none; gap: 16px; }
 .page-view.active { display: grid; }
@@ -191,29 +195,37 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
 
 .stream-hero__inner {
   display: grid;
-  grid-template-columns: minmax(200px, 320px) 1fr;
+  grid-template-columns: minmax(180px, 280px) 1fr;
   gap: 0;
-  min-height: 180px;
+  min-height: 0;
+  max-height: 220px;
 }
 
 .stream-hero__media {
   position: relative;
   background: #1d2333;
-  min-height: 180px;
+  min-height: 0;
+  max-height: 220px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
 }
 
 .stream-hero__media--empty {
   background:
     linear-gradient(135deg, rgba(83, 252, 24, 0.08), transparent 55%),
     #1d2333;
+  min-height: 180px;
 }
 
 .stream-hero__thumb {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  max-height: 220px;
   object-fit: cover;
+  object-position: center;
   display: block;
-  min-height: 180px;
 }
 
 .stream-badge {
@@ -241,11 +253,13 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
 }
 
 .stream-hero__body {
-  padding: 24px 28px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 6px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .stream-hero__title {
@@ -277,12 +291,13 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
 @media (max-width: 900px) {
   .stream-hero__inner {
     grid-template-columns: 1fr;
+    max-height: none;
   }
 
   .stream-hero__thumb,
   .stream-hero__media {
-    min-height: 160px;
     max-height: 200px;
+    aspect-ratio: 16 / 9;
   }
 
   .overview-grid {
