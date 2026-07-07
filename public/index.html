@@ -46,7 +46,7 @@
           </div>
 
           <nav class="nav" id="main-nav">
-            <button class="nav-link active" data-page="overview" type="button">Overview</button>
+            <button class="nav-link active" data-page="overview" type="button">Stream stats</button>
             <button class="nav-link" data-page="workout" type="button">Workout / OBS</button>
             <button class="nav-link" data-page="slots" type="button">Slots</button>
             <button class="nav-link" data-page="drinking" type="button">Drinking</button>
@@ -69,14 +69,18 @@
           <p class="notice hidden" id="webhook-notice"></p>
 
           <section class="page-view active" data-page="overview">
-            <header class="page-header">
-              <h1>Overview</h1>
-              <p class="subtitle">Quick snapshot of your channel</p>
-            </header>
+            <div class="stream-hero card" id="stream-hero"></div>
             <div class="stats-grid" id="stats-grid"></div>
-            <div class="card panel">
-              <h2>Channel details</h2>
-              <div class="detail-card" id="channel-details"></div>
+            <div class="overview-grid">
+              <div class="card panel">
+                <h2>Channel</h2>
+                <div class="detail-card" id="channel-details"></div>
+              </div>
+              <div class="card panel">
+                <h2>OBS quick links</h2>
+                <p class="subtitle">Copy these into OBS browser sources — they sync through na5ty.com</p>
+                <div id="overview-obs-links"></div>
+              </div>
             </div>
           </section>
 

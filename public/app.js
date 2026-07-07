@@ -48,6 +48,24 @@ function formatEventType(type) {
     .replace(/^./, (char) => char.toUpperCase());
 }
 
+function formatStreamUptime(startedAt) {
+  if (!startedAt) return null;
+  const elapsedMs = Date.now() - new Date(startedAt).getTime();
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return null;
+
+  const totalMinutes = Math.floor(elapsedMs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0) return `${hours}h ${minutes}m live`;
+  return `${minutes}m live`;
+}
+
+function formatStatValue(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  return value;
+}
+
 function renderTable(container, columns, rows, emptyText) {
   if (!rows?.length) {
     container.innerHTML = `<div class="empty-state">${emptyText}</div>`;
@@ -84,17 +102,51 @@ function showPage(page) {
   }
 }
 
+function renderStreamHero(data) {
+  const hero = document.getElementById("stream-hero");
+  if (!hero) return;
+
+  const channel = data.channel || {};
+  const profile = data.profile || {};
+  const isLive = Boolean(channel.isLive);
+  const thumb = channel.thumbnail || channel.bannerImage;
+  const uptime = isLive ? formatStreamUptime(channel.streamStartedAt) : null;
+  const slug = channel.slug || profile.username || "channel";
+
+  hero.innerHTML = `
+    <div class="stream-hero__inner">
+      <div class="stream-hero__media${thumb ? "" : " stream-hero__media--empty"}">
+        ${thumb ? `<img class="stream-hero__thumb" src="${escapeHtml(thumb)}" alt="" />` : ""}
+        <span class="stream-badge ${isLive ? "stream-badge--live" : "stream-badge--offline"}">
+          ${isLive ? "Live" : "Offline"}
+        </span>
+      </div>
+      <div class="stream-hero__body">
+        <p class="eyebrow">${escapeHtml(profile.displayName || slug)} · kick.com/${escapeHtml(slug)}</p>
+        <h1 class="stream-hero__title">${escapeHtml(channel.title || (isLive ? "Live now" : "Not streaming"))}</h1>
+        <p class="subtitle stream-hero__meta">
+          ${escapeHtml(channel.category || "No category")}
+          ${uptime ? ` · ${escapeHtml(uptime)}` : ""}
+        </p>
+        ${
+          isLive
+            ? `<div class="stream-hero__viewers"><strong>${escapeHtml(channel.viewerCount ?? 0)}</strong> watching now</div>`
+            : `<p class="subtitle" style="margin:0;">Go live on Kick and your stats update here automatically.</p>`
+        }
+      </div>
+    </div>
+  `;
+}
+
 function renderStats(data) {
   const channel = data.channel || {};
   const stats = data.chat?.stats || {};
   const items = [
     { label: "Active subs", value: channel.activeSubscribers ?? 0 },
     { label: "Canceled subs", value: channel.canceledSubscribers ?? 0 },
-    { label: "Live viewers", value: channel.isLive ? channel.viewerCount : "Offline" },
-    { label: "Treadmill mins", value: data.workout?.minutesBank ?? 0 },
-    { label: "Commands", value: data.bot?.commands?.length ?? 0 },
-    { label: "Timers", value: data.bot?.timers?.length ?? 0 },
+    { label: "Total streams", value: data.livestreamStats?.totalLivestreams ?? "—" },
     { label: "Chat messages", value: stats.totalMessages ?? 0 },
+    { label: "Live viewers", value: channel.isLive ? channel.viewerCount ?? 0 : "Offline" },
     { label: "Rewards", value: data.rewards?.length ?? 0 },
   ];
 
@@ -103,11 +155,26 @@ function renderStats(data) {
       (item) => `
         <div class="stat-card">
           <div class="stat-label">${item.label}</div>
-          <div class="stat-value">${escapeHtml(item.value)}</div>
+          <div class="stat-value">${escapeHtml(formatStatValue(item.value))}</div>
         </div>
       `
     )
     .join("");
+}
+
+function renderOverviewQuickLinks(data) {
+  const container = document.getElementById("overview-obs-links");
+  if (!container) return;
+
+  const links = [
+    ["Chat box", data.widgetsUrls?.chatBox],
+    ["Stream alerts", data.widgetsUrls?.streamAlerts],
+    ["Slots timer", data.slotsUrls?.timer],
+    ["Slots widget", data.slotsUrls?.widget],
+    ["Now playing", data.widgetsUrls?.nowPlaying],
+  ];
+
+  renderObsUrlTable(container, links);
 }
 
 function renderChannelDetails(channel) {
@@ -118,11 +185,11 @@ function renderChannelDetails(channel) {
 
   channelDetails.innerHTML = `
     <dl class="detail-list">
-      <div><dt>Stream title</dt><dd>${escapeHtml(channel.title || "No title")}</dd></div>
       <div><dt>Description</dt><dd>${escapeHtml(channel.description || "No description")}</dd></div>
-      <div><dt>Category</dt><dd>${escapeHtml(channel.category || "None")}</dd></div>
       <div><dt>Language</dt><dd>${escapeHtml(channel.language || "Unknown")}</dd></div>
+      <div><dt>Category</dt><dd>${escapeHtml(channel.category || "None")}</dd></div>
       <div><dt>Tags</dt><dd>${escapeHtml(channel.customTags?.join(", ") || "None")}</dd></div>
+      <div><dt>Mature</dt><dd>${channel.isMature ? "Yes" : "No"}</dd></div>
     </dl>
   `;
 }
@@ -1450,8 +1517,10 @@ function renderDashboard(data) {
     webhookNotice.classList.add("hidden");
   }
 
+  renderStreamHero(data);
   renderStats(data);
   renderChannelDetails(data.channel);
+  renderOverviewQuickLinks(data);
   renderApiAccess(data);
   renderWorkout(data.workout, data.obsUrls);
   renderSlots(data.slots, data.slotsUrls, data.slotsTimer);
