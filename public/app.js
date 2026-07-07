@@ -100,6 +100,10 @@ function showPage(page) {
   if (page === "lighting" && dashboardData?.lighting?.hue?.connected) {
     ensureHueDevicesLoaded();
   }
+  if (page === "widgets") {
+    const chatStatusEl = document.getElementById("widgets-chat-status");
+    if (chatStatusEl) refreshWidgetsChatStatus(chatStatusEl, dashboardData || {});
+  }
   if (page === "settings") {
     refreshSignInLog();
   }
@@ -640,6 +644,57 @@ function renderSlotsTimer(timer) {
   }
 }
 
+async function refreshWidgetsChatStatus(chatStatusEl, webhook = {}) {
+  if (webhook.webhookNote) {
+    chatStatusEl.textContent = webhook.webhookNote;
+    chatStatusEl.className = "subtitle err";
+    return;
+  }
+
+  try {
+    const [healthRes, hookRes] = await Promise.all([
+      fetch("/api/webhooks/health"),
+      fetch("/api/webhooks/status").catch(() => null),
+    ]);
+    const health = healthRes.ok ? await healthRes.json() : null;
+    const hookStatus = hookRes?.ok ? await hookRes.json() : null;
+
+    if (health?.messageCount > 0) {
+      chatStatusEl.textContent = `Chat live — ${health.messageCount} message(s) on server. OBS should match.`;
+      chatStatusEl.className = "subtitle ok";
+      return;
+    }
+
+    if (hookStatus?.chatWebhookActive) {
+      chatStatusEl.textContent =
+        "Kick chat webhook is active. Type in chat or click Send test chat.";
+      chatStatusEl.className = "subtitle ok";
+      return;
+    }
+
+    if (hookStatus?.webhookError) {
+      chatStatusEl.textContent = `Webhook setup failed: ${hookStatus.webhookError}. Sign out and sign in again.`;
+      chatStatusEl.className = "subtitle err";
+      return;
+    }
+
+    if (!health?.kickSignedInOnServer) {
+      chatStatusEl.textContent =
+        "Sign in with Kick on na5ty.com first — then click Send test chat.";
+      chatStatusEl.className = "subtitle err";
+      return;
+    }
+
+    chatStatusEl.textContent =
+      "Signed in but no chat yet. In Kick Developer, set Webhook URL to https://na5ty.com/webhooks/kick then sign in again.";
+    chatStatusEl.className = "subtitle";
+  } catch {
+    chatStatusEl.textContent =
+      "Sign in at na5ty.com → Widgets → Send test chat to verify OBS chat.";
+    chatStatusEl.className = "subtitle";
+  }
+}
+
 function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
   const urlsTable = document.getElementById("widgets-urls-table");
   if (urlsTable && widgetsUrls) {
@@ -652,21 +707,7 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
 
   const chatStatusEl = document.getElementById("widgets-chat-status");
   if (chatStatusEl) {
-    if (webhook.webhookNote) {
-      chatStatusEl.textContent = webhook.webhookNote;
-      chatStatusEl.className = "subtitle err";
-    } else if (webhook.webhookReady === false && webhook.webhookError) {
-      chatStatusEl.textContent = `Webhooks not registered — sign out and sign in again. (${webhook.webhookError})`;
-      chatStatusEl.className = "subtitle err";
-    } else if (webhook.webhookReady) {
-      chatStatusEl.textContent =
-        "Webhooks active. Live Kick chat flows to OBS. Use Send test chat to verify.";
-      chatStatusEl.className = "subtitle ok";
-    } else {
-      chatStatusEl.textContent =
-        "Sign in with Kick on na5ty.com to register webhooks, then chat will sync live.";
-      chatStatusEl.className = "subtitle";
-    }
+    refreshWidgetsChatStatus(chatStatusEl, webhook);
   }
 
   const statusEl = document.getElementById("spotify-status");

@@ -582,6 +582,9 @@ app.get("/api/chat/status", (req, res) => {
   const messages = broadcasterId
     ? eventStore.getRecentMessages(broadcasterId, 1)
     : [];
+  const token = broadcasterId
+    ? tokenStore.getBroadcasterToken(broadcasterId)
+    : null;
 
   res.json({
     broadcasterId: broadcasterId ? String(broadcasterId) : null,
@@ -589,10 +592,54 @@ app.get("/api/chat/status", (req, res) => {
       ? eventStore.getChannelData(broadcasterId).stats?.totalMessages ?? 0
       : 0,
     hasMessages: messages.length > 0,
+    kickSignedInOnServer: Boolean(token?.accessToken),
     webhookConfigured: Boolean(process.env.WEBHOOK_URL),
     webhookUrl: WEBHOOK_URL,
     liveChatRequiresWebhooks: true,
   });
+});
+
+app.get("/api/webhooks/health", (req, res) => {
+  const broadcasterId = DEFAULT_BROADCASTER_ID;
+  const token = tokenStore.getBroadcasterToken(broadcasterId);
+  const messageCount =
+    eventStore.getChannelData(broadcasterId).stats?.totalMessages ?? 0;
+
+  res.json({
+    ok: true,
+    webhookUrl: WEBHOOK_URL,
+    kickSignedInOnServer: Boolean(token?.accessToken),
+    messageCount,
+    setup: [
+      "Kick Developer → Webhooks → URL must be https://na5ty.com/webhooks/kick",
+      "Railway → WEBHOOK_URL=https://na5ty.com/webhooks/kick",
+      "Sign in at https://na5ty.com (registers chat.message.sent with Kick)",
+      "Widgets tab → Send test chat (proves OBS + dashboard without going live)",
+      "Live chat fills in when viewers type in your Kick chat",
+    ],
+  });
+});
+
+app.get("/api/webhooks/status", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const accessToken = await kickApi.ensureAccessToken(req, config.kick);
+    const subs = await kickApi.getEventSubscriptions(accessToken, user.profile.id);
+    const events = subs.map((sub) => sub.event);
+
+    res.json({
+      webhookUrl: WEBHOOK_URL,
+      webhookReady: Boolean(req.session.webhookReady),
+      webhookError: req.session.webhookError || null,
+      subscribedEvents: events,
+      chatWebhookActive: events.includes("chat.message.sent"),
+      kickDeveloperMustMatch: WEBHOOK_URL,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.get("/api/chat/events", (req, res) => {
