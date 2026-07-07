@@ -68,6 +68,23 @@ function kickRedirectUri(req) {
   return `${publicBaseUrl(req)}/auth/kick/callback`;
 }
 
+function getAllowedBroadcasterIds() {
+  const raw = String(process.env.ALLOWED_BROADCASTER_IDS ?? "1183030").trim();
+  if (!raw || raw === "*") return null;
+  return new Set(
+    raw
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+  );
+}
+
+function isAllowedBroadcaster(broadcasterId) {
+  const allowed = getAllowedBroadcasterIds();
+  if (!allowed) return true;
+  return allowed.has(String(broadcasterId));
+}
+
 const config = {
   kick: {
     clientId: process.env.KICK_CLIENT_ID,
@@ -205,6 +222,10 @@ app.get("/api/dashboard", async (req, res) => {
   if (!req.session.user || req.session.user.provider !== "kick") {
     return res.status(401).json({ error: "Not signed in with Kick" });
   }
+  if (!isAllowedBroadcaster(req.session.user.profile.id)) {
+    req.session.destroy(() => {});
+    return res.status(403).json({ error: "access_denied" });
+  }
 
   try {
     const dashboard = await kickApi.getDashboard(req, config.kick);
@@ -294,6 +315,11 @@ app.get("/api/dashboard", async (req, res) => {
 function requireKickUser(req, res) {
   if (!req.session.user || req.session.user.provider !== "kick") {
     res.status(401).json({ error: "Not signed in with Kick" });
+    return null;
+  }
+  if (!isAllowedBroadcaster(req.session.user.profile.id)) {
+    req.session.destroy(() => {});
+    res.status(403).json({ error: "access_denied" });
     return null;
   }
   return req.session.user;
@@ -1372,10 +1398,15 @@ app.get("/auth/kick/callback", async (req, res) => {
     }
 
     const kickUser = userData.data[0];
+    const userId = String(kickUser.user_id);
+    if (!isAllowedBroadcaster(userId)) {
+      return res.redirect("/?error=access_denied");
+    }
+
     saveUserSession(
       req,
       {
-        id: String(kickUser.user_id),
+        id: userId,
         username: kickUser.name,
         displayName: kickUser.name,
         email: kickUser.email || null,

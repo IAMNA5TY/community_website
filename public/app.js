@@ -2598,6 +2598,7 @@ if (error) {
     invalid_state: "Login session expired. Please try again.",
     invalid_spotify_state: "Spotify login expired. Click Connect Spotify again.",
     invalid redirect uri: "Kick redirect URI mismatch. Add the URL shown below in Kick Developer settings, then try again.",
+    access_denied: "This dashboard is private. Your Kick account is not authorized to sign in.",
   };
   showError(friendly[error] || decodeURIComponent(error));
   window.history.replaceState({}, "", "/");
