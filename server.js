@@ -223,6 +223,37 @@ async function setupKickSubscriptions(req) {
   }
 }
 
+async function ensureStoredWebhookSubscriptions() {
+  const broadcasterId = DEFAULT_BROADCASTER_ID;
+  const token = tokenStore.getBroadcasterToken(broadcasterId);
+  if (!token?.accessToken) return;
+
+  try {
+    const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
+      broadcasterId,
+      config.kick
+    );
+    const subs = await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+    console.log(
+      `[webhooks] channel ${broadcasterId} subscriptions:`,
+      events.length ? events.join(", ") : "(none)"
+    );
+  } catch (error) {
+    console.warn("[webhooks] boot subscribe failed:", error.message);
+  }
+}
+
+function resolveWebhookBroadcasterId(payload) {
+  return (
+    payload.broadcaster?.user_id ||
+    payload.broadcaster_user_id ||
+    payload.channel?.user_id ||
+    tokenStore.getPrimaryBroadcasterId() ||
+    DEFAULT_BROADCASTER_ID
+  );
+}
+
 app.get("/api/me", (req, res) => {
   if (!req.session.user) {
     return res.json({ loggedIn: false });
@@ -625,7 +656,7 @@ app.get("/api/webhooks/health", async (req, res) => {
         config.kick
       );
       const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
-      subscribedEvents = subs.map((sub) => sub.event);
+      subscribedEvents = subs.map((sub) => sub.event || sub.name).filter(Boolean);
       chatWebhookActive = subscribedEvents.includes("chat.message.sent");
     } catch (error) {
       subscriptionError = error.message;
@@ -658,7 +689,7 @@ app.post("/api/webhooks/reregister", async (req, res) => {
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
     const subs = await kickApi.getEventSubscriptions(accessToken, user.profile.id);
-    const events = subs.map((sub) => sub.event);
+    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
 
     res.json({
       ok: Boolean(req.session.webhookReady),
@@ -683,7 +714,7 @@ app.get("/api/webhooks/status", async (req, res) => {
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
     const subs = await kickApi.getEventSubscriptions(accessToken, user.profile.id);
-    const events = subs.map((sub) => sub.event);
+    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
 
     res.json({
       webhookUrl: WEBHOOK_URL,
@@ -1645,16 +1676,14 @@ app.post("/webhooks/kick", (req, res) => {
   const isValid = webhook.verifyKickWebhook(rawBody, headers);
 
   if (!isValid && process.env.NODE_ENV === "production") {
+    const eventType = headers["kick-event-type"] || req.body?.event || "unknown";
+    console.warn(`[webhook] rejected ${eventType}: invalid or missing Kick signature`);
     return res.status(401).json({ error: "Invalid signature" });
   }
 
   const eventType = headers["kick-event-type"] || req.body?.event || "";
   const payload = extractWebhookPayload(req.body);
-  const broadcasterUserId =
-    payload.broadcaster?.user_id ||
-    payload.broadcaster_user_id ||
-    payload.channel?.user_id ||
-    tokenStore.getPrimaryBroadcasterId();
+  const broadcasterUserId = resolveWebhookBroadcasterId(payload);
 
   if (eventType === "chat.message.sent") {
     const channelId = String(broadcasterUserId || "unknown");
@@ -1714,8 +1743,9 @@ app.post("/webhooks/kick", (req, res) => {
   res.status(200).json({ ok: true });
 });
 
-webhook.loadPublicKey().then(() => {
+webhook.loadPublicKey().then(async () => {
   eventStore.migrateMessageStats();
+  await ensureStoredWebhookSubscriptions();
   const primaryId = tokenStore.getPrimaryBroadcasterId();
   if (primaryId) {
     workoutState.setBroadcaster(primaryId);
