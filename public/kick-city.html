@@ -22,6 +22,10 @@
       margin: 0 0 8px;
       font-size: 1.6rem;
     }
+    .kick-city-card h2 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+    }
     .kick-city-card p {
       color: var(--text-muted, #9aa0b5);
       margin: 0 0 16px;
@@ -63,6 +67,35 @@
     }
     .kick-city-ok { color: #7dffb3; }
     .kick-city-err { color: #ff8e8e; }
+    .kick-city-steps {
+      margin: 0 0 16px;
+      padding-left: 1.2rem;
+      color: var(--text-muted, #9aa0b5);
+      line-height: 1.6;
+    }
+    .kick-city-code-box {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px dashed rgba(83, 252, 24, 0.35);
+      background: rgba(83, 252, 24, 0.06);
+    }
+    .kick-city-code-box.visible {
+      display: block;
+    }
+    .kick-city-code {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      margin: 8px 0 12px;
+      font-family: ui-monospace, monospace;
+    }
+    .kick-city-code-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
@@ -70,18 +103,34 @@
     <div class="kick-city-card">
       <h1>Kick City Rewards</h1>
       <p>
-        Register your Kick username so na5ty.com tracks your chat messages and keywords
-        for the FiveM Kick Rewards server. After registering here, link the same username in-game with <code>/kick yourname</code>.
+        Register your Kick username here on na5ty.com. Then link your in-game account from the
+        <strong>Kick Menu</strong> — no chat commands needed.
       </p>
+      <ol class="kick-city-steps">
+        <li>Register your Kick username below (sign in with Kick to auto-fill).</li>
+        <li>Copy your <strong>link code</strong>.</li>
+        <li>In-game, open <code>/kickmenu</code> → <strong>Link Kick account</strong> → paste the code.</li>
+      </ol>
       <form class="kick-city-form" id="registerForm">
         <input id="kickUsername" name="kickUsername" placeholder="Your Kick username" autocomplete="username" required>
         <button class="btn btn-kick" type="submit">Register for Kick Rewards</button>
       </form>
       <p class="kick-city-note" id="registerStatus"></p>
+      <div class="kick-city-code-box" id="linkCodeBox">
+        <div class="kick-city-note">Your in-game link code</div>
+        <div class="kick-city-code" id="linkCodeValue">------</div>
+        <p class="kick-city-note">
+          Open <code>/kickmenu</code> in FiveM → <strong>Link Kick account</strong> → enter this code.
+        </p>
+        <div class="kick-city-code-actions">
+          <button class="btn btn-secondary" type="button" id="copyLinkCode">Copy code</button>
+          <button class="btn btn-secondary" type="button" id="refreshLinkCode">Refresh code</button>
+        </div>
+      </div>
     </div>
 
     <div class="kick-city-card">
-      <h2 style="margin-top:0;">Your stats</h2>
+      <h2>Your stats</h2>
       <p>Look up message counts from the last 24 hours (updates when you chat on Kick).</p>
       <form class="kick-city-form" id="lookupForm">
         <input id="lookupUsername" placeholder="Kick username to look up" required>
@@ -101,6 +150,28 @@
     const lookupForm = document.getElementById("lookupForm");
     const registerStatus = document.getElementById("registerStatus");
     const statsPanel = document.getElementById("statsPanel");
+    const linkCodeBox = document.getElementById("linkCodeBox");
+    const linkCodeValue = document.getElementById("linkCodeValue");
+    const copyLinkCodeBtn = document.getElementById("copyLinkCode");
+    const refreshLinkCodeBtn = document.getElementById("refreshLinkCode");
+
+    let currentUsername = "";
+
+    function showLinkCode(code) {
+      linkCodeValue.textContent = code || "------";
+      linkCodeBox.classList.toggle("visible", Boolean(code));
+    }
+
+    async function registerUsername(kickUsername) {
+      const response = await fetch("/api/rewards/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kickUsername }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Register failed");
+      return data;
+    }
 
     registerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -109,16 +180,43 @@
       registerStatus.className = "kick-city-note";
 
       try {
-        const response = await fetch("/api/rewards/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ kickUsername }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Register failed");
-        registerStatus.textContent = `Registered as ${data.registration.kickUsername}. Use the same name with /kick in-game.`;
+        const data = await registerUsername(kickUsername);
+        currentUsername = data.registration.kickUsername;
+        registerStatus.textContent = `Registered as ${currentUsername}. Use the link code below in the Kick Menu.`;
         registerStatus.className = "kick-city-note kick-city-ok";
-        document.getElementById("lookupUsername").value = data.registration.kickUsername;
+        document.getElementById("lookupUsername").value = currentUsername;
+        showLinkCode(data.linkCode || data.registration.linkCode);
+      } catch (error) {
+        registerStatus.textContent = error.message;
+        registerStatus.className = "kick-city-note kick-city-err";
+      }
+    });
+
+    copyLinkCodeBtn.addEventListener("click", async () => {
+      const code = linkCodeValue.textContent.trim();
+      if (!code || code === "------") return;
+      try {
+        await navigator.clipboard.writeText(code);
+        registerStatus.textContent = "Link code copied.";
+        registerStatus.className = "kick-city-note kick-city-ok";
+      } catch {
+        registerStatus.textContent = "Could not copy — select the code manually.";
+        registerStatus.className = "kick-city-note kick-city-err";
+      }
+    });
+
+    refreshLinkCodeBtn.addEventListener("click", async () => {
+      if (!currentUsername) {
+        currentUsername = document.getElementById("kickUsername").value.trim();
+      }
+      if (!currentUsername) return;
+      registerStatus.textContent = "Refreshing link code...";
+      registerStatus.className = "kick-city-note";
+      try {
+        const data = await registerUsername(currentUsername);
+        showLinkCode(data.linkCode || data.registration.linkCode);
+        registerStatus.textContent = "Link code refreshed.";
+        registerStatus.className = "kick-city-note kick-city-ok";
       } catch (error) {
         registerStatus.textContent = error.message;
         registerStatus.className = "kick-city-note kick-city-err";
@@ -134,6 +232,11 @@
         const response = await fetch(`/api/rewards/summary/${encodeURIComponent(kickUsername)}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Lookup failed");
+
+        if (data.registered && (data.linkCode || data.registration?.linkCode)) {
+          currentUsername = data.kickUsername;
+          showLinkCode(data.linkCode || data.registration.linkCode);
+        }
 
         const streamers = Object.entries(data.streamers || {});
         if (!streamers.length) {
@@ -165,10 +268,22 @@
 
     fetch("/api/me")
       .then((r) => r.json())
-      .then((data) => {
-        if (data.loggedIn && data.profile?.username) {
-          document.getElementById("kickUsername").value = data.profile.username;
-          document.getElementById("lookupUsername").value = data.profile.username;
+      .then(async (data) => {
+        if (!data.loggedIn || !data.profile?.username) return;
+        const username = data.profile.username;
+        document.getElementById("kickUsername").value = username;
+        document.getElementById("lookupUsername").value = username;
+        try {
+          const response = await fetch(`/api/rewards/register/${encodeURIComponent(username)}`);
+          if (response.ok) {
+            const reg = await response.json();
+            currentUsername = reg.registration.kickUsername;
+            showLinkCode(reg.registration.linkCode);
+            registerStatus.textContent = `Already registered as ${currentUsername}. Use your link code in the Kick Menu.`;
+            registerStatus.className = "kick-city-note kick-city-ok";
+          }
+        } catch {
+          // ignore
         }
       })
       .catch(() => {});
