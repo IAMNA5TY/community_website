@@ -49,15 +49,29 @@ systemAudio.onBeat(() => {
 const stakeAffiliate = require("./lib/stake-affiliate");
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || `${BASE_URL}/webhooks/kick`;
+
+function publicBaseUrl(req) {
+  const fromEnv = String(process.env.BASE_URL || "").trim().replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
+  const proto =
+    req.get("x-forwarded-proto")?.split(",")[0]?.trim() || req.protocol || "https";
+  const host =
+    req.get("x-forwarded-host")?.split(",")[0]?.trim() || req.get("host") || "localhost";
+  return `${proto}://${host}`;
+}
+
+function kickRedirectUri(req) {
+  return `${publicBaseUrl(req)}/auth/kick/callback`;
+}
 
 const config = {
   kick: {
     clientId: process.env.KICK_CLIENT_ID,
     clientSecret: process.env.KICK_CLIENT_SECRET,
-    redirectUri: `${BASE_URL}/auth/kick/callback`,
     authorizeUrl: "https://id.kick.com/oauth/authorize",
     tokenUrl: "https://id.kick.com/oauth/token",
     userUrl: "https://api.kick.com/public/v1/users",
@@ -176,6 +190,14 @@ app.get("/api/me", (req, res) => {
     scope,
     webhookReady: Boolean(req.session.webhookReady),
     webhookUrl: WEBHOOK_URL,
+  });
+});
+
+app.get("/api/auth/kick-info", (req, res) => {
+  res.json({
+    configured: Boolean(config.kick.clientId),
+    redirectUri: kickRedirectUri(req),
+    baseUrl: publicBaseUrl(req),
   });
 });
 
@@ -1284,15 +1306,17 @@ app.get("/auth/kick", (req, res) => {
 
   const state = randomState();
   const pkce = createPkcePair();
+  const redirectUri = kickRedirectUri(req);
   req.session.oauthState = {
     provider: "kick",
     state,
     codeVerifier: pkce.verifier,
+    redirectUri,
   };
 
   const params = new URLSearchParams({
     client_id: config.kick.clientId,
-    redirect_uri: config.kick.redirectUri,
+    redirect_uri: redirectUri,
     response_type: "code",
     scope: config.kick.scope,
     state,
@@ -1323,6 +1347,7 @@ app.get("/auth/kick/callback", async (req, res) => {
   }
 
   const codeVerifier = saved.codeVerifier;
+  const redirectUri = saved.redirectUri || kickRedirectUri(req);
   delete req.session.oauthState;
 
   try {
@@ -1330,7 +1355,7 @@ app.get("/auth/kick/callback", async (req, res) => {
       grant_type: "authorization_code",
       client_id: config.kick.clientId,
       client_secret: config.kick.clientSecret,
-      redirect_uri: config.kick.redirectUri,
+      redirect_uri: redirectUri,
       code,
       code_verifier: codeVerifier,
     });

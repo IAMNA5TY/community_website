@@ -2597,6 +2597,7 @@ if (error) {
     kick_not_configured: "Kick is not configured.",
     invalid_state: "Login session expired. Please try again.",
     invalid_spotify_state: "Spotify login expired. Click Connect Spotify again.",
+    invalid redirect uri: "Kick redirect URI mismatch. Add the URL shown below in Kick Developer settings, then try again.",
   };
   showError(friendly[error] || decodeURIComponent(error));
   window.history.replaceState({}, "", "/");
@@ -2612,3 +2613,23 @@ if (error) {
 
 loadDashboard();
 setInterval(loadDashboard, 15000);
+
+async function loadKickRedirectHint() {
+  const hint = document.getElementById("kick-redirect-hint");
+  if (!hint) return;
+
+  try {
+    const response = await fetch("/api/auth/kick-info");
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.redirectUri) return;
+
+    hint.innerHTML =
+      `Kick Developer → Redirect URL must include exactly:<br><code>${escapeHtml(data.redirectUri)}</code>`;
+    hint.classList.remove("hidden");
+  } catch {
+    // ignore
+  }
+}
+
+loadKickRedirectHint();
