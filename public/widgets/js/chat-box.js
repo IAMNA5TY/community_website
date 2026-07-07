@@ -13,9 +13,64 @@ function escapeAttr(value) {
   return escapeHtml(value).replaceAll("'", "&#39;");
 }
 
-function formatChatContent(content) {
-  return escapeHtml(String(content || ""))
-    .replace(/\[emote:\d+:([^\]]+)\]/g, ":$1:");
+const KICK_EMOTE_CDN = "https://files.kick.com/emotes";
+const emoteNameCache = new Map();
+
+function rememberEmotes(emotes = []) {
+  for (const emote of emotes) {
+    if (emote?.id && emote?.name) {
+      emoteNameCache.set(String(emote.name).toLowerCase(), String(emote.id));
+    }
+  }
+}
+
+function emoteImgTag(id, name) {
+  const safeId = escapeAttr(String(id));
+  const safeName = escapeHtml(String(name || ""));
+  return `<img class="chat-emote" src="${KICK_EMOTE_CDN}/${safeId}/fullsize" alt=":${safeName}:" title=":${safeName}:" loading="lazy">`;
+}
+
+function formatChatContent(content, emotes = []) {
+  rememberEmotes(emotes);
+  const text = String(content || "");
+  const byName = new Map(emoteNameCache);
+
+  const parts = [];
+  const emoteToken = /\[emote:(\d+):([^\]]+)\]/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = emoteToken.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: "text", value: text.slice(lastIndex, match.index) });
+    }
+    parts.push({ type: "emote", id: match[1], name: match[2] });
+    emoteNameCache.set(String(match[2]).toLowerCase(), String(match[1]));
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (!parts.length) {
+    parts.push({ type: "text", value: text });
+  } else if (lastIndex < text.length) {
+    parts.push({ type: "text", value: text.slice(lastIndex) });
+  }
+
+  let html = "";
+  for (const part of parts) {
+    if (part.type === "emote") {
+      html += emoteImgTag(part.id, part.name);
+      continue;
+    }
+
+    let chunk = escapeHtml(part.value);
+    chunk = chunk.replace(/:([a-zA-Z0-9_]+):/g, (full, name) => {
+      const id = byName.get(name.toLowerCase());
+      return id ? emoteImgTag(id, name) : full;
+    });
+    html += chunk;
+  }
+
+  return html;
 }
 
 function lineClass(message) {
@@ -37,7 +92,7 @@ function renderMessage(message) {
       >
       <div class="chat-body">
         <span class="chat-user">${escapeHtml(message.username)}</span>
-        <span class="chat-text">${formatChatContent(message.content)}</span>
+        <span class="chat-text">${formatChatContent(message.content, message.emotes)}</span>
       </div>
     </div>
   `;

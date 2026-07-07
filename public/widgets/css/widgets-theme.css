@@ -153,6 +153,16 @@ body.chat-widget-page {
   word-break: break-word;
 }
 
+.chat-emote {
+  height: 1.45em;
+  width: auto;
+  max-width: 4.5em;
+  vertical-align: -0.2em;
+  display: inline-block;
+  margin: 0 1px;
+  object-fit: contain;
+}
+
 .chat-empty {
   padding: 12px 14px;
   border-radius: 12px;
