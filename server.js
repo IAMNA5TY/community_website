@@ -12,6 +12,7 @@ const webhook = require("./lib/webhook");
 const tokenStore = require("./lib/token-store");
 const webhookState = require("./lib/webhook-state");
 const webhookDebug = require("./lib/webhook-debug");
+const webhookSubscription = require("./lib/webhook-subscription");
 const botConfig = require("./lib/bot-config");
 const botEngine = require("./lib/bot-engine");
 const workoutState = require("./lib/workout-state");
@@ -217,8 +218,17 @@ function buildWebhookNote(req) {
     return "Kick cannot reach localhost. Use ngrok and set WEBHOOK_URL in .env, then put that URL in Kick Developer → Enable Webhooks (not Redirect URLs).";
   }
 
+  const broadcasterId = req.session.user?.profile?.id;
+  if (broadcasterId && webhookSubscription.isRateLimited(broadcasterId)) {
+    const retryAt = webhookSubscription.rateLimitRetryAt(broadcasterId);
+    return `Kick API rate limit — subscription setup paused until ${retryAt ? new Date(retryAt).toLocaleTimeString() : "later"}. Your webhook URL should still be ${WEBHOOK_URL} in Kick Developer → Enable Webhooks. Chat may already work if you were subscribed before — type in Kick chat to test.`;
+  }
+
   if (!req.session.webhookReady) {
     const err = req.session.webhookError;
+    if (err && /rate limit/i.test(err)) {
+      return `Kick API rate limit — wait 10–15 minutes, then refresh this page (do not spam sign-in). Webhook URL in Kick Developer must be ${WEBHOOK_URL}.`;
+    }
     if (err) {
       return `${err} In Kick Developer, open your app → Enable Webhooks → Webhook URL = ${WEBHOOK_URL} (this is separate from Redirect URLs).`;
     }
@@ -226,6 +236,10 @@ function buildWebhookNote(req) {
   }
 
   return null;
+}
+
+function subscriptionEventsFromList(subs) {
+  return (subs || []).map((sub) => sub.event || sub.name).filter(Boolean);
 }
 
 async function setupKickSubscriptions(req, options = {}) {
@@ -236,16 +250,33 @@ async function setupKickSubscriptions(req, options = {}) {
     return;
   }
 
+  const force = Boolean(options.force);
+  const sessionReady = Boolean(req.session.webhookReady);
+
+  if (
+    !force &&
+    !webhookSubscription.shouldAttempt(broadcasterId, { chatActive: sessionReady })
+  ) {
+    if (webhookSubscription.isRateLimited(broadcasterId)) {
+      req.session.webhookError = "Rate limit exceeded";
+      if (webhookSubscription.getCachedChatActive(broadcasterId)) {
+        req.session.webhookReady = true;
+        req.session.webhookError = null;
+      }
+    }
+    return;
+  }
+
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
-    if (options.force) {
-      await kickApi.resubscribeChannelEvents(accessToken, broadcasterId);
+    let subs;
+    if (force) {
+      subs = await kickApi.resubscribeChannelEvents(accessToken, broadcasterId);
     } else {
-      await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+      subs = await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
     }
 
-    const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
-    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+    const events = subscriptionEventsFromList(subs);
     const chatActive = events.includes("chat.message.sent");
 
     req.session.webhookReady = chatActive;
@@ -253,10 +284,19 @@ async function setupKickSubscriptions(req, options = {}) {
       ? null
       : "chat.message.sent not subscribed — check Kick Developer webhook URL";
 
+    webhookSubscription.noteResult(broadcasterId, { events, chatActive });
+
     console.log(
       `[webhooks] ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
     );
   } catch (error) {
+    webhookSubscription.noteResult(broadcasterId, { error: error.message });
+    if (/rate limit/i.test(error.message) && webhookSubscription.getCachedChatActive(broadcasterId)) {
+      req.session.webhookReady = true;
+      req.session.webhookError = null;
+      console.warn("[webhooks] rate limited but using cached ready state:", error.message);
+      return;
+    }
     req.session.webhookReady = false;
     req.session.webhookError = error.message;
     console.warn("[webhooks] subscribe failed:", error.message);
@@ -275,21 +315,30 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
     return;
   }
 
+  const force = Boolean(options.webhookUrlChanged);
+  if (!webhookSubscription.shouldAttempt(broadcasterId, { force })) {
+    if (webhookSubscription.isRateLimited(broadcasterId)) {
+      console.warn("[webhooks] boot subscribe skipped — Kick API rate limit");
+    }
+    return;
+  }
+
   try {
     const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
       broadcasterId,
       config.kick
     );
-    await kickApi.subscribeToChannelEvents(accessToken, broadcasterId, {
-      force: Boolean(options.webhookUrlChanged),
-    });
-    const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
-    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+    const subs = force
+      ? await kickApi.resubscribeChannelEvents(accessToken, broadcasterId)
+      : await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+    const events = subscriptionEventsFromList(subs);
     const chatActive = events.includes("chat.message.sent");
+    webhookSubscription.noteResult(broadcasterId, { events, chatActive });
     console.log(
       `[webhooks] boot ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
     );
   } catch (error) {
+    webhookSubscription.noteResult(broadcasterId, { error: error.message });
     console.warn("[webhooks] boot subscribe failed:", error.message);
   }
 }
@@ -831,12 +880,23 @@ app.post("/api/webhooks/reregister", async (req, res) => {
   const user = requireKickUser(req, res);
   if (!user) return;
 
+  const broadcasterId = user.profile.id;
+  if (webhookSubscription.isRateLimited(broadcasterId)) {
+    return res.status(429).json({
+      ok: false,
+      webhookReady: Boolean(req.session.webhookReady),
+      webhookError: "Rate limit exceeded",
+      retryAfter: webhookSubscription.rateLimitRetryAt(broadcasterId),
+      message: "Kick API rate limit — wait 10–15 minutes before re-registering.",
+    });
+  }
+
   await setupKickSubscriptions(req, { force: true });
 
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
     const subs = await kickApi.getEventSubscriptions(accessToken, user.profile.id);
-    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+    const events = subscriptionEventsFromList(subs);
 
     res.json({
       ok: Boolean(req.session.webhookReady),
@@ -846,6 +906,9 @@ app.post("/api/webhooks/reregister", async (req, res) => {
       chatWebhookActive: events.includes("chat.message.sent"),
     });
   } catch (error) {
+    if (/rate limit/i.test(error.message)) {
+      webhookSubscription.noteResult(broadcasterId, { error: error.message });
+    }
     res.status(500).json({
       ok: false,
       webhookReady: false,
@@ -858,10 +921,30 @@ app.get("/api/webhooks/status", async (req, res) => {
   const user = requireKickUser(req, res);
   if (!user) return;
 
+  const broadcasterId = user.profile.id;
+
+  if (webhookSubscription.isRateLimited(broadcasterId)) {
+    const cached = webhookSubscription.getCachedEvents(broadcasterId);
+    return res.json({
+      webhookUrl: WEBHOOK_URL,
+      webhookReady: Boolean(req.session.webhookReady),
+      webhookError: "Rate limit exceeded",
+      subscribedEvents: cached,
+      chatWebhookActive: cached.includes("chat.message.sent"),
+      kickDeveloperMustMatch: WEBHOOK_URL,
+      rateLimited: true,
+      retryAfter: webhookSubscription.rateLimitRetryAt(broadcasterId),
+    });
+  }
+
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
-    const subs = await kickApi.getEventSubscriptions(accessToken, user.profile.id);
-    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+    const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
+    const events = subscriptionEventsFromList(subs);
+    webhookSubscription.noteResult(broadcasterId, {
+      events,
+      chatActive: events.includes("chat.message.sent"),
+    });
 
     res.json({
       webhookUrl: WEBHOOK_URL,
@@ -872,6 +955,9 @@ app.get("/api/webhooks/status", async (req, res) => {
       kickDeveloperMustMatch: WEBHOOK_URL,
     });
   } catch (error) {
+    if (/rate limit/i.test(error.message)) {
+      webhookSubscription.noteResult(broadcasterId, { error: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -1800,7 +1886,7 @@ app.get("/auth/kick/callback", async (req, res) => {
     }
 
     try {
-      await setupKickSubscriptions(req, { force: true });
+      await setupKickSubscriptions(req);
     } catch (error) {
       req.session.webhookReady = false;
       req.session.webhookError = error.message;
