@@ -119,14 +119,17 @@ function renderStreamHero(data) {
   const channel = data.channel || {};
   const profile = data.profile || {};
   const isLive = Boolean(channel.isLive);
-  const thumb = channel.thumbnail || channel.bannerImage;
+  // Offline channel banners are full-width artwork — only use stream thumbnail when live.
+  const thumb = isLive
+    ? channel.thumbnail || channel.bannerImage
+    : channel.categoryThumbnail || null;
   const uptime = isLive ? formatStreamUptime(channel.streamStartedAt) : null;
   const slug = channel.slug || profile.username || "channel";
 
   hero.innerHTML = `
     <div class="stream-hero__inner">
       <div class="stream-hero__media${thumb ? "" : " stream-hero__media--empty"}">
-        ${thumb ? `<img class="stream-hero__thumb" src="${escapeHtml(thumb)}" alt="" />` : ""}
+        ${thumb ? `<img class="stream-hero__thumb" src="${escapeHtml(thumb)}" alt="" loading="lazy" decoding="async" />` : ""}
         <span class="stream-badge ${isLive ? "stream-badge--live" : "stream-badge--offline"}">
           ${isLive ? "Live" : "Offline"}
         </span>

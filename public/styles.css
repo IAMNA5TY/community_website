@@ -191,30 +191,35 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
 .stream-hero {
   padding: 0;
   overflow: hidden;
+  max-height: 200px;
+}
+
+.stream-hero.card {
+  padding: 0;
 }
 
 .stream-hero__inner {
   display: grid;
-  grid-template-columns: minmax(180px, 280px) 1fr;
+  grid-template-columns: minmax(160px, 240px) 1fr;
   gap: 0;
-  min-height: 0;
-  max-height: 220px;
+  height: 200px;
+  max-height: 200px;
+  overflow: hidden;
 }
 
 .stream-hero__media {
   position: relative;
   background: #1d2333;
-  min-height: 0;
-  max-height: 220px;
+  height: 200px;
+  max-height: 200px;
   overflow: hidden;
-  aspect-ratio: 16 / 10;
+  isolation: isolate;
 }
 
 .stream-hero__media--empty {
   background:
     linear-gradient(135deg, rgba(83, 252, 24, 0.08), transparent 55%),
     #1d2333;
-  min-height: 180px;
 }
 
 .stream-hero__thumb {
@@ -222,10 +227,17 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   inset: 0;
   width: 100%;
   height: 100%;
-  max-height: 220px;
+  max-width: 100%;
+  max-height: 200px;
   object-fit: cover;
   object-position: center;
   display: block;
+}
+
+#stream-hero img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: cover;
 }
 
 .stream-badge {
@@ -289,15 +301,17 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
 }
 
 @media (max-width: 900px) {
-  .stream-hero__inner {
-    grid-template-columns: 1fr;
-    max-height: none;
+  .stream-hero,
+  .stream-hero__inner,
+  .stream-hero__media,
+  .stream-hero__thumb,
+  #stream-hero img {
+    height: 180px;
+    max-height: 180px;
   }
 
-  .stream-hero__thumb,
-  .stream-hero__media {
-    max-height: 200px;
-    aspect-ratio: 16 / 9;
+  .stream-hero__inner {
+    grid-template-columns: 1fr;
   }
 
   .overview-grid {
