@@ -665,9 +665,23 @@ async function refreshWidgetsChatStatus(chatStatusEl, webhook = {}) {
       return;
     }
 
+    if (health?.chatWebhookActive && health?.debug?.totalHits === 0) {
+      chatStatusEl.textContent =
+        "Subscribed but Kick has not sent webhooks since last deploy — type in chat, then open Chat debug.";
+      chatStatusEl.className = "subtitle";
+      return;
+    }
+
+    if (health?.debug?.totalRejected > 0) {
+      chatStatusEl.textContent =
+        `Webhooks rejected (${health.debug.lastRejection?.reason || "unknown"}) — open Chat debug for details.`;
+      chatStatusEl.className = "subtitle err";
+      return;
+    }
+
     if (health?.chatWebhookActive) {
       chatStatusEl.textContent =
-        "Kick chat webhook is active. Click Send test chat or type in Kick chat.";
+        "Kick chat webhook is active — type in Kick chat or use Send test chat.";
       chatStatusEl.className = "subtitle ok";
       return;
     }
@@ -2381,6 +2395,85 @@ document.getElementById("spotify-sync-calibrate-btn")?.addEventListener("click",
     dashboardData.lighting.sync.runtime = data.runtime;
     renderSpotifySync(dashboardData.lighting.sync, dashboardData.lighting.hue);
   }
+});
+
+let widgetsChatDebugTimer = null;
+
+function formatWebhookDebug(data) {
+  const lines = [
+    `Webhook URL: ${data.webhookUrl || "?"}`,
+    `Expected channel: ${data.expectedBroadcasterId || "1183030"}`,
+    `Kick signed in: ${data.kickSignedInOnServer ? "yes" : "no"}`,
+    `chat.message.sent subscribed: ${data.chatWebhookActive ? "yes" : "no"}`,
+    `Messages for channel: ${data.messageCountForChannel ?? 0}`,
+    `Stored by broadcaster: ${JSON.stringify(data.storedByBroadcaster || {})}`,
+    `Webhook hits since deploy: ${data.totalHits ?? 0} (accepted ${data.totalAccepted ?? 0}, rejected ${data.totalRejected ?? 0})`,
+    `Last webhook hit: ${data.lastHitAt || "never"}`,
+    `Last chat webhook: ${data.lastChatAt || "never"}`,
+  ];
+
+  if (data.lastChat) {
+    lines.push(
+      `Last chat: [${data.lastChat.channelId}] ${data.lastChat.username}: ${data.lastChat.content}`
+    );
+  }
+
+  if (data.lastRejection) {
+    lines.push(
+      `Last rejection: ${data.lastRejection.eventType} — ${data.lastRejection.reason} at ${data.lastRejection.at}`
+    );
+  }
+
+  if (Array.isArray(data.hints) && data.hints.length) {
+    lines.push("", "Hints:");
+    for (const hint of data.hints) lines.push(`- ${hint}`);
+  }
+
+  if (Array.isArray(data.recent) && data.recent.length) {
+    lines.push("", "Recent webhook events:");
+    for (const event of data.recent.slice(0, 8)) {
+      const summary =
+        event.eventType === "chat.message.sent"
+          ? `${event.summary?.username}: ${event.summary?.content}`
+          : event.eventType;
+      lines.push(
+        `- ${event.at} ${event.valid ? "OK" : "REJECT"} ${event.eventType} [${event.channelId || "?"}] ${summary || ""}`
+      );
+    }
+  }
+
+  return lines.join("\n");
+}
+
+async function refreshWidgetsChatDebug() {
+  const debugEl = document.getElementById("widgets-chat-debug");
+  if (!debugEl || debugEl.classList.contains("hidden")) return;
+
+  try {
+    const response = await fetch("/api/webhooks/debug");
+    const data = await response.json();
+    debugEl.textContent = formatWebhookDebug(data);
+  } catch (error) {
+    debugEl.textContent = `Debug fetch failed: ${error.message}`;
+  }
+}
+
+document.getElementById("widgets-debug-chat-btn")?.addEventListener("click", async () => {
+  const debugEl = document.getElementById("widgets-chat-debug");
+  if (!debugEl) return;
+
+  debugEl.classList.toggle("hidden");
+  const visible = !debugEl.classList.contains("hidden");
+  if (!visible) {
+    if (widgetsChatDebugTimer) {
+      clearInterval(widgetsChatDebugTimer);
+      widgetsChatDebugTimer = null;
+    }
+    return;
+  }
+
+  await refreshWidgetsChatDebug();
+  widgetsChatDebugTimer = setInterval(refreshWidgetsChatDebug, 3000);
 });
 
 document.getElementById("widgets-test-chat-btn")?.addEventListener("click", async () => {

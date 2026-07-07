@@ -712,6 +712,22 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
+}
+
+.widgets-debug-log {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #d7e3ff;
+  font-size: 12px;
+  line-height: 1.45;
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .widgets-embed-frame {
