@@ -680,14 +680,14 @@ async function refreshWidgetsChatStatus(chatStatusEl, webhook = {}) {
 
     if (!health?.kickSignedInOnServer) {
       chatStatusEl.textContent =
-        "Sign in with Kick on na5ty.com, then click Register webhooks.";
+        "Sign in with Kick — webhooks register automatically on login.";
       chatStatusEl.className = "subtitle err";
       return;
     }
 
     chatStatusEl.textContent =
-      "Webhook URL saved in Kick — now click Register webhooks, then Send test chat.";
-    chatStatusEl.className = "subtitle";
+      `Set Kick Developer → Enable Webhooks → Webhook URL to ${health?.webhookUrl || "https://na5ty.com/webhooks/kick"} (not Redirect URLs), then sign in again.`;
+    chatStatusEl.className = "subtitle err";
   } catch {
     chatStatusEl.textContent =
       "Sign in at na5ty.com → Widgets → Send test chat to verify OBS chat.";
@@ -2380,32 +2380,6 @@ document.getElementById("spotify-sync-calibrate-btn")?.addEventListener("click",
   if (dashboardData?.lighting?.sync) {
     dashboardData.lighting.sync.runtime = data.runtime;
     renderSpotifySync(dashboardData.lighting.sync, dashboardData.lighting.hue);
-  }
-});
-
-document.getElementById("widgets-register-webhooks-btn")?.addEventListener("click", async () => {
-  const chatStatusEl = document.getElementById("widgets-chat-status");
-  if (chatStatusEl) {
-    chatStatusEl.textContent = "Registering webhooks with Kick...";
-    chatStatusEl.className = "subtitle";
-  }
-
-  const response = await fetch("/api/webhooks/reregister", { method: "POST" });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    if (chatStatusEl) {
-      chatStatusEl.textContent = data.error || data.webhookError || "Register failed — sign in with Kick first";
-      chatStatusEl.className = "subtitle err";
-    }
-    return showError(data.error || data.webhookError || "Webhook register failed");
-  }
-
-  showError("");
-  if (chatStatusEl) {
-    chatStatusEl.textContent = data.chatWebhookActive
-      ? "Webhooks registered — click Send test chat."
-      : `Registered but chat webhook missing. ${data.webhookError || ""}`.trim();
-    chatStatusEl.className = data.chatWebhookActive ? "subtitle ok" : "subtitle err";
   }
 });
 

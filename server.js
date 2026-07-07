@@ -207,15 +207,46 @@ function redirectWithSession(req, res, url) {
   });
 }
 
+function buildWebhookNote(req) {
+  if (WEBHOOK_URL.includes("localhost") || WEBHOOK_URL.includes("127.0.0.1")) {
+    return "Kick cannot reach localhost. Use ngrok and set WEBHOOK_URL in .env, then put that URL in Kick Developer → Enable Webhooks (not Redirect URLs).";
+  }
+
+  if (!req.session.webhookReady) {
+    const err = req.session.webhookError;
+    if (err) {
+      return `${err} In Kick Developer, open your app → Enable Webhooks → Webhook URL = ${WEBHOOK_URL} (this is separate from Redirect URLs).`;
+    }
+    return `In Kick Developer → Enable Webhooks, set Webhook URL to ${WEBHOOK_URL}. Redirect URLs are only for sign-in. Sign in again after saving.`;
+  }
+
+  return null;
+}
+
 async function setupKickSubscriptions(req) {
+  const broadcasterId = req.session.user?.profile?.id;
+  if (!broadcasterId) {
+    req.session.webhookReady = false;
+    req.session.webhookError = "Not signed in";
+    return;
+  }
+
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
-    await kickApi.subscribeToChannelEvents(
-      accessToken,
-      req.session.user.profile.id
+    await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+
+    const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
+    const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+    const chatActive = events.includes("chat.message.sent");
+
+    req.session.webhookReady = chatActive;
+    req.session.webhookError = chatActive
+      ? null
+      : "chat.message.sent not subscribed — check Kick Developer webhook URL";
+
+    console.log(
+      `[webhooks] ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
     );
-    req.session.webhookReady = true;
-    req.session.webhookError = null;
   } catch (error) {
     req.session.webhookReady = false;
     req.session.webhookError = error.message;
@@ -233,11 +264,12 @@ async function ensureStoredWebhookSubscriptions() {
       broadcasterId,
       config.kick
     );
-    const subs = await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+    await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+    const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
     const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+    const chatActive = events.includes("chat.message.sent");
     console.log(
-      `[webhooks] channel ${broadcasterId} subscriptions:`,
-      events.length ? events.join(", ") : "(none)"
+      `[webhooks] boot ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
     );
   } catch (error) {
     console.warn("[webhooks] boot subscribe failed:", error.message);
@@ -324,9 +356,7 @@ app.get("/api/dashboard", async (req, res) => {
   }
 
   try {
-    if (!req.session.webhookReady) {
-      await setupKickSubscriptions(req);
-    }
+    await setupKickSubscriptions(req);
 
     const dashboard = await kickApi.getDashboard(req, config.kick);
     const stored = eventStore.getChannelData(req.session.user.profile.id);
@@ -403,10 +433,7 @@ app.get("/api/dashboard", async (req, res) => {
       webhookReady: Boolean(req.session.webhookReady),
       webhookError: req.session.webhookError || null,
       webhookUrl: WEBHOOK_URL,
-      webhookNote:
-        WEBHOOK_URL.includes("localhost") || WEBHOOK_URL.includes("127.0.0.1")
-          ? "Kick cannot reach localhost. Use a tunnel like ngrok and set WEBHOOK_URL in .env to receive live chat and sub events."
-          : null,
+      webhookNote: buildWebhookNote(req),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -672,9 +699,9 @@ app.get("/api/webhooks/health", async (req, res) => {
     chatWebhookActive,
     subscriptionError,
     setup: [
-      "Kick Developer → Webhooks → URL must be https://na5ty.com/webhooks/kick",
-      "Sign out and sign in at na5ty.com after saving the webhook URL",
-      "Widgets → Register webhooks, then Send test chat",
+      `Kick Developer → Enable Webhooks → Webhook URL = ${WEBHOOK_URL}`,
+      "Redirect URLs are only for sign-in — do not put the webhook URL there",
+      "Sign in at na5ty.com — webhooks register automatically on login",
       "Live chat works when viewers type in Kick chat",
     ],
   });
