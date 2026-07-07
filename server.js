@@ -53,6 +53,7 @@ const stakeAffiliate = require("./lib/stake-affiliate");
 const signInLog = require("./lib/sign-in-log");
 const kickRewardsStore = require("./lib/kick-rewards-store");
 const { createKickRewardsRouter } = require("./lib/kick-rewards-routes");
+const kickPusherMonitor = require("./lib/kick-pusher-monitor");
 const dashboardAccess = require("./lib/dashboard-access");
 
 const app = express();
@@ -2127,6 +2128,11 @@ webhook.loadPublicKey().then(async () => {
     );
   }
   await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
+  if (String(process.env.KICK_PUSHER_MONITOR || "1") !== "0") {
+    kickPusherMonitor.start();
+  } else {
+    console.log("[pusher-monitor] disabled (KICK_PUSHER_MONITOR=0)");
+  }
   const primaryId = tokenStore.getPrimaryBroadcasterId();
   if (primaryId) {
     workoutState.setBroadcaster(primaryId);
