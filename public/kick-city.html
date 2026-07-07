@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kick City Rewards — NA5TY</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .kick-city-page {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
+    .kick-city-card {
+      background: var(--card, #12121a);
+      border: 1px solid var(--border, rgba(255,255,255,0.08));
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .kick-city-card h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+    }
+    .kick-city-card p {
+      color: var(--text-muted, #9aa0b5);
+      margin: 0 0 16px;
+      line-height: 1.5;
+    }
+    .kick-city-form {
+      display: grid;
+      gap: 12px;
+    }
+    .kick-city-form input {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border, rgba(255,255,255,0.12));
+      background: rgba(0,0,0,0.25);
+      color: inherit;
+      font-size: 1rem;
+    }
+    .kick-city-stats {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .kick-city-stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+    }
+    .kick-city-keywords {
+      font-size: 0.85rem;
+      color: var(--text-muted, #9aa0b5);
+      margin-top: 4px;
+    }
+    .kick-city-note {
+      font-size: 0.9rem;
+      color: var(--text-muted, #9aa0b5);
+    }
+    .kick-city-ok { color: #7dffb3; }
+    .kick-city-err { color: #ff8e8e; }
+  </style>
+</head>
+<body>
+  <div class="kick-city-page">
+    <div class="kick-city-card">
+      <h1>Kick City Rewards</h1>
+      <p>
+        Register your Kick username so na5ty.com tracks your chat messages and keywords
+        for the FiveM Kick Rewards server. After registering here, link the same username in-game with <code>/kick yourname</code>.
+      </p>
+      <form class="kick-city-form" id="registerForm">
+        <input id="kickUsername" name="kickUsername" placeholder="Your Kick username" autocomplete="username" required>
+        <button class="btn btn-kick" type="submit">Register for Kick Rewards</button>
+      </form>
+      <p class="kick-city-note" id="registerStatus"></p>
+    </div>
+
+    <div class="kick-city-card">
+      <h2 style="margin-top:0;">Your stats</h2>
+      <p>Look up message counts from the last 24 hours (updates when you chat on Kick).</p>
+      <form class="kick-city-form" id="lookupForm">
+        <input id="lookupUsername" placeholder="Kick username to look up" required>
+        <button class="btn btn-secondary" type="submit">Check stats</button>
+      </form>
+      <div class="kick-city-stats" id="statsPanel"></div>
+    </div>
+
+    <p class="kick-city-note">
+      FiveM server config: set <code>Config.API.BaseURL = "https://na5ty.com/api"</code>
+    </p>
+    <p><a href="/">← Back to dashboard</a></p>
+  </div>
+
+  <script>
+    const registerForm = document.getElementById("registerForm");
+    const lookupForm = document.getElementById("lookupForm");
+    const registerStatus = document.getElementById("registerStatus");
+    const statsPanel = document.getElementById("statsPanel");
+
+    registerForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const kickUsername = document.getElementById("kickUsername").value.trim();
+      registerStatus.textContent = "Registering...";
+      registerStatus.className = "kick-city-note";
+
+      try {
+        const response = await fetch("/api/rewards/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kickUsername }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Register failed");
+        registerStatus.textContent = `Registered as ${data.registration.kickUsername}. Use the same name with /kick in-game.`;
+        registerStatus.className = "kick-city-note kick-city-ok";
+        document.getElementById("lookupUsername").value = data.registration.kickUsername;
+      } catch (error) {
+        registerStatus.textContent = error.message;
+        registerStatus.className = "kick-city-note kick-city-err";
+      }
+    });
+
+    lookupForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const kickUsername = document.getElementById("lookupUsername").value.trim();
+      statsPanel.innerHTML = "<div class='kick-city-note'>Loading...</div>";
+
+      try {
+        const response = await fetch(`/api/rewards/summary/${encodeURIComponent(kickUsername)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Lookup failed");
+
+        const streamers = Object.entries(data.streamers || {});
+        if (!streamers.length) {
+          statsPanel.innerHTML = "<div class='kick-city-note'>No chat data yet — type in Kick chat after registering.</div>";
+          return;
+        }
+
+        statsPanel.innerHTML = streamers.map(([slug, row]) => {
+          const keywords = Object.entries(row.keywords_24h || {})
+            .map(([key, count]) => `${key}: ${count}`)
+            .join(", ");
+          return `
+            <div class="kick-city-stat">
+              <div>
+                <strong>${slug}</strong>
+                <div class="kick-city-keywords">${keywords || "No keywords yet"}</div>
+              </div>
+              <div>
+                <div>${row.message_count_24h} msgs (24h)</div>
+                <div class="kick-city-keywords">${row.gift_kicks_all_time} KICKS gifted</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      } catch (error) {
+        statsPanel.innerHTML = `<div class="kick-city-err">${error.message}</div>`;
+      }
+    });
+
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.loggedIn && data.profile?.username) {
+          document.getElementById("kickUsername").value = data.profile.username;
+          document.getElementById("lookupUsername").value = data.profile.username;
+        }
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>

@@ -50,6 +50,8 @@ systemAudio.onBeat(() => {
 });
 const stakeAffiliate = require("./lib/stake-affiliate");
 const signInLog = require("./lib/sign-in-log");
+const kickRewardsStore = require("./lib/kick-rewards-store");
+const { createKickRewardsRouter } = require("./lib/kick-rewards-routes");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -146,6 +148,7 @@ app.use(
   })
 );
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/api", createKickRewardsRouter(config));
 
 function randomState() {
   return crypto.randomBytes(24).toString("hex");
@@ -1789,6 +1792,14 @@ app.get("/auth/kick/callback", async (req, res) => {
     signInLog.recordSignIn({ ...signInEntry, allowed: true });
 
     try {
+      kickRewardsStore.registerKickUsername(kickUser.name, {
+        displayName: kickUser.name,
+      });
+    } catch (error) {
+      console.warn("[kick-rewards] register on login:", error.message);
+    }
+
+    try {
       await setupKickSubscriptions(req, { force: true });
     } catch (error) {
       req.session.webhookReady = false;
@@ -1866,6 +1877,15 @@ app.post("/webhooks/kick", (req, res) => {
       stored: true,
     });
     console.log(`Chat webhook: [${channelId}] ${payload.sender?.username || "?"}: ${(payload.content || "").slice(0, 80)}`);
+    const rewardsStreamer = kickRewardsStore.broadcasterIdToStreamer(channelId);
+    if (rewardsStreamer && payload.sender?.username) {
+      kickRewardsStore.recordChatMessage({
+        streamer: rewardsStreamer,
+        username: payload.sender.username,
+        content: payload.content || "",
+        createdAt: payload.created_at || new Date().toISOString(),
+      });
+    }
     botEngine
       .handleChatMessage(channelId, payload, config.kick)
       .catch((error) => {
@@ -1921,8 +1941,17 @@ app.post("/webhooks/kick", (req, res) => {
       const slug =
         payload.channel?.slug ||
         payload.broadcaster?.channel_slug ||
-        payload.broadcaster?.username;
+        payload.broadcaster?.username ||
+        kickRewardsStore.broadcasterIdToStreamer(broadcasterUserId);
       giftedSubLeaderboardApi.clearCache(slug);
+      if (slug && payload.sender?.username) {
+        kickRewardsStore.recordKicksGifted({
+          streamer: slug,
+          donor: payload.sender.username,
+          amount: payload.gift?.amount || payload.amount,
+          createdAt: payload.created_at || new Date().toISOString(),
+        });
+      }
     }
   }
 

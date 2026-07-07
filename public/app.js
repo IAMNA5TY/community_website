@@ -179,6 +179,7 @@ function renderOverviewQuickLinks(data) {
   const links = [
     ["Chat box", data.widgetsUrls?.chatBox],
     ["Stream alerts", data.widgetsUrls?.streamAlerts],
+    ["Kick City rewards", "/kick-city.html"],
     ["Slots timer", data.slotsUrls?.timer],
     ["Slots widget", data.slotsUrls?.widget],
     ["Now playing", data.widgetsUrls?.nowPlaying],
