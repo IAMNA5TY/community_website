@@ -80,10 +80,18 @@ function getAllowedBroadcasterIds() {
   );
 }
 
-function isAllowedBroadcaster(broadcasterId) {
+function isAllowedBroadcaster(broadcasterId, username) {
   const allowed = getAllowedBroadcasterIds();
   if (!allowed) return true;
-  return allowed.has(String(broadcasterId));
+  if (allowed.has(String(broadcasterId))) return true;
+
+  const allowedNames = String(process.env.ALLOWED_KICK_USERNAMES || "na5ty")
+    .split(",")
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowedNames.length) return false;
+
+  return allowedNames.includes(String(username || "").toLowerCase());
 }
 
 const config = {
@@ -120,12 +128,12 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use(express.static(path.join(__dirname, "public")));
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "dev-secret-change-me",
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
       sameSite: "lax",
@@ -134,6 +142,7 @@ app.use(
     },
   })
 );
+app.use(express.static(path.join(__dirname, "public")));
 
 function randomState() {
   return crypto.randomBytes(24).toString("hex");
@@ -181,6 +190,15 @@ function saveUserSession(req, profile, tokens) {
     refreshToken: tokens.refresh_token || null,
     expiresAt: req.session.user.expiresAt,
     username: profile.username,
+  });
+}
+
+function redirectWithSession(req, res, url) {
+  req.session.save((err) => {
+    if (err) {
+      return res.redirect(`/?error=${encodeURIComponent(err.message)}`);
+    }
+    res.redirect(url);
   });
 }
 
@@ -324,7 +342,7 @@ function requireKickUser(req, res) {
     res.status(401).json({ error: "Not signed in with Kick" });
     return null;
   }
-  if (!isAllowedBroadcaster(req.session.user.profile.id)) {
+  if (!isAllowedBroadcaster(req.session.user.profile.id, req.session.user.profile.username)) {
     req.session.destroy(() => {});
     res.status(403).json({ error: "access_denied" });
     return null;
@@ -1357,7 +1375,7 @@ app.get("/auth/kick", (req, res) => {
     code_challenge_method: "S256",
   });
 
-  res.redirect(`${config.kick.authorizeUrl}?${params}`);
+  redirectWithSession(req, res, `${config.kick.authorizeUrl}?${params}`);
 });
 
 app.get("/auth/kick/callback", async (req, res) => {
@@ -1414,7 +1432,7 @@ app.get("/auth/kick/callback", async (req, res) => {
       ip: req.ip,
     };
 
-    if (!isAllowedBroadcaster(userId)) {
+    if (!isAllowedBroadcaster(userId, kickUser.name)) {
       signInLog.recordSignIn({ ...signInEntry, allowed: false });
       return res.redirect("/?error=access_denied");
     }
@@ -1434,12 +1452,23 @@ app.get("/auth/kick/callback", async (req, res) => {
 
     signInLog.recordSignIn({ ...signInEntry, allowed: true });
 
-    await setupKickSubscriptions(req);
-    workoutState.setBroadcaster(kickUser.user_id);
-    botEngine.refreshTimersForBroadcaster(kickUser.user_id, config.kick);
-    res.redirect("/");
+    try {
+      await setupKickSubscriptions(req);
+    } catch (error) {
+      req.session.webhookReady = false;
+      req.session.webhookError = error.message;
+    }
+
+    try {
+      workoutState.setBroadcaster(kickUser.user_id);
+      botEngine.refreshTimersForBroadcaster(kickUser.user_id, config.kick);
+    } catch (error) {
+      console.warn("[auth] post-login setup:", error.message);
+    }
+
+    redirectWithSession(req, res, "/");
   } catch (err) {
-    res.redirect(`/?error=${encodeURIComponent(err.message)}`);
+    redirectWithSession(req, res, `/?error=${encodeURIComponent(err.message)}`);
   }
 });
 

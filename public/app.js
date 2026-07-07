@@ -1604,8 +1604,11 @@ function showLogin() {
 }
 
 async function loadDashboard() {
-  const response = await fetch("/api/dashboard");
-  if (response.status === 401) {
+  const response = await fetch("/api/dashboard", { credentials: "same-origin" });
+  if (response.status === 401 || response.status === 403) {
+    if (response.status === 403) {
+      showError("This dashboard is private. Your Kick account is not authorized to sign in.");
+    }
     showLogin();
     return;
   }
