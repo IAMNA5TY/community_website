@@ -10,6 +10,7 @@ const chatEvents = require("./lib/chat-events");
 const kickApi = require("./lib/kick");
 const webhook = require("./lib/webhook");
 const tokenStore = require("./lib/token-store");
+const webhookState = require("./lib/webhook-state");
 const botConfig = require("./lib/bot-config");
 const botEngine = require("./lib/bot-engine");
 const workoutState = require("./lib/workout-state");
@@ -217,7 +218,7 @@ function buildWebhookNote(req) {
     if (err) {
       return `${err} In Kick Developer, open your app → Enable Webhooks → Webhook URL = ${WEBHOOK_URL} (this is separate from Redirect URLs).`;
     }
-    return `In Kick Developer → Enable Webhooks, set Webhook URL to ${WEBHOOK_URL}. Redirect URLs are only for sign-in. Sign in again after saving.`;
+    return `In Kick Developer → Enable Webhooks, set Webhook URL to ${WEBHOOK_URL}. Redirect URLs are only for sign-in. Sign in once after saving — the site re-registers on restart.`;
   }
 
   return null;
@@ -254,17 +255,26 @@ async function setupKickSubscriptions(req) {
   }
 }
 
-async function ensureStoredWebhookSubscriptions() {
+async function ensureStoredWebhookSubscriptions(options = {}) {
   const broadcasterId = DEFAULT_BROADCASTER_ID;
   const token = tokenStore.getBroadcasterToken(broadcasterId);
-  if (!token?.accessToken) return;
+  if (!token?.accessToken) {
+    if (options.webhookUrlChanged) {
+      console.warn(
+        "[webhooks] webhook URL changed but no saved Kick token — sign in at na5ty.com once"
+      );
+    }
+    return;
+  }
 
   try {
     const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
       broadcasterId,
       config.kick
     );
-    await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+    await kickApi.subscribeToChannelEvents(accessToken, broadcasterId, {
+      force: Boolean(options.webhookUrlChanged),
+    });
     const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
     const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
     const chatActive = events.includes("chat.message.sent");
@@ -1772,7 +1782,13 @@ app.post("/webhooks/kick", (req, res) => {
 
 webhook.loadPublicKey().then(async () => {
   eventStore.migrateMessageStats();
-  await ensureStoredWebhookSubscriptions();
+  const { changed, previousUrl } = webhookState.noteWebhookUrl(WEBHOOK_URL);
+  if (changed) {
+    console.log(
+      `[webhooks] URL changed ${previousUrl} -> ${WEBHOOK_URL} — re-registering subscriptions`
+    );
+  }
+  await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
   const primaryId = tokenStore.getPrimaryBroadcasterId();
   if (primaryId) {
     workoutState.setBroadcaster(primaryId);
