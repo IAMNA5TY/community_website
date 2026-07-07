@@ -2407,8 +2407,8 @@ function formatWebhookDebug(data) {
     `chat.message.sent subscribed: ${data.chatWebhookActive ? "yes" : "no"}`,
     `Messages for channel: ${data.messageCountForChannel ?? 0}`,
     `Stored by broadcaster: ${JSON.stringify(data.storedByBroadcaster || {})}`,
-    `Webhook hits since deploy: ${data.totalHits ?? 0} (accepted ${data.totalAccepted ?? 0}, rejected ${data.totalRejected ?? 0})`,
-    `Last webhook hit: ${data.lastHitAt || "never"}`,
+    `Webhook hits since deploy: ${data.totalHits ?? 0} (from Kick ${data.kickHits ?? 0}, other ${data.otherHits ?? 0})`,
+    `Last Kick webhook: ${data.lastKickHitAt || "never"}`,
     `Last chat webhook: ${data.lastChatAt || "never"}`,
   ];
 

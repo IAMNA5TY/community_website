@@ -225,7 +225,7 @@ function buildWebhookNote(req) {
   return null;
 }
 
-async function setupKickSubscriptions(req) {
+async function setupKickSubscriptions(req, options = {}) {
   const broadcasterId = req.session.user?.profile?.id;
   if (!broadcasterId) {
     req.session.webhookReady = false;
@@ -235,7 +235,11 @@ async function setupKickSubscriptions(req) {
 
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
-    await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+    if (options.force) {
+      await kickApi.resubscribeChannelEvents(accessToken, broadcasterId);
+    } else {
+      await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+    }
 
     const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
     const events = subs.map((sub) => sub.event || sub.name).filter(Boolean);
@@ -712,6 +716,10 @@ app.get("/api/webhooks/debug", async (req, res) => {
     storedByBroadcaster,
     recentStoredMessages: channelMessages,
     webhookState: webhookState.getWebhookState(),
+    clientIdPrefix: config.kick.clientId
+      ? `${config.kick.clientId.slice(0, 6)}…${config.kick.clientId.slice(-4)}`
+      : null,
+    expectedClientIdPrefix: "01KWJ2…C2GKV",
     ...webhookDebug.getDebugSnapshot(),
     hints: buildWebhookDebugHints({
       subscribedEvents,
@@ -729,9 +737,15 @@ function buildWebhookDebugHints({ subscribedEvents, storedByBroadcaster, broadca
     hints.push("chat.message.sent is not subscribed — sign in at na5ty.com");
   }
 
-  if (debug.totalHits === 0) {
+  if (debug.kickHits === 0 && debug.totalHits > 0) {
     hints.push(
-      "API subscriptions are active but Kick has sent 0 webhooks — open Kick Developer → your app → Enable Webhooks (toggle ON) → Webhook URL = https://na5ty.com/webhooks/kick. This is NOT the Redirect URLs list."
+      "Hits seen but none from Kick (missing Kick-Event-* headers) — only manual tests reached the server so far"
+    );
+  }
+
+  if (debug.kickHits === 0) {
+    hints.push(
+      "Kick has not POSTed yet. Toggle webhooks OFF→Save→ON→Save in Kick Developer, sign out/in at na5ty.com, then chat. If still 0, check Cloudflare Security → Events for blocked POSTs to /webhooks/kick"
     );
   }
 
@@ -814,7 +828,7 @@ app.post("/api/webhooks/reregister", async (req, res) => {
   const user = requireKickUser(req, res);
   if (!user) return;
 
-  await setupKickSubscriptions(req);
+  await setupKickSubscriptions(req, { force: true });
 
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
@@ -1775,7 +1789,7 @@ app.get("/auth/kick/callback", async (req, res) => {
     signInLog.recordSignIn({ ...signInEntry, allowed: true });
 
     try {
-      await setupKickSubscriptions(req);
+      await setupKickSubscriptions(req, { force: true });
     } catch (error) {
       req.session.webhookReady = false;
       req.session.webhookError = error.message;
