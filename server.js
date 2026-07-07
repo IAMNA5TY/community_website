@@ -1794,6 +1794,15 @@ app.get("/auth/kick/callback", async (req, res) => {
   }
 });
 
+app.get("/webhooks/kick", (_req, res) => {
+  res.json({
+    ok: true,
+    endpoint: "kick-webhook",
+    url: WEBHOOK_URL,
+    note: "Kick POSTs chat/events here. Enable Webhooks in Kick Developer must point to this URL.",
+  });
+});
+
 app.post("/webhooks/kick", (req, res) => {
   const headers = Object.fromEntries(
     Object.entries(req.headers).map(([key, value]) => [
