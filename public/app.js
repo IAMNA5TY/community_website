@@ -100,6 +100,9 @@ function showPage(page) {
   if (page === "lighting" && dashboardData?.lighting?.hue?.connected) {
     ensureHueDevicesLoaded();
   }
+  if (page === "settings") {
+    refreshSignInLog();
+  }
 }
 
 function renderStreamHero(data) {
@@ -209,6 +212,58 @@ function renderApiAccess(data) {
       <div><dt>APIs</dt><dd><ul class="plain-list">${sources || "<li>None</li>"}</ul></dd></div>
     </dl>
   `;
+}
+
+function renderSignInLog(entries) {
+  const container = document.getElementById("sign-in-log-table");
+  if (!container) return;
+
+  renderTable(
+    container,
+    [
+      {
+        label: "User",
+        render: (row) => {
+          const name = row.displayName || row.username || row.broadcasterId || "Unknown";
+          const avatar = row.profileImage
+            ? `<img class="sign-in-avatar" src="${escapeHtml(row.profileImage)}" alt="" />`
+            : "";
+          return `${avatar}<div><strong>${escapeHtml(name)}</strong><br><span class="subtitle">@${escapeHtml(row.username || "unknown")} · ID ${escapeHtml(row.broadcasterId)}</span></div>`;
+        },
+      },
+      {
+        label: "When",
+        render: (row) => (row.at ? new Date(row.at).toLocaleString() : "—"),
+      },
+      {
+        label: "Status",
+        render: (row) =>
+          row.allowed
+            ? '<span class="pill pill-ok">Allowed</span>'
+            : '<span class="pill pill-warn">Blocked</span>',
+      },
+      {
+        label: "IP",
+        render: (row) => escapeHtml(row.ip || "—"),
+      },
+    ],
+    entries,
+    "No sign-ins recorded yet."
+  );
+}
+
+async function refreshSignInLog() {
+  const container = document.getElementById("sign-in-log-table");
+  if (!container) return;
+
+  const response = await fetch("/api/admin/sign-ins");
+  if (!response.ok) {
+    renderSignInLog([]);
+    return;
+  }
+
+  const data = await response.json();
+  renderSignInLog(data.entries || []);
 }
 
 function attrQuote(value) {

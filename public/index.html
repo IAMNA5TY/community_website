@@ -764,8 +764,13 @@
           <section class="page-view" data-page="settings">
             <header class="page-header">
               <h1>Settings</h1>
-              <p class="subtitle">API access and webhook subscriptions</p>
+              <p class="subtitle">API access, sign-in activity, and webhooks</p>
             </header>
+            <div class="card panel">
+              <h2>Sign-in activity</h2>
+              <p class="subtitle">Recent Kick sign-in attempts — authorized and blocked</p>
+              <div id="sign-in-log-table"></div>
+            </div>
             <div class="card panel">
               <h2>API access</h2>
               <div class="detail-card" id="api-access"></div>
@@ -781,6 +786,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=33"></script>
+    <script src="/app.js?v=34"></script>
   </body>
 </html>

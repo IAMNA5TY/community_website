@@ -830,6 +830,32 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   font-weight: 600;
 }
 
+.pill-ok {
+  background: rgba(83, 252, 24, 0.12);
+  color: #b8f7a0;
+}
+
+.pill-warn {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ffb3b3;
+}
+
+.sign-in-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+  vertical-align: middle;
+  border: 1px solid var(--border);
+}
+
+#sign-in-log-table .data-table td:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .tab-row { display: flex; gap: 8px; }
 
 .tab {

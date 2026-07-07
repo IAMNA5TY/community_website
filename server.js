@@ -47,6 +47,7 @@ systemAudio.onBeat(() => {
   }
 });
 const stakeAffiliate = require("./lib/stake-affiliate");
+const signInLog = require("./lib/sign-in-log");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -216,6 +217,12 @@ app.get("/api/auth/kick-info", (req, res) => {
     redirectUri: kickRedirectUri(req),
     baseUrl: publicBaseUrl(req),
   });
+});
+
+app.get("/api/admin/sign-ins", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json({ entries: signInLog.getRecent(50) });
 });
 
 app.get("/api/dashboard", async (req, res) => {
@@ -1399,7 +1406,16 @@ app.get("/auth/kick/callback", async (req, res) => {
 
     const kickUser = userData.data[0];
     const userId = String(kickUser.user_id);
+    const signInEntry = {
+      broadcasterId: userId,
+      username: kickUser.name,
+      displayName: kickUser.name,
+      profileImage: kickUser.profile_picture,
+      ip: req.ip,
+    };
+
     if (!isAllowedBroadcaster(userId)) {
+      signInLog.recordSignIn({ ...signInEntry, allowed: false });
       return res.redirect("/?error=access_denied");
     }
 
@@ -1415,6 +1431,8 @@ app.get("/auth/kick/callback", async (req, res) => {
       },
       tokens
     );
+
+    signInLog.recordSignIn({ ...signInEntry, allowed: true });
 
     await setupKickSubscriptions(req);
     workoutState.setBroadcaster(kickUser.user_id);
