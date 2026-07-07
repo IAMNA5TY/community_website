@@ -730,7 +730,9 @@ function buildWebhookDebugHints({ subscribedEvents, storedByBroadcaster, broadca
   }
 
   if (debug.totalHits === 0) {
-    hints.push("Kick has not hit /webhooks/kick since last deploy — type in chat or check Kick Developer webhook URL");
+    hints.push(
+      "API subscriptions are active but Kick has sent 0 webhooks — open Kick Developer → your app → Enable Webhooks (toggle ON) → Webhook URL = https://na5ty.com/webhooks/kick. This is NOT the Redirect URLs list."
+    );
   }
 
   if (debug.totalRejected > 0 && debug.lastRejection?.reason === "invalid_signature") {
