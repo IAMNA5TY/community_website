@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Treadmill Tracker</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <style>
+    body { background: transparent !important; }
+
+    .wrap {
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      width: 360px;
+    }
+
+    .treadmill-time { font-size: 5rem; }
+    .treadmill-belt { height: 56px; }
+  </style>
+</head>
+<body>
+  <div class="panel wrap orange-accent" id="treadmillPanel">
+    <div class="panel-header orange"><span class="icon">🏃</span> Treadmill — 1 Sub = 1 Min</div>
+    <div class="panel-body treadmill-display">
+      <div class="treadmill-belt paused"></div>
+      <div class="treadmill-time">0:00</div>
+      <div class="treadmill-label">Time Remaining</div>
+      <div class="treadmill-status idle">
+        <span class="status-dot"></span> Waiting For Subs
+      </div>
+      <div class="stat-grid" style="margin-top:16px;">
+        <div class="stat-box blue">
+          <div class="stat-value" data-bank>0</div>
+          <div class="stat-label">Mins Banked</div>
+        </div>
+        <div class="stat-box highlight">
+          <div class="stat-value" data-subs>0</div>
+          <div class="stat-label">Gifted Subs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/workout.js"></script>
+  <script>
+    initWorkoutPage({
+      treadmill: document.getElementById("treadmillPanel"),
+    });
+  </script>
+</body>
+</html>

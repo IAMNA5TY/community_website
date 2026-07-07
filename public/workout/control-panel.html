@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Workout Control Panel — NA5TY</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <style>
+    body {
+      background: var(--bg-deep) !important;
+      overflow-y: auto;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    body.embed {
+      background: transparent !important;
+      min-height: 0;
+    }
+
+    body.embed .dashboard {
+      max-width: none;
+      padding: 0;
+      gap: 12px;
+    }
+
+    body.embed .embed-only {
+      display: block;
+    }
+
+    body.embed .full-only {
+      display: none !important;
+    }
+
+    .embed-only {
+      display: none;
+    }
+
+    body.embed .collapse-section {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-panel);
+    }
+
+    body.embed .collapse-section summary {
+      padding: 12px 14px;
+      cursor: pointer;
+      list-style: none;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    body.embed .collapse-section summary::-webkit-details-marker { display: none; }
+
+    body.embed .collapse-section[open] summary {
+      border-bottom: 1px solid var(--border);
+      color: var(--orange-bright);
+    }
+
+    body.embed .collapse-section .section-body {
+      padding: 14px;
+    }
+
+    .dashboard {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 16px 32px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .dash-header {
+      text-align: center;
+    }
+
+    .dash-header h1 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .dash-header p {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .status-pill.ok {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--green);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    .status-pill.warn {
+      background: var(--orange-dim);
+      color: var(--orange-bright);
+      border: 1px solid rgba(255, 87, 34, 0.3);
+    }
+
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .card-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .stat-box .val {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--orange-bright);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat-box.timer .val {
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-box .lbl {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .status-bar.idle {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .status-bar.active {
+      background: var(--orange-dim);
+      color: var(--orange-bright);
+      border: 1px solid rgba(255, 87, 34, 0.35);
+    }
+
+    .status-bar.paused {
+      background: rgba(79, 195, 247, 0.1);
+      color: var(--blue-bright);
+      border: 1px solid rgba(79, 195, 247, 0.25);
+    }
+
+    .status-bar .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: currentColor;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 10px;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--orange);
+      color: #1a0800;
+    }
+
+    .btn-green {
+      background: var(--green);
+      color: #0a1a0a;
+    }
+
+    .btn-dark {
+      background: var(--bg-card);
+      color: var(--white);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: rgba(244, 67, 54, 0.12);
+      color: #ff8a80;
+      border: 1px solid rgba(244, 67, 54, 0.25);
+    }
+
+    .btn-sm {
+      padding: 9px 10px;
+      font-size: 0.72rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .field-row.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 9px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--white);
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: var(--font);
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--orange);
+      box-shadow: 0 0 0 2px var(--orange-dim);
+    }
+
+    .btn-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-trio {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+    }
+
+    .btn-trio .btn-danger {
+      padding-inline: 14px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+
+    .sub-label {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--green);
+      color: #0a1a0a;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 520px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .action-grid { grid-template-columns: 1fr; }
+      .field-row.three { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="dash-header full-only">
+      <h1>Workout Control Panel</h1>
+      <p>NA5TY · Synced to OBS &amp; chat</p>
+      <div class="status-pill ok" id="serverStatus">
+        <span class="status-dot" style="background:var(--green);width:8px;height:8px;border-radius:50%;"></span>
+        Connected · <span id="serverHost"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Live stats</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="val" id="pvSubs">0</div>
+          <div class="lbl">Subs</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" id="pvMessages">0</div>
+          <div class="lbl">Messages</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" id="pvWeight">245</div>
+          <div class="lbl">Weight</div>
+        </div>
+        <div class="stat-box timer">
+          <div class="val" id="pvTimer">0:00</div>
+          <div class="lbl">Treadmill</div>
+        </div>
+      </div>
+      <div class="status-bar idle" id="pvStatus">
+        <span class="dot"></span>
+        <span id="pvStatusText">Waiting for subs</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Stream controls</div>
+      <div class="action-grid">
+        <button class="btn btn-primary" onclick="doAddSub()">+1 Sub</button>
+        <button class="btn btn-green" onclick="doStart()">▶ Start</button>
+        <button class="btn btn-dark" onclick="doStop()">⏸ Pause</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sub-label">Set totals</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Subs</label>
+          <input type="number" id="inTotalSubs" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Minutes</label>
+          <input type="number" id="inTotalMins" min="0" step="1">
+        </div>
+      </div>
+      <div class="btn-pair">
+        <button class="btn btn-primary btn-sm" onclick="setTotals()">Set totals</button>
+        <button class="btn btn-dark btn-sm" onclick="syncTotalsFromLive()">Sync from live</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sub-label">Add amount</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Subs</label>
+          <input type="number" id="inAddSubs" min="1" step="1" value="1">
+        </div>
+        <div class="field">
+          <label>Minutes</label>
+          <input type="number" id="inAddMins" min="1" step="1" value="1">
+        </div>
+      </div>
+      <div class="btn-trio">
+        <button class="btn btn-dark btn-sm" onclick="doCustomAddSubs()">+ Subs</button>
+        <button class="btn btn-dark btn-sm" onclick="doCustomAddMins()">+ Mins</button>
+        <button class="btn btn-danger btn-sm" onclick="doReset()" title="Reset session">Reset</button>
+      </div>
+    </div>
+
+    <div class="card embed-only">
+      <div class="card-title">Weight &amp; lift PRs</div>
+      <div class="sub-label">Weight (lbs)</div>
+      <div class="field-row three">
+        <div class="field">
+          <label>Current</label>
+          <input type="number" id="inWeight" step="0.1">
+        </div>
+        <div class="field">
+          <label>Goal</label>
+          <input type="number" id="inGoal" step="0.1">
+        </div>
+        <div class="field">
+          <label>Start</label>
+          <input type="number" id="inStart" step="0.1">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="sub-label">Lift PRs (lbs)</div>
+      <div class="field-row three">
+        <div class="field">
+          <label>Bench</label>
+          <input type="number" id="inBench" step="5">
+        </div>
+        <div class="field">
+          <label>Squat</label>
+          <input type="number" id="inSquat" step="5">
+        </div>
+        <div class="field">
+          <label>Deadlift</label>
+          <input type="number" id="inDeadlift" step="5">
+        </div>
+      </div>
+      <div class="btn-pair" style="margin-top:10px;">
+        <button class="btn btn-primary btn-sm" onclick="saveWeight()">Save weight</button>
+        <button class="btn btn-primary btn-sm" onclick="saveLifts()">Save lifts</button>
+      </div>
+    </div>
+
+    <div class="card full-only">
+      <div class="card-title">Weight tracker</div>
+      <div class="field-row three">
+        <div class="field">
+          <label>Current</label>
+          <input type="number" id="inWeightFull" step="0.1">
+        </div>
+        <div class="field">
+          <label>Goal</label>
+          <input type="number" id="inGoalFull" step="0.1">
+        </div>
+        <div class="field">
+          <label>Start</label>
+          <input type="number" id="inStartFull" step="0.1">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveWeight()">Save weight</button>
+    </div>
+
+    <div class="card full-only">
+      <div class="card-title">Lift PRs</div>
+      <div class="field-row three">
+        <div class="field">
+          <label>Bench</label>
+          <input type="number" id="inBenchFull" step="5">
+        </div>
+        <div class="field">
+          <label>Squat</label>
+          <input type="number" id="inSquatFull" step="5">
+        </div>
+        <div class="field">
+          <label>Deadlift</label>
+          <input type="number" id="inDeadliftFull" step="5">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveLifts()">Save lifts</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Saved!</div>
+
+  <script src="js/workout.js"></script>
+  <script>
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2500);
+    }
+
+    function setWeightInputs(values) {
+      ["inWeight", "inGoal", "inStart", "inWeightFull", "inGoalFull", "inStartFull"].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.value = values[i % 3];
+      });
+    }
+
+    function setLiftInputs(values) {
+      ["inBench", "inSquat", "inDeadlift", "inBenchFull", "inSquatFull", "inDeadliftFull"].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el) el.value = values[i % 3];
+      });
+    }
+
+    function getWeightValues() {
+      const current = document.getElementById("inWeight") || document.getElementById("inWeightFull");
+      const goal = document.getElementById("inGoal") || document.getElementById("inGoalFull");
+      const start = document.getElementById("inStart") || document.getElementById("inStartFull");
+      return {
+        weight: parseFloat(current.value),
+        goalWeight: parseFloat(goal.value),
+        startWeight: parseFloat(start.value),
+      };
+    }
+
+    function getLiftValues() {
+      const bench = document.getElementById("inBench") || document.getElementById("inBenchFull");
+      const squat = document.getElementById("inSquat") || document.getElementById("inSquatFull");
+      const deadlift = document.getElementById("inDeadlift") || document.getElementById("inDeadliftFull");
+      return {
+        bench: parseFloat(bench.value),
+        squat: parseFloat(squat.value),
+        deadlift: parseFloat(deadlift.value),
+      };
+    }
+
+    function refreshPreview(state) {
+      state = WorkoutStoreActions.tick({ ...state });
+      const seconds = WorkoutStoreActions.getSeconds(state);
+
+      document.getElementById("pvSubs").textContent = state.subs;
+      document.getElementById("pvMessages").textContent = state.messageCount ?? 0;
+      document.getElementById("pvWeight").textContent = state.weight;
+      document.getElementById("pvTimer").textContent = formatTime(seconds);
+
+      const st = document.getElementById("pvStatus");
+      const stText = document.getElementById("pvStatusText");
+
+      if (state.isRunning) {
+        st.className = "status-bar active";
+        stText.textContent = "Running — " + formatTime(seconds) + " left";
+      } else if (seconds > 0) {
+        st.className = "status-bar paused";
+        stText.textContent = "Paused at " + formatTime(seconds);
+      } else {
+        st.className = "status-bar idle";
+        stText.textContent = state.minutesBank > 0
+          ? state.minutesBank + " min banked — ready to start"
+          : "Waiting for subs";
+      }
+    }
+
+    function loadForm(state) {
+      setWeightInputs([state.weight, state.goalWeight, state.startWeight]);
+      setLiftInputs([state.bench, state.squat, state.deadlift]);
+      document.getElementById("inTotalSubs").value = state.subs;
+      document.getElementById("inTotalMins").value = state.minutesBank;
+      refreshPreview(state);
+    }
+
+    async function syncTotalsFromLive() {
+      const state = await WorkoutStore.load();
+      document.getElementById("inTotalSubs").value = document.getElementById("pvSubs").textContent;
+      document.getElementById("inTotalMins").value = state.minutesBank;
+      toast("Synced from live stats");
+    }
+
+    async function setTotals() {
+      const subs = document.getElementById("inTotalSubs").value;
+      const mins = document.getElementById("inTotalMins").value;
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.setTotals(subs, mins, state);
+      await WorkoutStore.save(state);
+      toast("Totals updated");
+    }
+
+    async function doCustomAddSubs() {
+      await doAddSub(parseInt(document.getElementById("inAddSubs").value, 10) || 1);
+    }
+
+    async function doCustomAddMins() {
+      await doAddMin(parseInt(document.getElementById("inAddMins").value, 10) || 1);
+    }
+
+    async function doAddSub(n = 1) {
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.addSub(n, state);
+      await WorkoutStore.save(state);
+      toast("+" + n + " sub, +" + n + " min");
+    }
+
+    async function doAddMin(n = 1) {
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.addMinutes(n, state);
+      await WorkoutStore.save(state);
+      toast("+" + n + " min added");
+    }
+
+    async function doStart() {
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.startTreadmill(state);
+      if (state._startFailed) {
+        toast("No minutes banked — add time first");
+        return;
+      }
+      await WorkoutStore.save(state);
+      toast("Treadmill started");
+    }
+
+    async function doStop() {
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.stopTreadmill(state);
+      await WorkoutStore.save(state);
+      const seconds = WorkoutStoreActions.getSeconds(state);
+      toast("Paused at " + formatTime(seconds));
+    }
+
+    async function doReset() {
+      if (!confirm("Reset subs and treadmill? Weight & lifts stay.")) return;
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.resetSession(state);
+      await WorkoutStore.save(state);
+      toast("Session reset");
+    }
+
+    async function saveWeight() {
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.updateStats(getWeightValues(), state);
+      await WorkoutStore.save(state);
+      toast("Weight saved");
+    }
+
+    async function saveLifts() {
+      let state = await WorkoutStore.load();
+      state = WorkoutActions.updateStats(getLiftValues(), state);
+      await WorkoutStore.save(state);
+      toast("Lifts saved");
+    }
+
+    if (new URLSearchParams(location.search).get("embed") === "1") {
+      document.body.classList.add("embed");
+    }
+
+    const hostEl = document.getElementById("serverHost");
+    if (hostEl) hostEl.textContent = location.host || "localhost:3000";
+
+    (async () => {
+      const state = await WorkoutStore.load();
+      loadForm(state);
+      startWorkoutSync({ onUpdate: refreshPreview });
+      window.addEventListener("workout-update", (e) => loadForm(e.detail));
+
+      try {
+        const res = await fetch(API_STATE);
+        if (!res.ok) throw new Error();
+      } catch {
+        const pill = document.getElementById("serverStatus");
+        if (pill) {
+          pill.className = "status-pill warn";
+          pill.innerHTML = "Server offline — start site on port 3000";
+        }
+      }
+    })();
+
+    if (
+      !location.hostname.match(/localhost|127\.0\.0\.1/) &&
+      !document.body.classList.contains("embed")
+    ) {
+      const pill = document.getElementById("serverStatus");
+      if (pill) {
+        pill.className = "status-pill warn";
+        pill.innerHTML = "Open via http://localhost:3000/workout/control-panel.html";
+      }
+    }
+  </script>
+</body>
+</html>

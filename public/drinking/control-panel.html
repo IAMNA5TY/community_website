@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drinking Control Panel</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <link rel="stylesheet" href="css/drinking-theme.css">
+  <style>
+    body {
+      background: var(--bg-deep) !important;
+      overflow-y: auto;
+      min-height: 100vh;
+    }
+    body.embed { background: transparent !important; min-height: 0; }
+    body.embed .dashboard { max-width: none; padding: 0; gap: 12px; }
+    body.embed .full-only { display: none !important; }
+    .dashboard {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 16px 32px;
+      display: grid;
+      gap: 14px;
+    }
+    .dash-header { text-align: center; }
+    .dash-header h1 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      color: var(--orange-bright);
+      margin-bottom: 4px;
+    }
+    .dash-header p { color: var(--text-muted); font-size: 0.82rem; }
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .card-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .stat-box .val {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--orange-bright);
+    }
+    .stat-box .lbl {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .btn-beer {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--orange-dim);
+      color: var(--orange-bright);
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .btn-beer:hover { background: rgba(255, 87, 34, 0.22); }
+    .btn-beer.primary {
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      color: #0a0a0a;
+      border-color: var(--orange);
+    }
+    .goal-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    .goal-row input {
+      width: 72px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--white);
+      font-weight: 700;
+    }
+    .status-bar {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="dash-header full-only">
+      <h1>🍺 Drinking Control</h1>
+      <p>Shotgun counter — synced to OBS overlays</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Session stats</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="val" data-control-count>0</div>
+          <div class="lbl">Shotguns</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" data-control-cheers>0</div>
+          <div class="lbl">Cheers</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" data-control-goal>12</div>
+          <div class="lbl">Goal</div>
+        </div>
+      </div>
+      <div class="status-bar" data-control-status>Loading...</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Shotgun controls</div>
+      <div class="btn-row">
+        <button class="btn-beer primary" id="drinking-shotgun-btn" type="button">+1 Shotgun</button>
+        <button class="btn-beer" id="drinking-cheer-btn" type="button">+1 Cheers</button>
+        <button class="btn-beer" id="drinking-shotgun-3-btn" type="button">+3 Shotguns</button>
+        <button class="btn-beer" id="drinking-undo-btn" type="button">Undo -1</button>
+        <button class="btn-beer" id="drinking-reset-btn" type="button">Reset session</button>
+      </div>
+      <div class="goal-row">
+        <label for="drinking-goal-input" class="lbl" style="font-size:0.72rem;color:var(--text-muted);">Session goal</label>
+        <input id="drinking-goal-input" type="number" min="1" max="99" value="12" />
+        <button class="btn-beer" id="drinking-goal-btn" type="button">Set goal</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/drinking.js?v=3"></script>
+  <script>
+    if (new URLSearchParams(location.search).get("embed") === "1") {
+      document.body.classList.add("embed");
+    }
+    initDrinkingControlPanel();
+  </script>
+</body>
+</html>

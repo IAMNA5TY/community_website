@@ -1,0 +1,9 @@
+node_modules/
+.env
+data/
+.DS_Store
+
+# Local troubleshooting scripts (not part of the app)
+samsung-*
+fix-sam*
+run-samsung*

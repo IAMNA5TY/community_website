@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shotgun Cam Scene</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+  <link rel="stylesheet" href="css/drinking-theme.css">
+  <style>
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent !important;
+    }
+
+    .scene-root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      background: transparent !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-root">
+  <div class="lens-fullscreen">
+    <div class="cam-transparent-frame">
+      <div class="cam-frame-ring" aria-hidden="true"></div>
+      <div class="cam-frame-top-bar" aria-hidden="true"></div>
+      <div class="cam-frame-bottom-bar" aria-hidden="true"></div>
+      <div class="cam-frame-corner cam-frame-corner--tl" aria-hidden="true"></div>
+      <div class="cam-frame-corner cam-frame-corner--tr" aria-hidden="true"></div>
+      <div class="cam-frame-corner cam-frame-corner--bl" aria-hidden="true"></div>
+      <div class="cam-frame-corner cam-frame-corner--br" aria-hidden="true"></div>
+      <div class="lens-edge-vignette lens-edge-vignette--top" aria-hidden="true"></div>
+      <div class="lens-edge-vignette lens-edge-vignette--bottom" aria-hidden="true"></div>
+      <div class="lens-edge-vignette lens-edge-vignette--left" aria-hidden="true"></div>
+      <div class="lens-edge-vignette lens-edge-vignette--right" aria-hidden="true"></div>
+      <div class="lens-rec-dot"><span class="live-dot"></span> 1080P</div>
+      <div class="cam-preview-hint">Full-screen lens — webcam shows through</div>
+    </div>
+  </div>
+
+  <header class="cam-top-bar">
+    <div class="cam-brand">
+      <div class="cam-brand-icon" aria-hidden="true">
+        <span class="cam-lens-ring"></span>
+        <span class="cam-lens-core"></span>
+      </div>
+      <div class="cam-brand-meta">
+        <div class="cam-brand-row">
+          <span class="cam-rec-pill"><span class="live-dot"></span> REC</span>
+          <span class="cam-tc" id="camTimecode">00:00:00</span>
+        </div>
+        <div class="cam-brand-title">Shotgun Cam</div>
+      </div>
+    </div>
+    <div class="cam-top-rules">
+      <div class="rules-item"><span class="num">!</span> SHOTGUN</div>
+      <div class="rules-arrow orange">→</div>
+      <div class="rules-item blue"><span class="num">+</span> 1 BEER</div>
+      <div class="rules-arrow">→</div>
+      <div class="rules-item"><span class="num">🎉</span> CHEERS</div>
+      <div class="rules-arrow orange">→</div>
+      <div class="rules-item blue">HYPE IT UP</div>
+    </div>
+  </header>
+
+  <div class="lens-hud lens-hud--br">
+    <div class="panel stream-bg counter-panel-compact" id="beerCounterPanel" style="border-color:var(--border);">
+      <div class="panel-header" style="display:flex;justify-content:space-between;gap:8px;">
+        <span><span class="icon">🍺</span> Shotguns</span>
+        <span style="color:var(--blue-bright);"><span class="icon">🎉</span> Cheers</span>
+      </div>
+      <div class="panel-body">
+        <div class="dual-counter-grid">
+          <div class="dual-counter-box shotgun">
+            <div class="dual-val" data-beer-count>0</div>
+            <div class="dual-lbl">!shotgun</div>
+          </div>
+          <div class="dual-counter-box cheers">
+            <div class="dual-val" data-cheers-count>0</div>
+            <div class="dual-lbl">cheers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script src="js/drinking.js?v=3"></script>
+  <script>
+    const sceneParams = new URLSearchParams(location.search);
+    if (sceneParams.get("obs") === "1" || sceneParams.get("obs") === "true") {
+      document.body.classList.add("obs-mode");
+    }
+
+    const camTc = document.getElementById("camTimecode");
+    const camStarted = Date.now();
+    setInterval(() => {
+      if (!camTc) return;
+      const s = Math.floor((Date.now() - camStarted) / 1000);
+      const h = String(Math.floor(s / 3600)).padStart(2, "0");
+      const m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+      const sec = String(s % 60).padStart(2, "0");
+      camTc.textContent = `${h}:${m}:${sec}`;
+    }, 1000);
+
+    initBeerCounterPage({
+      container: document.getElementById("beerCounterPanel"),
+      pollMs: 600,
+      onUpdate: (state) => updateDrinkingDisplay(document, state),
+      onCheers: () => {
+        const el = document.querySelector("[data-cheers-count]");
+        if (el) {
+          el.classList.remove("bump");
+          void el.offsetWidth;
+          el.classList.add("bump");
+        }
+      },
+    });
+  </script>
+</body>
+</html>

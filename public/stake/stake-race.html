@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stake.us Race Leaderboard</title>
+  <link rel="stylesheet" href="css/stake-theme.css">
+</head>
+<body>
+  <div class="stake-widget" id="stakeWidget">
+    <div class="stake-header">
+      <div class="stake-brand">
+        <h1>Stake.us Race</h1>
+      </div>
+      <div class="stake-badge" id="raceStatus">Loading...</div>
+    </div>
+
+    <div class="stake-race">
+      <h2 id="raceName">Daily Race</h2>
+      <div class="stake-race-meta" id="raceMeta">Fetching leaderboard...</div>
+    </div>
+
+    <div class="stake-body" id="leaderboardBody">
+      <div class="stake-empty">Loading race leaderboard...</div>
+    </div>
+
+    <div class="stake-footer" id="updatedAt">—</div>
+  </div>
+
+  <script>
+    const API = `${location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:3000"}/api/stake/leaderboard?limit=15`;
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function formatRaceWindow(race) {
+      if (!race?.startTime || !race?.endTime) return "";
+      const start = new Date(race.startTime).toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+      const end = new Date(race.endTime).toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+      return `${start} → ${end}`;
+    }
+
+    function renderLeaderboard(data) {
+      const race = data.race;
+      const entries = data.entries || [];
+
+      document.getElementById("raceName").textContent = race?.name || "No active race";
+      document.getElementById("raceStatus").textContent = race?.status || "—";
+      document.getElementById("raceMeta").innerHTML = race
+        ? `<strong>${escapeHtml(race.currencyLabel || race.currency || "")}</strong> · ${escapeHtml(formatRaceWindow(race))}`
+        : "No active race found";
+
+      const body = document.getElementById("leaderboardBody");
+      if (!entries.length) {
+        body.innerHTML = `<div class="stake-empty">No leaderboard entries yet.</div>`;
+        return;
+      }
+
+      body.innerHTML = entries
+        .map((entry) => {
+          const topClass =
+            entry.position === 1 ? "top1" : entry.position <= 3 ? `top${entry.position}` : "";
+          return `
+            <div class="stake-row ${topClass}">
+              <div class="stake-rank">#${entry.position}</div>
+              <div class="stake-user">
+                <div class="stake-name ${entry.hidden ? "hidden-user" : ""}">${escapeHtml(entry.username)}</div>
+                <div class="stake-wagered">${escapeHtml(entry.wageredLabel)} wagered</div>
+              </div>
+              <div class="stake-prize">${escapeHtml(entry.payoutLabel)}</div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch(API);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to load leaderboard");
+        renderLeaderboard(data);
+        document.getElementById("updatedAt").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        document.getElementById("leaderboardBody").innerHTML =
+          `<div class="stake-error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 60000);
+  </script>
+</body>
+</html>

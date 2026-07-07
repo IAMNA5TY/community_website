@@ -1,0 +1,1483 @@
+require("dotenv").config();
+
+const crypto = require("crypto");
+const express = require("express");
+const session = require("express-session");
+const path = require("path");
+
+const eventStore = require("./lib/event-store");
+const chatEvents = require("./lib/chat-events");
+const kickApi = require("./lib/kick");
+const webhook = require("./lib/webhook");
+const tokenStore = require("./lib/token-store");
+const botConfig = require("./lib/bot-config");
+const botEngine = require("./lib/bot-engine");
+const workoutState = require("./lib/workout-state");
+const slotsState = require("./lib/slots-state");
+const slotsEvents = require("./lib/slots-events");
+const slotsProfiles = require("./lib/slots-profiles");
+const slotsTimerState = require("./lib/slots-timer-state");
+const slotsTimerEvents = require("./lib/slots-timer-events");
+const drinkingState = require("./lib/drinking-state");
+const drinkingEvents = require("./lib/drinking-events");
+const workoutEvents = require("./lib/workout-events");
+const subscriptionUtils = require("./lib/subscription-utils");
+const { extractWebhookPayload } = require("./lib/webhook-payload");
+const giftedSubLeaderboardApi = require("./lib/gifted-sub-leaderboard");
+const spotify = require("./lib/spotify");
+const spotifyState = require("./lib/spotify-state");
+const spotifyEvents = require("./lib/spotify-events");
+const spotifyOAuthPending = require("./lib/spotify-oauth-pending");
+const hue = require("./lib/hue");
+const govee = require("./lib/govee");
+const goveeLan = require("./lib/govee-lan");
+const lightingSyncConfig = require("./lib/lighting-sync-config");
+const lightingLayout = require("./lib/lighting-layout");
+const spotifyHueSync = require("./lib/spotify-hue-sync");
+const systemAudio = require("./lib/system-audio-capture");
+const alertEvents = require("./lib/alert-events");
+const alertState = require("./lib/alert-state");
+const alertUtils = require("./lib/alert-utils");
+const stakeApi = require("./lib/stake");
+
+systemAudio.onBeat(() => {
+  const broadcasterId = tokenStore.getPrimaryBroadcasterId();
+  if (broadcasterId) {
+    spotifyHueSync.onAudioBeat(broadcasterId);
+  }
+});
+const stakeAffiliate = require("./lib/stake-affiliate");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const WEBHOOK_URL = process.env.WEBHOOK_URL || `${BASE_URL}/webhooks/kick`;
+
+const config = {
+  kick: {
+    clientId: process.env.KICK_CLIENT_ID,
+    clientSecret: process.env.KICK_CLIENT_SECRET,
+    redirectUri: `${BASE_URL}/auth/kick/callback`,
+    authorizeUrl: "https://id.kick.com/oauth/authorize",
+    tokenUrl: "https://id.kick.com/oauth/token",
+    userUrl: "https://api.kick.com/public/v1/users",
+    scope:
+      "user:read channel:read channel:rewards:read kicks:read events:subscribe chat:write",
+  },
+};
+
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
+app.use((req, res, next) => {
+  if (req.path.startsWith("/slots/") || req.path.startsWith("/api/slots")) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  }
+  if (req.path.startsWith("/widgets/") || req.path.startsWith("/api/chat") || req.path.startsWith("/api/alerts")) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  }
+  if (req.path.startsWith("/api/spotify")) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  }
+  if (req.path.startsWith("/drinking/") || req.path.startsWith("/api/drinking")) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  }
+  next();
+});
+app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "dev-secret-change-me",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
+  })
+);
+
+function randomState() {
+  return crypto.randomBytes(24).toString("hex");
+}
+
+function createPkcePair() {
+  const verifier = crypto.randomBytes(32).toString("base64url");
+  const challenge = crypto
+    .createHash("sha256")
+    .update(verifier)
+    .digest("base64url");
+  return { verifier, challenge };
+}
+
+async function exchangeForm(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(body).toString(),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message =
+      data.error_description || data.error || data.message || response.statusText;
+    throw new Error(message);
+  }
+  return data;
+}
+
+function saveUserSession(req, profile, tokens) {
+  req.session.user = {
+    provider: "kick",
+    profile,
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token || null,
+    expiresAt: tokens.expires_in
+      ? Date.now() + tokens.expires_in * 1000
+      : null,
+    scope: tokens.scope || null,
+  };
+
+  tokenStore.saveBroadcasterToken(profile.id, {
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token || null,
+    expiresAt: req.session.user.expiresAt,
+    username: profile.username,
+  });
+}
+
+async function setupKickSubscriptions(req) {
+  try {
+    const accessToken = await kickApi.ensureAccessToken(req, config.kick);
+    await kickApi.subscribeToChannelEvents(accessToken);
+    req.session.webhookReady = true;
+  } catch (error) {
+    req.session.webhookReady = false;
+    req.session.webhookError = error.message;
+  }
+}
+
+app.get("/api/me", (req, res) => {
+  if (!req.session.user) {
+    return res.json({ loggedIn: false });
+  }
+
+  const { provider, profile, scope } = req.session.user;
+  res.json({
+    loggedIn: true,
+    provider,
+    profile,
+    scope,
+    webhookReady: Boolean(req.session.webhookReady),
+    webhookUrl: WEBHOOK_URL,
+  });
+});
+
+app.get("/api/dashboard", async (req, res) => {
+  if (!req.session.user || req.session.user.provider !== "kick") {
+    return res.status(401).json({ error: "Not signed in with Kick" });
+  }
+
+  try {
+    const dashboard = await kickApi.getDashboard(req, config.kick);
+    const stored = eventStore.getChannelData(req.session.user.profile.id);
+    const giftedSubLeaderboard = await giftedSubLeaderboardApi.getGiftedSubLeaderboard(
+      dashboard.channel?.slug,
+      25
+    );
+
+    res.json({
+      ...dashboard,
+      giftedSubLeaderboard,
+      spotify: {
+        configured: spotify.isConfigured(),
+        connected: Boolean(spotify.getToken(req.session.user.profile.id)),
+        displayName: spotify.getToken(req.session.user.profile.id)?.displayName || null,
+        redirectUri: spotifyRedirectUri(req),
+        playback: await spotifyState.loadForBroadcaster(req.session.user.profile.id),
+      },
+      lighting: {
+        hue: {
+          ...hue.getPublicStatus(req.session.user.profile.id),
+          defaultBridgeIp: process.env.HUE_BRIDGE_IP || "192.168.1.177",
+        },
+        govee: govee.getPublicStatus(req.session.user.profile.id),
+        layout: lightingLayout.getLayout(req.session.user.profile.id),
+        sync: {
+          ...lightingSyncConfig.getSettings(req.session.user.profile.id),
+          runtime: spotifyHueSync.getRuntimeStatus(),
+          ready:
+            hue.isConnected(req.session.user.profile.id) &&
+            Boolean(spotify.getToken(req.session.user.profile.id)),
+        },
+      },
+      chat: stored,
+      bot: botConfig.getBotConfig(req.session.user.profile.id),
+      workout: workoutState.loadForDisplay(),
+      slots: slotsState.load(),
+      slotsTimer: slotsTimerState.load(),
+      drinking: drinkingState.load(),
+      slotsUrls: {
+        widget: `${BASE_URL}/slots/slots-widget.html?obs=1&v=7`,
+        pickAlert: `${BASE_URL}/slots/slots-pick.html?obs=1&v=10`,
+        timer: `${BASE_URL}/slots/slots-timer.html?obs=1&v=7`,
+        controlPanel: `${BASE_URL}/slots/slots-control-panel.html`,
+        controlWidget: `${BASE_URL}/slots/slots-control-panel.html?embed=1`,
+      },
+      widgetsUrls: {
+        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1`,
+        streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
+        nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
+      },
+      drinkingUrls: {
+        beerCounter: `${BASE_URL}/drinking/beer-counter.html`,
+        shotgunCam: `${BASE_URL}/drinking/shotgun-cam.html?obs=1`,
+        shotgunAlert: `${BASE_URL}/drinking/shotgun-alert.html?obs=1`,
+        sceneWidget: `${BASE_URL}/drinking/widget-scene.html`,
+        controlPanel: `${BASE_URL}/drinking/control-panel.html`,
+        controlWidget: `${BASE_URL}/drinking/control-panel.html?embed=1`,
+      },
+      stakeUrls: {
+        raceLeaderboard: `${BASE_URL}/stake/stake-race.html`,
+        affiliateLeaderboard: `${BASE_URL}/stake/stake-affiliate.html`,
+      },
+      obsUrls: {
+        controlPanel: `${BASE_URL}/workout/control-panel.html`,
+        controlWidget: `${BASE_URL}/workout/control-panel.html?embed=1`,
+        sceneWidget: `${BASE_URL}/workout/widget-scene.html`,
+        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1`,
+        stats: `${BASE_URL}/workout/workout-stats.html?obs=1`,
+        rules: `${BASE_URL}/workout/rules-banner.html?obs=1`,
+        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1`,
+        scene: `${BASE_URL}/workout/just-chatting.html?obs=1`,
+      },
+      webhookReady: Boolean(req.session.webhookReady),
+      webhookUrl: WEBHOOK_URL,
+      webhookNote:
+        WEBHOOK_URL.includes("localhost") || WEBHOOK_URL.includes("127.0.0.1")
+          ? "Kick cannot reach localhost. Use a tunnel like ngrok and set WEBHOOK_URL in .env to receive live chat and sub events."
+          : null,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function requireKickUser(req, res) {
+  if (!req.session.user || req.session.user.provider !== "kick") {
+    res.status(401).json({ error: "Not signed in with Kick" });
+    return null;
+  }
+  return req.session.user;
+}
+
+function isLocalRequest(req) {
+  const ip = String(req.ip || req.socket?.remoteAddress || "");
+  return (
+    ip === "::1" ||
+    ip === "127.0.0.1" ||
+    ip === "::ffff:127.0.0.1" ||
+    req.hostname === "localhost"
+  );
+}
+
+app.get("/api/bot", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json(botConfig.getBotConfig(user.profile.id));
+});
+
+app.post("/api/bot/commands", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const command = botConfig.addCommand(user.profile.id, req.body);
+    res.json({ ok: true, command });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete("/api/bot/commands/:id", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    botConfig.deleteCommand(user.profile.id, req.params.id);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/bot/timers", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const timer = botConfig.addTimer(user.profile.id, req.body);
+    botEngine.refreshTimersForBroadcaster(user.profile.id, config.kick);
+    res.json({ ok: true, timer });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete("/api/bot/timers/:id", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    botConfig.deleteTimer(user.profile.id, req.params.id);
+    botEngine.stopTimer(req.params.id);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/bot/timers/:id/toggle", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const timer = botConfig.toggleTimer(
+      user.profile.id,
+      req.params.id,
+      req.body.enabled
+    );
+    botEngine.refreshTimersForBroadcaster(user.profile.id, config.kick);
+    res.json({ ok: true, timer });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/bot/test", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const message = req.body.message || "Bot test message!";
+    await botEngine.sendChatMessage(user.profile.id, message, config.kick);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/test/sub", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const broadcasterId = user.profile.id;
+  const eventType = req.body.eventType || "channel.subscription.new";
+  const quantity = Math.max(1, parseInt(req.body.quantity, 10) || 1);
+  const payload = {
+    broadcaster_user_id: broadcasterId,
+    subscriber: { username: req.body.username || "TestSub" },
+    gifter: { username: req.body.username || "TestGifter" },
+    quantity,
+  };
+
+  if (eventType === "channel.subscription.gifts") {
+    payload.giftees = Array.from({ length: quantity }, (_, i) => ({
+      username: `GiftRecipient${i + 1}`,
+    }));
+  }
+
+  const resolvedQuantity = subscriptionUtils.parseSubscriptionQuantity(eventType, payload);
+
+  eventStore.addSubscriptionEvent(broadcasterId, eventType, payload);
+  if (subscriptionUtils.shouldCreditWorkout(eventType)) {
+    botEngine.handleSubscriptionEvent(resolvedQuantity);
+  }
+
+  const alert = alertUtils.buildAlert(eventType, payload);
+  if (alert) alertState.pushAlert(alert);
+
+  res.json({
+    ok: true,
+    message: `Simulated ${resolvedQuantity} sub(s) — same path as a live Kick webhook`,
+    workout: workoutState.loadForDisplay(),
+  });
+});
+
+app.post("/api/test/chat", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const broadcasterId = user.profile.id;
+  const payload = {
+    message_id: `test-${Date.now()}`,
+    content: req.body.message || "Test chat message from dashboard",
+    sender: {
+      username: req.body.username || "TestViewer",
+      user_id: 0,
+      is_moderator: false,
+      is_subscriber: false,
+    },
+    broadcaster_user_id: broadcasterId,
+  };
+
+  const message = eventStore.addChatMessage(String(broadcasterId), payload);
+  chatEvents.broadcastMessage(message);
+  workoutState.incrementMessagesForBroadcaster(broadcasterId);
+
+  botEngine
+    .handleChatMessage(String(broadcasterId), payload, config.kick)
+    .catch((error) => {
+      console.error("Test chat command failed:", error.message);
+    });
+
+  res.json({
+    ok: true,
+    message: "Simulated chat message — commands processed like a live Kick webhook",
+    drinking: drinkingState.load(),
+    workout: workoutState.loadForDisplay(),
+  });
+});
+
+app.get("/api/slots", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(slotsState.load());
+});
+
+app.get("/api/chat/messages", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const broadcasterId =
+    req.query.broadcasterId ||
+    tokenStore.getPrimaryBroadcasterId() ||
+    workoutState.load().broadcasterUserId;
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 25));
+
+  if (!broadcasterId) {
+    return res.json({ messages: [], broadcasterId: null });
+  }
+
+  res.json({
+    broadcasterId: String(broadcasterId),
+    messages: eventStore.getRecentMessages(broadcasterId, limit),
+  });
+});
+
+app.get("/api/chat/events", (req, res) => {
+  chatEvents.subscribe(res);
+});
+
+app.get("/api/alerts/state", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(alertState.load());
+});
+
+app.get("/api/alerts/events", (req, res) => {
+  alertEvents.subscribe(res);
+  const state = alertState.load();
+  if (state.alertNonce > 0 && state.lastAlert) {
+    res.write(`data: ${JSON.stringify({ event: "alert", ...state })}\n\n`);
+  }
+});
+
+function handleTestAlert(req, res) {
+  const started = Date.now();
+  const type = req.body?.type || req.query?.type || "sub";
+  const quantity = req.body?.quantity ?? req.query?.quantity;
+  const username = req.body?.username || req.query?.username || "TestViewer";
+  const alert = alertUtils.buildTestAlert(type, { username, quantity });
+
+  if (!alert) {
+    console.warn(`[test-alert] reject unknown type=${type}`);
+    return res.status(400).json({ error: "Unknown alert type" });
+  }
+
+  const state = alertState.pushAlert(alert);
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ok: true, alertNonce: state.alertNonce, lastAlert: state.lastAlert });
+  console.log(
+    `[test-alert] ${req.method} type=${type} nonce=${state.alertNonce} ${Date.now() - started}ms`
+  );
+}
+
+app.post("/api/test/alert", (req, res) => {
+  handleTestAlert(req, res);
+});
+
+app.get("/api/test/alert", (req, res) => {
+  handleTestAlert(req, res);
+});
+
+app.get("/api/slots-timer", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(slotsTimerState.load());
+});
+
+app.get("/api/slots-timer/events", (req, res) => {
+  slotsTimerEvents.subscribe(res, slotsTimerState.load());
+});
+
+app.post("/api/slots-timer", (req, res) => {
+  try {
+    if (req.body?.action) {
+      const result = slotsTimerState.applyAction(req.body);
+      if (result.error) return res.status(400).json({ error: result.error });
+      slotsTimerEvents.broadcastTimer(result.state);
+      return res.json(result.state);
+    }
+    const state = slotsTimerState.save(req.body);
+    slotsTimerEvents.broadcastTimer(state);
+    res.json(state);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/slots/events", (req, res) => {
+  slotsEvents.subscribe(res);
+});
+
+app.get("/api/drinking", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(drinkingState.load());
+});
+
+app.get("/api/drinking/events", (req, res) => {
+  drinkingEvents.subscribe(res);
+});
+
+app.post("/api/drinking", (req, res) => {
+  try {
+    const { action, count, goal, by } = req.body || {};
+    if (!action) {
+      return res.json(drinkingState.save(req.body));
+    }
+
+    const result = drinkingState.applyAction({ action, count, goal, by });
+    if (result.error) return res.status(400).json({ error: result.error });
+
+    if (action === "add") {
+      drinkingEvents.broadcastShotgun(result.state);
+    } else if (action === "cheer") {
+      drinkingEvents.broadcastCheers(result.state);
+    }
+
+    return res.json(result.state);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+function broadcastSlotsPick(state) {
+  slotsEvents.broadcastPick(state);
+}
+
+async function pickSlotsAndBroadcast(broadcasterUserId) {
+  const result = slotsState.pickRandom();
+  if (result.error) {
+    return result;
+  }
+
+  await slotsProfiles.enrichSlotsPick(result.state, config.kick, broadcasterUserId);
+  broadcastSlotsPick(result.state);
+  return result;
+}
+
+function testUserMeta(user) {
+  return {
+    userId: user?.profile?.id ? String(user.profile.id) : null,
+    profilePicture: user?.profile?.profileImage || null,
+  };
+}
+
+app.post("/api/slots", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const { action, slotName, username } = req.body;
+
+    if (action === "pick") {
+      const result = await pickSlotsAndBroadcast(user.profile.id);
+      if (result.error) return res.status(400).json({ error: result.error });
+      return res.json({ ok: true, slots: result.state, pick: result.pick });
+    }
+
+    if (action === "clear") {
+      return res.json({ ok: true, slots: slotsState.clearQueue() });
+    }
+
+    if (action === "clearPick") {
+      return res.json({ ok: true, slots: slotsState.clearLastPick() });
+    }
+
+    if (action === "add") {
+      const result = slotsState.addRequest(
+        username || "TestUser",
+        slotName,
+        req.body.userMeta || testUserMeta(user)
+      );
+      if (result.error) return res.status(400).json({ error: result.error });
+      return res.json({ ok: true, slots: result.state, request: result.request });
+    }
+
+    res.status(400).json({ error: "Unknown action" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/test/slots-request", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const result = slotsState.addRequest(
+    req.body.username || "TestViewer",
+    req.body.slotName || "Test Slot",
+    testUserMeta(user)
+  );
+  if (result.error) return res.status(400).json({ error: result.error });
+
+  res.json({
+    ok: true,
+    message: "Simulated !sr request",
+    slots: result.state,
+  });
+});
+
+app.post("/api/test/slots-pick", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const result = await pickSlotsAndBroadcast(user.profile.id);
+  if (result.error) return res.status(400).json({ error: result.error });
+
+  res.json({
+    ok: true,
+    message: `Picked ${result.pick.slotName} for ${result.pick.username}`,
+    slots: result.state,
+    pick: result.pick,
+  });
+});
+
+app.get("/api/stake/status", async (_req, res) => {
+  try {
+    res.json(await stakeApi.getStatus());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/stake/races", async (_req, res) => {
+  try {
+    if (!stakeApi.isConfigured()) {
+      return res.status(400).json({ error: "Stake.us access token not configured" });
+    }
+    res.json(await stakeApi.getRaces());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/stake/leaderboard", async (req, res) => {
+  try {
+    if (!stakeApi.isConfigured()) {
+      return res.status(400).json({ error: "Stake.us access token not configured" });
+    }
+
+    const limit = Math.min(Number(req.query.limit) || 25, 100);
+    const raceId = req.query.raceId;
+
+    const data = raceId
+      ? await stakeApi.getRaceLeaderboard(String(raceId), limit)
+      : await stakeApi.getActiveLeaderboard(limit);
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/stake/affiliate/leaderboard", async (req, res) => {
+  try {
+    if (!stakeApi.isConfigured()) {
+      return res.status(400).json({ error: "Stake.us access token not configured" });
+    }
+
+    const data = await stakeAffiliate.getAffiliateLeaderboard({
+      code: req.query.code,
+      period: req.query.period || "month",
+      limit: req.query.limit,
+    });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/state", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(workoutState.loadForDisplay());
+});
+
+app.get("/api/workout/events", (req, res) => {
+  workoutEvents.subscribe(res);
+});
+
+app.post("/api/state", (req, res) => {
+  try {
+    workoutState.save(req.body);
+    res.setHeader("Cache-Control", "no-store");
+    res.json(workoutState.loadForDisplay());
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/workout", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json(workoutState.load());
+});
+
+app.post("/api/workout", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const { action, ...fields } = req.body;
+    let state = workoutState.load();
+
+    if (action === "addSub") state = workoutState.addSub(fields.count || 1);
+    else if (action === "addMinutes") state = workoutState.addMinutes(fields.count || 1);
+    else if (action === "setTotals") state = workoutState.setTotals(fields.subs, fields.minutes);
+    else if (action === "start") {
+      const result = workoutState.startTreadmill();
+      if (result.error) return res.status(400).json({ error: result.error });
+      state = result.state;
+    } else if (action === "stop") state = workoutState.stopTreadmill();
+    else if (action === "reset") state = workoutState.resetSession();
+    else state = workoutState.save(fields);
+
+    res.json({ ok: true, workout: state });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/auth/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.json({ ok: true });
+  });
+});
+
+function spotifyRedirectUri(req) {
+  if (process.env.SPOTIFY_REDIRECT_URI) {
+    return process.env.SPOTIFY_REDIRECT_URI;
+  }
+  const host = String(req.get("host") || "127.0.0.1:3000").replace(/^localhost/i, "127.0.0.1");
+  return `${req.protocol}://${host}/auth/spotify/callback`;
+}
+
+function dashboardReturnUrl(req) {
+  const referer = req.get("referer");
+  if (referer && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?/i.test(referer)) {
+    try {
+      const url = new URL(referer);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      /* ignore */
+    }
+  }
+  return BASE_URL;
+}
+
+function resolveSpotifyBroadcasterId(req, res) {
+  if (req.session.user?.provider === "kick") {
+    return String(req.session.user.profile.id);
+  }
+
+  const primaryId = tokenStore.getPrimaryBroadcasterId();
+  if (primaryId) {
+    return String(primaryId);
+  }
+
+  res.redirect(
+    `/?error=${encodeURIComponent("Sign in with Kick on this site first, then connect Spotify")}`
+  );
+  return null;
+}
+
+app.get("/auth/spotify", (req, res) => {
+  if (!spotify.isConfigured()) {
+    return res.redirect("/?error=spotify_not_configured");
+  }
+
+  const broadcasterId = resolveSpotifyBroadcasterId(req, res);
+  if (!broadcasterId) return;
+
+  const redirectUri = spotifyRedirectUri(req);
+  const state = randomState();
+  const returnTo = dashboardReturnUrl(req);
+
+  spotifyOAuthPending.prune();
+  spotifyOAuthPending.save(state, {
+    broadcasterId,
+    redirectUri,
+    returnTo,
+  });
+
+  res.redirect(spotify.getAuthorizeUrl(state, redirectUri));
+});
+
+app.get("/auth/spotify/callback", async (req, res) => {
+  const { code, state, error } = req.query;
+  const pending = state ? spotifyOAuthPending.take(String(state)) : null;
+  const returnTo = pending?.returnTo || BASE_URL;
+
+  if (error) {
+    return res.redirect(`${returnTo}/?error=${encodeURIComponent(String(error))}`);
+  }
+
+  if (!pending) {
+    return res.redirect(`${returnTo}/?error=invalid_spotify_state`);
+  }
+
+  try {
+    const tokens = await spotify.exchangeCode(code, pending.redirectUri);
+    const spotifyTokens = require("./lib/spotify-tokens");
+    spotifyTokens.saveToken(pending.broadcasterId, {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
+      scope: tokens.scope || "",
+      displayName: null,
+    });
+    const profile = await spotify.getProfile(pending.broadcasterId).catch(() => null);
+    if (profile?.display_name) {
+      spotifyTokens.updateToken(pending.broadcasterId, {
+        displayName: profile.display_name,
+      });
+    }
+    await spotifyState.refreshPlayback(pending.broadcasterId, { force: true });
+    res.redirect(`${returnTo}/?spotify=connected`);
+  } catch (err) {
+    res.redirect(`${returnTo}/?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+app.post("/auth/spotify/disconnect", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  spotify.deleteToken(user.profile.id);
+  res.json({ ok: true });
+});
+
+app.get("/api/lighting/hue/status", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json(hue.getPublicStatus(user.profile.id));
+});
+
+app.post("/api/lighting/hue/discover", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const bridges = await hue.discoverBridges(user.profile.id);
+    res.json({ bridges });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/hue/connect", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const bridgeIp = String(req.body?.bridgeIp || "").trim();
+  if (!bridgeIp) {
+    return res.status(400).json({ error: "Bridge IP is required" });
+  }
+
+  try {
+    const config = await hue.connectBridge(user.profile.id, bridgeIp);
+    res.json({
+      ok: true,
+      ...hue.getPublicStatus(user.profile.id),
+      bridgeName: config.bridgeName,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/hue/disconnect", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  hue.disconnectBridge(user.profile.id);
+  res.json({ ok: true });
+});
+
+app.get("/api/lighting/hue/devices", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    res.json(await hue.listDevices(user.profile.id));
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put("/api/lighting/hue/selection", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const config = hue.saveSelection(user.profile.id, {
+      lightIds: req.body?.lightIds,
+      groupId: req.body?.groupId,
+    });
+    res.json({
+      ok: true,
+      selectedLightIds: config.selectedLightIds || [],
+      selectedGroupId: config.selectedGroupId || null,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/hue/test", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const action = String(req.body?.action || "pulse").toLowerCase();
+  if (!["on", "off", "pulse"].includes(action)) {
+    return res.status(400).json({ error: "Invalid test action" });
+  }
+
+  try {
+    spotifyHueSync.pauseManualControl(action === "off" ? 180000 : 15000);
+    const result =
+      action === "off"
+        ? await hue.resetLights(user.profile.id)
+        : await hue.testLights(user.profile.id, action);
+    res.json({ ok: true, action, ...result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/hue/reset", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    spotifyHueSync.pauseManualControl(180000);
+    const result = await hue.resetLights(user.profile.id);
+    const goveeOff = await govee.allOff(user.profile.id).catch(() => ({ off: 0 }));
+    res.json({ ok: true, ...result, goveeOff: goveeOff.off || 0 });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/lighting/govee/status", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json(govee.getPublicStatus(user.profile.id));
+});
+
+app.post("/api/lighting/govee/discover", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    if (Array.isArray(req.body?.scanIps)) {
+      govee.saveScanIps(user.profile.id, req.body.scanIps);
+    }
+    const result = await govee.discover(user.profile.id);
+    res.json({
+      ok: true,
+      ...govee.listDevices(user.profile.id),
+      discoveredNow: result.discovered,
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: error.message,
+      ...govee.listDevices(user.profile.id),
+    });
+  }
+});
+
+app.get("/api/lighting/govee/devices", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json(govee.listDevices(user.profile.id));
+});
+
+app.put("/api/lighting/govee/selection", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const config = govee.saveSelection(user.profile.id, req.body?.deviceKeys || []);
+    res.json({
+      ok: true,
+      selectedDevices: config.selectedDevices || [],
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/govee/test", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const action = String(req.body?.action || "pulse").toLowerCase();
+  if (!["on", "off", "pulse"].includes(action)) {
+    return res.status(400).json({ error: "Invalid test action" });
+  }
+
+  try {
+    spotifyHueSync.pauseManualControl(action === "off" ? 180000 : 15000);
+    const result = await govee.testDevices(user.profile.id, action);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/lighting/layout", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json(lightingLayout.getLayout(user.profile.id));
+});
+
+app.put("/api/lighting/layout", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const layout = lightingLayout.saveLayout(user.profile.id, {
+      flashPattern: req.body?.flashPattern,
+      lights: req.body?.lights,
+    });
+    res.json({ ok: true, ...layout });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/layout/sync", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const layout = lightingLayout.syncLayoutFromDevices(user.profile.id);
+    res.json({ ok: true, ...layout });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/layout/test", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    spotifyHueSync.pauseManualControl(15000);
+    const result = await lightingLayout.testPattern(user.profile.id, Number(req.body?.beats) || 4);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/layout/identify", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const lightId = String(req.body?.lightId || "").trim();
+  if (!lightId) {
+    res.status(400).json({ error: "lightId is required" });
+    return;
+  }
+
+  try {
+    const holdMs = Number(req.body?.holdMs) || 4000;
+    spotifyHueSync.pauseManualControl(holdMs + 2000);
+    const result = await lightingLayout.identifyLight(user.profile.id, lightId, holdMs);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/layout/split-strip", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const lightId = String(req.body?.lightId || "").trim();
+  if (!lightId) {
+    res.status(400).json({ error: "lightId is required" });
+    return;
+  }
+
+  try {
+    const layout = await Promise.resolve(
+      lightingLayout.splitGoveeStrip(user.profile.id, lightId, Number(req.body?.parts) || 2)
+    );
+    res.json({ ok: true, ...layout });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/layout/map-colors", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const holdMs = Number(req.body?.holdMs) || 10000;
+    spotifyHueSync.pauseManualControl(holdMs + 3000);
+    const result = await lightingLayout.mapLayoutColors(user.profile.id, holdMs);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/chat-off", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  try {
+    const result = await spotifyHueSync.setChatLightsOff(user.profile.id);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post("/api/lighting/chat-on", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  try {
+    const result = await spotifyHueSync.setChatLightsOn(user.profile.id);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/lighting/sync/settings", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  res.json({
+    ...lightingSyncConfig.getSettings(user.profile.id),
+    runtime: spotifyHueSync.getRuntimeStatus(),
+  });
+});
+
+app.put("/api/lighting/sync/settings", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  const settings = lightingSyncConfig.saveSettings(user.profile.id, {
+    moodEnabled:
+      req.body?.moodEnabled !== undefined ? Boolean(req.body.moodEnabled) : undefined,
+    beatEnabled:
+      req.body?.beatEnabled !== undefined ? Boolean(req.body.beatEnabled) : undefined,
+    bpmOffset:
+      req.body?.bpmOffset !== undefined ? Number(req.body.bpmOffset) || 0 : undefined,
+    beatPhaseMs:
+      req.body?.beatPhaseMs !== undefined ? Number(req.body.beatPhaseMs) || 0 : undefined,
+    audioSyncEnabled:
+      req.body?.audioSyncEnabled !== undefined
+        ? Boolean(req.body.audioSyncEnabled)
+        : undefined,
+    audioSensitivity:
+      req.body?.audioSensitivity !== undefined
+        ? Number(req.body.audioSensitivity) || 6
+        : undefined,
+  });
+  spotifyHueSync.resetSession(user.profile.id);
+  spotifyHueSync.syncAudioCapture(user.profile.id).catch((error) => {
+    console.warn("[lighting] audio capture:", error.message);
+  });
+
+  res.json({
+    ok: true,
+    ...settings,
+    runtime: spotifyHueSync.getRuntimeStatus(),
+  });
+});
+
+app.post("/api/lighting/sync/calibrate", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const saved = spotifyHueSync.saveCalibrationForCurrentTrack(user.profile.id);
+    res.json({
+      ok: true,
+      calibration: saved,
+      runtime: spotifyHueSync.getRuntimeStatus(),
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/spotify/state", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const state = await spotifyState.loadForBroadcaster(user.profile.id);
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      configured: spotify.isConfigured(),
+      connected: Boolean(spotify.getToken(user.profile.id)),
+      ...state,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/spotify/events", (req, res) => {
+  spotifyEvents.subscribe(res);
+});
+
+app.get("/api/spotify/now-playing", async (_req, res) => {
+  const broadcasterId = tokenStore.getPrimaryBroadcasterId();
+  if (!broadcasterId) {
+    return res.json({
+      connected: false,
+      isPlaying: false,
+      track: null,
+      error: "Sign in with Kick and connect Spotify in the dashboard",
+    });
+  }
+
+  try {
+    const state = await spotifyState.loadForNowPlaying(broadcasterId);
+    res.json(state);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/auth/kick", (req, res) => {
+  if (!config.kick.clientId) {
+    return res.redirect("/?error=kick_not_configured");
+  }
+
+  const state = randomState();
+  const pkce = createPkcePair();
+  req.session.oauthState = {
+    provider: "kick",
+    state,
+    codeVerifier: pkce.verifier,
+  };
+
+  const params = new URLSearchParams({
+    client_id: config.kick.clientId,
+    redirect_uri: config.kick.redirectUri,
+    response_type: "code",
+    scope: config.kick.scope,
+    state,
+    code_challenge: pkce.challenge,
+    code_challenge_method: "S256",
+  });
+
+  res.redirect(`${config.kick.authorizeUrl}?${params}`);
+});
+
+app.get("/auth/kick/callback", async (req, res) => {
+  const { code, state, error, error_description: errorDescription } = req.query;
+
+  if (error) {
+    return res.redirect(
+      `/?error=${encodeURIComponent(errorDescription || error)}`
+    );
+  }
+
+  const saved = req.session.oauthState;
+  if (
+    !saved ||
+    saved.provider !== "kick" ||
+    saved.state !== state ||
+    !saved.codeVerifier
+  ) {
+    return res.redirect("/?error=invalid_state");
+  }
+
+  const codeVerifier = saved.codeVerifier;
+  delete req.session.oauthState;
+
+  try {
+    const tokens = await exchangeForm(config.kick.tokenUrl, {
+      grant_type: "authorization_code",
+      client_id: config.kick.clientId,
+      client_secret: config.kick.clientSecret,
+      redirect_uri: config.kick.redirectUri,
+      code,
+      code_verifier: codeVerifier,
+    });
+
+    const userResponse = await fetch(config.kick.userUrl, {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
+    });
+
+    const userData = await userResponse.json();
+    if (!userResponse.ok || !userData.data?.[0]) {
+      throw new Error("Failed to load Kick profile");
+    }
+
+    const kickUser = userData.data[0];
+    saveUserSession(
+      req,
+      {
+        id: String(kickUser.user_id),
+        username: kickUser.name,
+        displayName: kickUser.name,
+        email: kickUser.email || null,
+        profileImage: kickUser.profile_picture,
+        profileUrl: `https://kick.com/${kickUser.name}`,
+      },
+      tokens
+    );
+
+    await setupKickSubscriptions(req);
+    workoutState.setBroadcaster(kickUser.user_id);
+    botEngine.refreshTimersForBroadcaster(kickUser.user_id, config.kick);
+    res.redirect("/");
+  } catch (err) {
+    res.redirect(`/?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+app.post("/webhooks/kick", (req, res) => {
+  const headers = Object.fromEntries(
+    Object.entries(req.headers).map(([key, value]) => [
+      key.toLowerCase(),
+      Array.isArray(value) ? value[0] : value,
+    ])
+  );
+
+  const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body || {}));
+  const isValid = webhook.verifyKickWebhook(rawBody, headers);
+
+  if (!isValid && process.env.NODE_ENV === "production") {
+    return res.status(401).json({ error: "Invalid signature" });
+  }
+
+  const eventType = headers["kick-event-type"] || req.body?.event || "";
+  const payload = extractWebhookPayload(req.body);
+  const broadcasterUserId =
+    payload.broadcaster?.user_id ||
+    payload.broadcaster_user_id ||
+    payload.channel?.user_id ||
+    tokenStore.getPrimaryBroadcasterId();
+
+  if (eventType === "chat.message.sent") {
+    const channelId = String(broadcasterUserId || "unknown");
+    const message = eventStore.addChatMessage(channelId, payload);
+    chatEvents.broadcastMessage(message);
+    workoutState.incrementMessagesForBroadcaster(channelId);
+    console.log(`Chat webhook: ${payload.sender?.username || "?"}: ${(payload.content || "").slice(0, 80)}`);
+    botEngine
+      .handleChatMessage(channelId, payload, config.kick)
+      .catch((error) => {
+        console.error("Command handler failed:", error.message);
+      });
+  } else if (eventType.startsWith("channel.subscription")) {
+    const quantity = subscriptionUtils.parseSubscriptionQuantity(eventType, payload);
+    eventStore.addSubscriptionEvent(
+      broadcasterUserId || "unknown",
+      eventType,
+      payload
+    );
+    if (subscriptionUtils.shouldCreditWorkout(eventType)) {
+      botEngine.handleSubscriptionEvent(quantity);
+      const gifter =
+        payload.gifter?.username || payload.subscriber?.username || "?";
+      if (eventType === "channel.subscription.gifts") {
+        const gifteeCount = subscriptionUtils.countGiftRecipients(payload);
+        console.log(
+          `Sub webhook: ${eventType} ×${quantity} (${gifter}) giftees=${gifteeCount}`
+        );
+      } else {
+        console.log(`Sub webhook: ${eventType} ×${quantity} (${gifter})`);
+      }
+    }
+    const alert = alertUtils.buildAlert(eventType, payload);
+    if (alert) alertState.pushAlert(alert);
+  } else if (eventType === "channel.followed" || eventType === "kicks.gifted") {
+    const alert = alertUtils.buildAlert(eventType, payload);
+    if (alert) {
+      alertState.pushAlert(alert);
+      console.log(
+        `Alert webhook: ${eventType} (${alert.username})`
+      );
+    }
+  }
+
+  res.status(200).json({ ok: true });
+});
+
+webhook.loadPublicKey().then(() => {
+  eventStore.migrateMessageStats();
+  const primaryId = tokenStore.getPrimaryBroadcasterId();
+  if (primaryId) {
+    workoutState.setBroadcaster(primaryId);
+  }
+  botEngine.reloadTimers(config.kick);
+  spotifyHueSync.start();
+  goveeLan.init().then((status) => {
+    if (status.listening) {
+      console.log("[govee-lan] listening on UDP 4002");
+    } else if (status.initError) {
+      console.warn("[govee-lan] NOT listening:", status.initError);
+      console.warn("[govee-lan] Govee test + beat sync will not work until you restart with start-everything.bat");
+    }
+  }).catch((error) => {
+    console.warn("[govee-lan] init failed:", error.message);
+    console.warn("[govee-lan] Restart with start-everything.bat to free UDP port 4002");
+  });
+  const shutdown = () => {
+    goveeLan.closeSharedSocket();
+  };
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
+  process.once("exit", shutdown);
+  const audioBroadcasterId = tokenStore.getPrimaryBroadcasterId();
+  if (audioBroadcasterId) {
+    spotifyHueSync.syncAudioCapture(audioBroadcasterId).catch((error) => {
+      console.warn("[lighting] audio capture on boot:", error.message);
+    });
+  }
+  app.listen(PORT, () => {
+    console.log(`Server running at ${BASE_URL}`);
+    console.log(`Webhook URL: ${WEBHOOK_URL}`);
+    console.log(`Workout OBS overlays: ${BASE_URL}/workout/control-panel.html`);
+    console.log(`Slots timer OBS: http://127.0.0.1:${PORT}/slots/slots-timer.html?obs=1&v=7`);
+    console.log(`Slots widget OBS: http://127.0.0.1:${PORT}/slots/slots-widget.html?obs=1&v=7`);
+    console.log(`Drinking OBS overlays: ${BASE_URL}/drinking/shotgun-cam.html`);
+    console.log(`Widget OBS overlays: ${BASE_URL}/widgets/chat-box.html?obs=1`);
+    console.log(`Stream alerts: ${BASE_URL}/widgets/stream-alerts.html?obs=1`);
+    if (!config.kick.clientId) console.warn("KICK_CLIENT_ID is not set");
+  });
+});

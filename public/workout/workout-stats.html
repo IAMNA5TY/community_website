@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Workout Stats</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <style>
+    body { background: transparent !important; }
+
+    .wrap {
+      position: fixed;
+      top: 40px;
+      left: 40px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel orange-accent">
+      <div class="panel-header orange"><span class="icon">⚖️</span> Weight</div>
+      <div class="panel-body" id="weightPanel">
+        <div class="weight-display">
+          <span class="weight-number" data-weight>245</span>
+          <span class="weight-unit">lbs</span>
+        </div>
+        <div class="weight-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:0%"></div>
+          </div>
+          <div class="progress-labels">
+            <span>Start</span>
+            <span><span data-togo>45</span> lbs to go</span>
+            <span class="goal">Goal: <span data-goal>200</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel blue-accent" id="liftsPanel">
+      <div class="panel-header blue"><span class="icon">🏋️</span> Lift PRs</div>
+      <div class="panel-body">
+        <div class="lift-row">
+          <span class="lift-name">Bench</span>
+          <span class="lift-weight"><span data-lift="bench">225</span> <span>lbs</span></span>
+        </div>
+        <div class="lift-row">
+          <span class="lift-name">Squat</span>
+          <span class="lift-weight"><span data-lift="squat">315</span> <span>lbs</span></span>
+        </div>
+        <div class="lift-row">
+          <span class="lift-name">Deadlift</span>
+          <span class="lift-weight"><span data-lift="deadlift">405</span> <span>lbs</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/workout.js"></script>
+  <script>
+    initWorkoutPage({
+      weight: document.getElementById("weightPanel"),
+      lifts: document.getElementById("liftsPanel"),
+    });
+  </script>
+</body>
+</html>

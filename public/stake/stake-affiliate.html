@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stake.us Code Leaderboard</title>
+  <link rel="stylesheet" href="css/stake-theme.css">
+</head>
+<body>
+  <div class="stake-widget affiliate-widget" id="affiliateWidget">
+    <div class="stake-header">
+      <div class="stake-brand">
+        <h1>Code <span id="campaignCode">na5ty</span></h1>
+      </div>
+      <div class="stake-badge" id="periodBadge">This month</div>
+    </div>
+
+    <div class="stake-race">
+      <h2 id="boardTitle">Referral Leaderboard</h2>
+      <div class="stake-race-meta" id="boardMeta">Loading referrals...</div>
+    </div>
+
+    <div class="stake-body" id="leaderboardBody">
+      <div class="stake-empty">Loading referral leaderboard...</div>
+    </div>
+
+    <div class="stake-footer" id="updatedAt">—</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const period = params.get("period") || "30days";
+    const API = `${location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:3000"}/api/stake/affiliate/leaderboard?period=${encodeURIComponent(period)}&limit=25`;
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function renderBoard(data) {
+      const code = data.campaign?.code || "na5ty";
+      document.getElementById("campaignCode").textContent = code;
+      document.getElementById("periodBadge").textContent =
+        data.period === "lifetime"
+          ? "Lifetime"
+          : data.period === "30days"
+            ? "Last 30 days"
+            : "This month";
+      document.getElementById("boardTitle").textContent =
+        data.period === "lifetime"
+          ? "Top referrals by wagering"
+          : data.period === "30days"
+            ? "Top referrals last 30 days"
+            : "Top referrals this month";
+      document.getElementById("boardMeta").innerHTML = `
+        <strong>${escapeHtml(String(data.campaign?.referCount || 0))}</strong> total referrals
+        ${data.trackingSince ? ` · tracking since ${new Date(data.trackingSince).toLocaleDateString()}` : ""}
+      `;
+
+      const body = document.getElementById("leaderboardBody");
+      const entries = data.entries || [];
+      if (!entries.length) {
+        body.innerHTML = `<div class="stake-empty">No referral leaderboard data yet.</div>`;
+        return;
+      }
+
+      body.innerHTML = entries
+        .map((entry) => {
+          const topClass =
+            entry.rank === 1 ? "top1" : entry.rank <= 3 ? `top${entry.rank}` : "";
+          return `
+            <div class="stake-row ${topClass}">
+              <div class="stake-rank">#${entry.rank}</div>
+              <div class="stake-user">
+                <div class="stake-name">${escapeHtml(entry.name)}</div>
+                <div class="stake-wagered">${escapeHtml(entry.metricLabel)}</div>
+              </div>
+              <div class="stake-prize">${escapeHtml(entry.depositCount)} deps</div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch(API);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to load referral leaderboard");
+        renderBoard(data);
+        document.getElementById("updatedAt").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        document.getElementById("leaderboardBody").innerHTML =
+          `<div class="stake-error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 300000);
+  </script>
+</body>
+</html>

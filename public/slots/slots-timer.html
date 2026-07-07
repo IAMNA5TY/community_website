@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slots Session Timer</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css?v=2">
+  <link rel="stylesheet" href="/css/stream-bg.css?v=2">
+  <style>
+    body {
+      background: transparent !important;
+      margin: 0;
+      padding: 12px 0 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 100vh;
+      overflow: visible;
+    }
+
+    body.obs-mode {
+      padding: 8px;
+      min-width: 420px;
+      min-height: 320px;
+    }
+
+    #obsLoadError {
+      display: none;
+      margin: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(244, 67, 54, 0.15);
+      border: 1px solid rgba(244, 67, 54, 0.45);
+      color: #ff8a80;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    #obsLoadError.show { display: block; }
+
+    .wrap {
+      width: 100%;
+      max-width: var(--overlay-stack-width, 640px);
+      flex-shrink: 0;
+      margin: 0 auto;
+    }
+
+    .slots-timer-time {
+      font-size: 4.8rem;
+      margin-top: 4px;
+      width: 100%;
+      overflow: visible;
+      line-height: 1;
+    }
+
+    .slots-timer-time.long {
+      font-size: 3.35rem;
+      letter-spacing: 0.02em;
+    }
+
+    .panel-body.treadmill-display {
+      overflow: visible;
+    }
+
+    .slots-progress {
+      margin-top: 14px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .slots-progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      box-shadow: 0 0 12px var(--orange-glow);
+      transition: width 0.4s ease;
+    }
+
+    .slots-progress-label {
+      margin-top: 6px;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .slots-affiliate-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .slots-code {
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+    }
+
+    .slots-signup-note {
+      margin-top: 10px;
+      font-size: 0.68rem;
+      line-height: 1.45;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .slots-signup-note strong {
+      color: var(--orange-bright);
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="obsLoadError">Cannot reach the dashboard — use <strong>http://127.0.0.1:3000</strong> in OBS (not localhost) and refresh cache.</div>
+  <div class="panel wrap orange-accent stream-bg" id="slotsTimerPanel">
+    <div class="panel-header orange"><span class="icon">🎰</span> Slots Session — Daily 1 Hour</div>
+    <div class="panel-body treadmill-display">
+      <div class="slots-timer-time treadmill-time">0:00</div>
+      <div class="treadmill-label">Time Remaining</div>
+      <div class="slots-timer-status treadmill-status idle">
+        <span class="status-dot"></span> Ready To Spin
+      </div>
+
+      <div class="slots-progress" aria-hidden="true">
+        <div class="slots-progress-fill"></div>
+      </div>
+      <div class="slots-progress-label">Daily progress — <span data-progress>0%</span></div>
+
+      <div class="slots-affiliate-row">
+        <div class="stat-box blue">
+          <div class="stat-value">stake.us</div>
+          <div class="stat-label">Affiliate</div>
+        </div>
+        <div class="stat-box highlight">
+          <div class="stat-value slots-code">na5ty</div>
+          <div class="stat-label">Code</div>
+        </div>
+      </div>
+      <p class="slots-signup-note">Sign up and use code <strong>na5ty</strong> for $25 just for signing up</p>
+    </div>
+  </div>
+
+  <script src="js/slots-timer.js?v=7"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      const obsMode = params.get("obs") === "1" || params.get("obs") === "true";
+      if (obsMode) document.body.classList.add("obs-mode");
+      const errEl = document.getElementById("obsLoadError");
+      let tries = 0;
+      async function probe() {
+        try {
+          const res = await fetch("/api/slots-timer", { cache: "no-store" });
+          if (!res.ok) throw new Error("bad status");
+          if (errEl) errEl.classList.remove("show");
+        } catch {
+          tries += 1;
+          if (tries >= 3 && errEl) errEl.classList.add("show");
+          else setTimeout(probe, 1500);
+        }
+      }
+      probe();
+    })();
+
+    const timerParams = new URLSearchParams(location.search);
+    const timerWidth = parseInt(timerParams.get("width"), 10);
+    if (timerWidth > 0) {
+      document.documentElement.style.setProperty("--overlay-stack-width", `${timerWidth}px`);
+    }
+
+    initSlotsTimerPage({
+      timer: document.getElementById("slotsTimerPanel"),
+    });
+  </script>
+</body>
+</html>

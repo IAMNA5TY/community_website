@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shotgun Alert</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+  <link rel="stylesheet" href="css/drinking-theme.css">
+  <style>
+    body { background: transparent !important; }
+  </style>
+</head>
+<body>
+  <div class="shotgun-alert-overlay" id="shotgunAlert">
+    <div class="shotgun-alert-card stream-bg panel orange-accent">
+      <div class="shotgun-alert-emoji">🍺</div>
+      <div class="shotgun-alert-title" id="alertTitle">SHOTGUN!</div>
+      <div class="shotgun-alert-count" id="alertCount">#1</div>
+      <div class="shotgun-alert-sub" id="alertSub">Beer down the hatch</div>
+    </div>
+  </div>
+
+  <script src="js/drinking.js"></script>
+  <script>
+    initShotgunAlertPage({ displayMs: 4500 });
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sub Alert</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <style>
+    body { background: transparent !important; }
+
+    .wrap {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .alert-content { padding: 28px 48px 32px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel alert-popup" id="alert" style="min-width:380px;">
+      <div class="alert-top"></div>
+      <div class="alert-content">
+        <div class="alert-icon">⭐</div>
+        <div class="alert-type">New Subscriber!</div>
+        <div class="alert-name" id="alertName">PlayerOne</div>
+        <div class="alert-bonus">+1 MIN ON THE TREADMILL 🏃</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/workout.js"></script>
+  <script>
+    (async () => {
+      const { state, alertName } = await WorkoutStore.parseUrl();
+      if (alertName) document.getElementById("alertName").textContent = alertName;
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("sub")) {
+        const alert = document.getElementById("alert");
+        setTimeout(() => alert.classList.add("hide"), 5000);
+      }
+    })();
+  </script>
+</body>
+</html>

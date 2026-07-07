@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Time Owed</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <style>
+    body { background: transparent !important; }
+
+    .wrap {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel wrap blue-accent" id="timeOwedPanel">
+    <div class="panel-header blue"><span class="icon">🏃</span> Time Owed</div>
+    <div class="panel-body sub-counter blue">
+      <div class="sub-count" data-time-owed>0</div>
+      <div class="stat-label" style="margin-top:6px;">Mins On Treadmill</div>
+    </div>
+  </div>
+
+  <script src="js/workout.js"></script>
+  <script>
+    initWorkoutPage({
+      timeOwed: document.getElementById("timeOwedPanel"),
+    });
+  </script>
+</body>
+</html>

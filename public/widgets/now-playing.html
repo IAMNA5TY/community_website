@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Now Playing</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+  <link rel="stylesheet" href="css/widgets-theme.css?v=11">
+</head>
+<body class="now-playing-page">
+  <div class="now-playing-wrap" id="nowPlayingRoot">
+    <div class="now-playing-card" id="nowPlayingCard">
+      <div class="now-playing-art" id="nowPlayingArt" aria-hidden="true"></div>
+      <div class="now-playing-meta">
+        <div class="now-playing-label">NOW PLAYING</div>
+        <div class="now-playing-title" id="nowPlayingTitle">Waiting for Spotify…</div>
+        <div class="now-playing-artist" id="nowPlayingArtist"></div>
+        <div class="now-playing-request" id="nowPlayingRequest"></div>
+        <div class="now-playing-progress">
+          <div class="now-playing-progress-fill" id="nowPlayingProgress"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/now-playing.js?v=1"></script>
+  <script>
+    initNowPlayingWidget();
+  </script>
+</body>
+</html>

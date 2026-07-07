@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kick Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card login-card" id="login-view">
+        <div class="brand">
+          <p class="eyebrow">Kick dashboard</p>
+          <h1>Sign in with Kick</h1>
+          <p class="subtitle">
+            Channel stats, chat bot, walk counter, rewards, and leaderboard.
+          </p>
+        </div>
+        <div class="actions">
+          <a class="btn btn-kick" href="/auth/kick">
+            <span class="btn-icon" aria-hidden="true">K</span>
+            Sign in with Kick
+          </a>
+          <button class="btn btn-twitch btn-disabled" type="button" disabled>
+            <span class="btn-icon" aria-hidden="true">T</span>
+            Twitch — Coming Soon
+          </button>
+        </div>
+      </section>
+
+      <section class="app-shell hidden" id="dashboard-view">
+        <aside class="sidebar card">
+          <div class="sidebar-profile">
+            <img id="avatar" class="avatar avatar-sm" alt="Profile picture" />
+            <div>
+              <p class="eyebrow">Signed in</p>
+              <strong id="display-name"></strong>
+              <p class="subtitle" id="channel-meta"></p>
+            </div>
+          </div>
+
+          <nav class="nav" id="main-nav">
+            <button class="nav-link active" data-page="overview" type="button">Overview</button>
+            <button class="nav-link" data-page="workout" type="button">Workout / OBS</button>
+            <button class="nav-link" data-page="slots" type="button">Slots</button>
+            <button class="nav-link" data-page="drinking" type="button">Drinking</button>
+            <button class="nav-link" data-page="widgets" type="button">Widgets</button>
+            <button class="nav-link" data-page="lighting" type="button">Lighting</button>
+            <button class="nav-link" data-page="stake" type="button">Stake.us</button>
+            <button class="nav-link" data-page="bot" type="button">Chat Bot</button>
+            <button class="nav-link" data-page="chat" type="button">Chat & Subs</button>
+            <button class="nav-link" data-page="rewards" type="button">Rewards</button>
+            <button class="nav-link" data-page="leaderboard" type="button">Leaderboard</button>
+            <button class="nav-link" data-page="settings" type="button">Settings</button>
+          </nav>
+
+          <button class="btn btn-secondary btn-compact" id="logout-btn" type="button">
+            Sign out
+          </button>
+        </aside>
+
+        <div class="content">
+          <p class="notice hidden" id="webhook-notice"></p>
+
+          <section class="page-view active" data-page="overview">
+            <header class="page-header">
+              <h1>Overview</h1>
+              <p class="subtitle">Quick snapshot of your channel</p>
+            </header>
+            <div class="stats-grid" id="stats-grid"></div>
+            <div class="card panel">
+              <h2>Channel details</h2>
+              <div class="detail-card" id="channel-details"></div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="workout">
+            <header class="page-header">
+              <h1>Workout / OBS</h1>
+              <p class="subtitle">Control the stream, preview the scene, and share widgets — all synced to chat &amp; OBS</p>
+            </header>
+
+            <div class="walk-preview" id="workout-preview"></div>
+
+            <div class="workout-studio">
+              <div class="card panel workout-studio__preview">
+                <div class="panel-header">
+                  <h2>Live Scene Preview</h2>
+                  <p class="subtitle">What viewers see in OBS — updates in real time</p>
+                </div>
+                <iframe
+                  class="workout-embed-frame workout-scene-frame"
+                  src="/workout/widget-scene.html"
+                  title="Workout scene preview"
+                ></iframe>
+              </div>
+
+              <div class="workout-studio__controls">
+                <iframe
+                  class="workout-embed-frame workout-control-frame"
+                  src="/workout/control-panel.html?embed=1"
+                  title="Workout control panel"
+                ></iframe>
+              </div>
+            </div>
+
+            <div class="card panel">
+              <h2>Test webhooks</h2>
+              <p class="subtitle">Simulate live Kick events without waiting for a real sub or chat message</p>
+              <div class="btn-row" style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-kick btn-compact" id="test-sub-btn" type="button">Test +1 sub</button>
+                <button class="btn btn-secondary btn-compact" id="test-chat-btn" type="button">Test chat message</button>
+              </div>
+              <p class="subtitle" id="test-webhook-result" style="margin-top:12px;"></p>
+            </div>
+
+            <div class="card panel">
+              <h2>Share widgets</h2>
+              <p class="subtitle">Embed the scene or control panel on another page — anyone with the link can use your live workout state</p>
+              <div id="embed-codes"></div>
+            </div>
+
+            <div class="card panel">
+              <h2>OBS Browser Source URLs</h2>
+              <p class="subtitle">Point OBS at these URLs — everything syncs through this site</p>
+              <div id="obs-urls-table"></div>
+            </div>
+
+            <div class="card panel">
+              <h2>Chat commands (synced to OBS)</h2>
+              <table class="data-table">
+                <thead>
+                  <tr><th>Command</th><th>Who</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>!walk</code></td><td>Anyone</td><td>Show treadmill minutes</td></tr>
+                  <tr><td><code>!walk +</code> / <code>!walk -</code></td><td>Mods</td><td>Add or remove minutes</td></tr>
+                  <tr><td><code>!walk set 10</code></td><td>Mods</td><td>Set minutes to exact number</td></tr>
+                  <tr><td><code>!start</code></td><td>Mods</td><td>Start treadmill timer in OBS</td></tr>
+                  <tr><td><code>!stop</code></td><td>Mods</td><td>Pause treadmill timer</td></tr>
+                  <tr><td><code>!reset</code></td><td>Mods</td><td>Reset subs &amp; treadmill (keeps weight/lifts)</td></tr>
+                </tbody>
+              </table>
+              <p class="subtitle" style="margin-top:12px;">New subs from Kick webhooks auto-add +1 sub and +1 minute.</p>
+              <p class="subtitle" style="margin-top:8px;">OBS browser sources must use <strong>http://localhost:3000/workout/...</strong> (not the old port <strong>7456</strong> Python server). URLs from the table above already include <code>?obs=1</code> for live sync.</p>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="slots">
+            <header class="page-header">
+              <h1>Slots</h1>
+              <p class="subtitle">Viewers request slots in chat — mods pick a random one for OBS</p>
+            </header>
+
+            <div class="slots-layout slots-layout--dual">
+              <div class="card panel slots-preview-card">
+                <div class="panel-header">
+                  <h2>Session Timer</h2>
+                  <p class="subtitle">Daily 1-hour slots tracker — matches workout overlay style</p>
+                </div>
+                <iframe
+                  class="slots-embed-frame"
+                  src="/slots/slots-timer.html"
+                  title="Slots timer preview"
+                ></iframe>
+              </div>
+
+              <div class="card panel slots-preview-card">
+                <div class="panel-header">
+                  <h2>Queue Widget</h2>
+                  <p class="subtitle">Always-on queue + last pick</p>
+                </div>
+                <iframe
+                  class="slots-embed-frame"
+                  src="/slots/slots-widget.html"
+                  title="Slots widget preview"
+                ></iframe>
+              </div>
+            </div>
+
+            <div class="card panel slots-preview-card">
+              <div class="panel-header">
+                <h2>Pick Alert Preview</h2>
+                <p class="subtitle">Fullscreen slot machine — only appears on !slots</p>
+              </div>
+              <iframe
+                class="slots-embed-frame slots-pick-frame"
+                src="/slots/slots-pick.html?obs=1&embed=1&v=9"
+                title="Slots pick alert preview"
+              ></iframe>
+              <div class="btn-row slots-actions">
+                <button class="btn btn-secondary btn-compact" id="slots-preview-pick-btn" type="button">Preview pick animation</button>
+              </div>
+            </div>
+
+            <div class="slots-controls-layout">
+              <div class="card panel">
+                <h2>Session timer controls</h2>
+                <p class="subtitle" id="slots-timer-status" style="margin-bottom:12px;">Loading timer...</p>
+                <div class="btn-row slots-actions">
+                  <button class="btn btn-kick btn-compact" id="slots-set-hour-btn" type="button">Set 1 hour</button>
+                  <button class="btn btn-secondary btn-compact" id="slots-timer-start-btn" type="button">Start</button>
+                  <button class="btn btn-secondary btn-compact" id="slots-timer-stop-btn" type="button">Pause</button>
+                  <button class="btn btn-secondary btn-compact" id="slots-timer-reset-btn" type="button">Reset timer</button>
+                </div>
+              </div>
+
+              <div class="card panel">
+                <h2>Pick controls</h2>
+                <div class="btn-row slots-actions">
+                  <button class="btn btn-kick btn-compact" id="slots-pick-btn" type="button">Random pick (!slots)</button>
+                  <button class="btn btn-secondary btn-compact" id="slots-clear-btn" type="button">Clear queue</button>
+                </div>
+                <div class="btn-row slots-actions" style="margin-top:10px;">
+                  <button class="btn btn-secondary btn-compact" id="slots-test-request-btn" type="button">Test !sr</button>
+                  <button class="btn btn-secondary btn-compact" id="slots-test-pick-btn" type="button">Test !slots</button>
+                </div>
+                <p class="subtitle" id="slots-status" style="margin-top:12px;"></p>
+                <div id="slots-queue-table"></div>
+              </div>
+            </div>
+
+            <div class="card panel">
+              <h2>OBS Browser Source URLs</h2>
+              <div id="slots-urls-table"></div>
+            </div>
+
+            <div class="card panel">
+              <h2>Chat commands</h2>
+              <table class="data-table">
+                <thead>
+                  <tr><th>Command</th><th>Who</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>!sr &lt;slot name&gt;</code> or <code>/sr</code></td><td>Anyone</td><td>Add a slot request to the queue</td></tr>
+                  <tr><td><code>!slots</code> or <code>/slots</code></td><td>Mods / streamer</td><td>Randomly pick one request from the queue (15s cooldown)</td></tr>
+                  <tr><td><code>!slotstart</code> or <code>/slotstart</code></td><td>Mods / streamer</td><td>Start the 1-hour slots session timer</td></tr>
+                </tbody>
+              </table>
+              <p class="subtitle" style="margin-top:12px;">Example: <code>!sr Sweet Bonanza</code> then mod runs <code>!slots</code></p>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="drinking">
+            <header class="page-header">
+              <h1>Drinking / Shotgun Cam</h1>
+              <p class="subtitle">Track shotgunned beers — counter, alerts, and a cam frame scene for OBS</p>
+            </header>
+
+            <div class="drinking-studio">
+              <div class="card panel drinking-preview-card">
+                <div class="panel-header">
+                  <h2>Shotgun Cam Scene</h2>
+                  <p class="subtitle">Full 1920×1080 lens frame — webcam fills the entire view underneath</p>
+                </div>
+                <iframe
+                  class="drinking-scene-frame"
+                  src="/drinking/widget-scene.html"
+                  title="Shotgun cam scene preview"
+                ></iframe>
+              </div>
+
+              <div class="drinking-side-stack">
+                <div class="card panel drinking-preview-card">
+                  <div class="panel-header">
+                    <h2>Beer Counter</h2>
+                    <p class="subtitle">Stackable overlay — session count + goal progress</p>
+                  </div>
+                  <iframe
+                    class="drinking-embed-frame"
+                    src="/drinking/beer-counter.html?embed=1"
+                    title="Beer counter preview"
+                  ></iframe>
+                </div>
+
+                <iframe
+                  class="drinking-control-frame"
+                  src="/drinking/control-panel.html?embed=1"
+                  title="Drinking control panel"
+                ></iframe>
+              </div>
+            </div>
+
+            <div class="card panel">
+              <h2>Shotgun controls</h2>
+              <p class="subtitle" id="drinking-status" style="margin-bottom:12px;">Loading counter...</p>
+              <div class="btn-row slots-actions">
+                <button class="btn btn-kick btn-compact" id="drinking-shotgun-dash-btn" type="button">+1 Shotgun</button>
+                <button class="btn btn-secondary btn-compact" id="drinking-cheer-dash-btn" type="button">+1 Cheers</button>
+                <button class="btn btn-secondary btn-compact" id="drinking-shotgun-3-dash-btn" type="button">+3 Shotguns</button>
+                <button class="btn btn-secondary btn-compact" id="drinking-undo-dash-btn" type="button">Undo -1</button>
+                <button class="btn btn-secondary btn-compact" id="drinking-reset-dash-btn" type="button">Reset session</button>
+              </div>
+              <div class="btn-row slots-actions" style="margin-top:10px;align-items:center;">
+                <label class="subtitle" for="drinking-goal-dash-input">Session goal</label>
+                <input id="drinking-goal-dash-input" type="number" min="1" max="99" value="12" style="width:72px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);" />
+                <button class="btn btn-secondary btn-compact" id="drinking-goal-dash-btn" type="button">Set goal</button>
+                <button class="btn btn-secondary btn-compact" id="drinking-test-cheers-btn" type="button">Test !cheers</button>
+                <button class="btn btn-secondary btn-compact" id="drinking-test-alert-btn" type="button">Test shotgun alert</button>
+              </div>
+            </div>
+
+            <div class="card panel">
+              <h2>OBS Browser Source URLs</h2>
+              <div id="drinking-urls-table"></div>
+            </div>
+
+            <div class="card panel">
+              <h2>Chat commands</h2>
+              <table class="data-table">
+                <thead>
+                  <tr><th>Command</th><th>Who</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>!shotgun</code> or <code>/shotgun</code></td><td>Mods / streamer</td><td>+1 beer on the shotgun counter (OBS alert)</td></tr>
+                  <tr><td><code>!shotgun -1</code></td><td>Mods / streamer</td><td>Remove 1 from the shotgun counter</td></tr>
+                  <tr><td><code>!shotgun 3</code></td><td>Mods / streamer</td><td>Add multiple shotguns at once</td></tr>
+                  <tr><td><code>cheers</code>, <code>!cheers</code>, or <code>/cheers</code></td><td>Anyone</td><td>+1 on the chat cheers counter</td></tr>
+                  <tr><td><code>!beers</code> or <code>/beers</code></td><td>Anyone</td><td>Show shotgun + cheers counts</td></tr>
+                  <tr><td><code>!beer reset</code></td><td>Mods / streamer</td><td>Reset session counters (keeps all-time)</td></tr>
+                </tbody>
+              </table>
+              <p class="subtitle" style="margin-top:12px;">OBS tip: size your <strong>webcam</strong> to full 1920×1080, then add <strong>shotgun-cam</strong> on top (transparent). The overlay is a full-screen lens border — only the edges and HUD panels are visible.</p>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="widgets">
+            <header class="page-header">
+              <h1>Widgets</h1>
+              <p class="subtitle">OBS overlays that match your stream theme</p>
+            </header>
+
+            <div class="widgets-layout widgets-layout--dual">
+              <div class="card panel widgets-preview-card">
+                <div class="panel-header">
+                  <h2>Stream Alerts</h2>
+                  <p class="subtitle">Follows, subs, gifted subs &amp; KICKs — slides in at the top in your orange/blue banner style</p>
+                </div>
+                <iframe
+                  class="widgets-embed-frame widgets-embed-frame--alerts"
+                  src="/widgets/stream-alerts.html?obs=1&embed=1"
+                  title="Stream alerts preview"
+                ></iframe>
+                <div class="btn-row slots-actions">
+                  <button class="btn btn-secondary btn-compact" id="widgets-test-follow-btn" type="button">Test follow</button>
+                  <button class="btn btn-secondary btn-compact" id="widgets-test-sub-btn" type="button">Test sub</button>
+                  <button class="btn btn-secondary btn-compact" id="widgets-test-gift-btn" type="button">Test gift</button>
+                  <button class="btn btn-secondary btn-compact" id="widgets-test-kicks-btn" type="button">Test KICKs</button>
+                </div>
+                <p class="subtitle" id="widgets-alert-status"></p>
+                <pre class="subtitle alert-debug hidden" id="widgets-alert-debug" aria-live="polite"></pre>
+              </div>
+
+              <div class="card panel widgets-preview-card">
+                <div class="panel-header">
+                  <h2>Kick Chat Box</h2>
+                  <p class="subtitle">Live chat from Kick webhooks — orange &amp; blue theme</p>
+                </div>
+                <iframe
+                  class="widgets-embed-frame"
+                  src="/widgets/chat-box.html?obs=1&embed=1"
+                  title="Chat box preview"
+                ></iframe>
+                <div class="btn-row slots-actions">
+                  <button class="btn btn-secondary btn-compact" id="widgets-test-chat-btn" type="button">Send test chat</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card panel widgets-preview-card" style="margin-top:16px;">
+              <div class="panel-header">
+                <h2>Spotify — Now Playing</h2>
+                <p class="subtitle" id="spotify-status">Chat controls music with !request, !skip, !pause, !replaysong, !vol</p>
+              </div>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;">
+                <a class="btn btn-kick btn-compact" id="spotify-connect-btn" href="/auth/spotify">Connect Spotify</a>
+                <button class="btn btn-secondary btn-compact hidden" id="spotify-disconnect-btn" type="button">Disconnect</button>
+              </div>
+              <p class="subtitle" id="spotify-redirect-uri" style="margin-bottom:12px;"></p>
+              <iframe
+                class="widgets-embed-frame widgets-embed-frame--now-playing"
+                src="/widgets/now-playing.html?obs=1&embed=1"
+                title="Now playing preview"
+              ></iframe>
+            </div>
+
+            <div class="card panel">
+              <h2>OBS Browser Source URLs</h2>
+              <div id="widgets-urls-table"></div>
+              <p class="subtitle" style="margin-top:12px;">
+                Add as a browser source with a transparent background. Use <code>?obs=1</code> for faster updates.
+                Stream alerts sit at the top of the scene — same look as your rules banner.
+                Chat box: optional <code>?max=30</code> message limit, <code>?compact=1</code> for a smaller box.
+              </p>
+              <table class="data-table" style="margin-top:16px;">
+                <thead>
+                  <tr><th>Command</th><th>Who</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>!request song name</code></td><td>Anyone</td><td>Search Spotify and add song to queue</td></tr>
+                  <tr><td><code>!skip</code></td><td>Mods / streamer</td><td>Skip current track</td></tr>
+                  <tr><td><code>!pause</code></td><td>Mods / streamer</td><td>Pause or resume playback</td></tr>
+                  <tr><td><code>!replaysong</code> or <code>/replaysong</code></td><td>Mods / streamer</td><td>Restart the current song from the beginning</td></tr>
+                  <tr><td><code>!vol 0-100</code></td><td>Mods / streamer</td><td>Set Spotify volume percent</td></tr>
+                  <tr><td><code>!lightsoff</code></td><td>Mods / streamer</td><td>Turn all lights off and pause beat sync (music only)</td></tr>
+                  <tr><td><code>!lightson</code></td><td>Mods / streamer</td><td>Resume beat sync with lights</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="lighting">
+            <header class="page-header">
+              <h1>Lighting</h1>
+              <p class="subtitle">Connect Philips Hue and Govee — Lumia Stream-style control for your stream room</p>
+            </header>
+
+            <div class="card panel">
+              <div class="panel-header">
+                <h2>Philips Hue</h2>
+                <p class="subtitle" id="hue-status">Discover your Hue Bridge on the same network as this PC.</p>
+              </div>
+
+              <div class="btn-row slots-actions" id="hue-connect-row">
+                <button class="btn btn-secondary btn-compact" id="hue-discover-btn" type="button">Discover bridges</button>
+                <input
+                  class="lighting-input"
+                  id="hue-bridge-ip"
+                  type="text"
+                  placeholder="Bridge IP (192.168.1.177)"
+                  style="min-width:220px;"
+                />
+                <button class="btn btn-kick btn-compact" id="hue-connect-btn" type="button">Connect</button>
+                <button class="btn btn-secondary btn-compact hidden" id="hue-disconnect-btn" type="button">Disconnect</button>
+              </div>
+
+              <p class="subtitle" id="hue-discover-results" style="margin-top:12px;"></p>
+              <p class="subtitle" style="margin-top:8px;">
+                Before connecting: press the <strong>link button</strong> on top of your Hue Bridge (round button).
+              </p>
+
+              <div class="hidden" id="hue-devices-panel" style="margin-top:16px;">
+                <div class="panel-header">
+                  <h3>Stream lights</h3>
+                  <button class="btn btn-secondary btn-compact" id="hue-refresh-devices-btn" type="button">Refresh</button>
+                </div>
+                <p class="subtitle" style="margin-bottom:12px;">
+                  Pick individual lights and/or a room group. Group wins for test commands if both are set.
+                </p>
+
+                <label class="subtitle" for="hue-group-select">Room / group</label>
+                <select id="hue-group-select" class="lighting-input" style="display:block; margin:8px 0 16px; min-width:280px;">
+                  <option value="">— No group —</option>
+                </select>
+
+                <div id="hue-lights-table"></div>
+
+                <div class="btn-row slots-actions" style="margin-top:16px;">
+                  <button class="btn btn-secondary btn-compact" id="hue-save-selection-btn" type="button">Save selection</button>
+                  <button class="btn btn-kick btn-compact" id="hue-test-pulse-btn" type="button">Test pulse</button>
+                  <button class="btn btn-secondary btn-compact" id="hue-test-on-btn" type="button">Test on</button>
+                  <button class="btn btn-secondary btn-compact" id="hue-test-off-btn" type="button">Test off</button>
+                  <button class="btn btn-secondary btn-compact" id="hue-reset-btn" type="button">Reset lights</button>
+                </div>
+                <p class="subtitle" id="hue-test-status" style="margin-top:12px;"></p>
+              </div>
+            </div>
+
+            <div class="card panel" id="spotify-lighting-sync-panel">
+              <div class="panel-header">
+                <h2>Spotify sync</h2>
+                <p class="subtitle" id="spotify-sync-status">Mood colors + beat pulse for your saved Hue lights</p>
+              </div>
+              <p class="subtitle" style="margin-bottom:12px;">
+                Concert mode: lights stay <strong>off</strong> between hits, then flash color → black on each beat.
+                With <strong>System audio</strong> on, every detected audio beat triggers a flash (not just BPM drops).
+              </p>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;">
+                <label class="subtitle" style="display:flex;align-items:center;gap:8px;">
+                  <input type="checkbox" id="spotify-sync-mood" />
+                  Song palette — unique colors per track (used on drops)
+                </label>
+              </div>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;">
+                <label class="subtitle" style="display:flex;align-items:center;gap:8px;">
+                  <input type="checkbox" id="spotify-sync-beat" />
+                  Concert drops — flash on/off to the beat (black between hits)
+                </label>
+              </div>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;">
+                <label class="subtitle" style="display:flex;align-items:center;gap:8px;">
+                  <input type="checkbox" id="spotify-sync-audio" checked />
+                  System audio — hear PC sound for real beat hits (falls back to BPM if capture fails)
+                </label>
+              </div>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
+                <span class="subtitle">Audio sensitivity:</span>
+                <button class="btn btn-secondary btn-compact" id="spotify-sync-audio-down" type="button">−</button>
+                <span class="subtitle" id="spotify-sync-audio-label">6</span>
+                <button class="btn btn-secondary btn-compact" id="spotify-sync-audio-up" type="button">+</button>
+                <span class="subtitle" style="opacity:0.75;">(higher = more hits)</span>
+              </div>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
+                <span class="subtitle">Beat timing fine-tune:</span>
+                <button class="btn btn-secondary btn-compact" id="spotify-sync-bpm-down" type="button">−5 BPM</button>
+                <span class="subtitle" id="spotify-sync-bpm-label">0 offset</span>
+                <button class="btn btn-secondary btn-compact" id="spotify-sync-bpm-up" type="button">+5 BPM</button>
+              </div>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
+                <span class="subtitle">Beat phase nudge:</span>
+                <button class="btn btn-secondary btn-compact" id="spotify-sync-phase-early" type="button">Earlier</button>
+                <span class="subtitle" id="spotify-sync-phase-label">0 ms</span>
+                <button class="btn btn-secondary btn-compact" id="spotify-sync-phase-late" type="button">Later</button>
+              </div>
+              <button class="btn btn-kick btn-compact" id="spotify-sync-save-btn" type="button">Save sync settings</button>
+              <button class="btn btn-secondary btn-compact" id="spotify-sync-calibrate-btn" type="button">Save calibration for current song</button>
+              <p class="subtitle" style="margin-top:10px;">
+                <strong>Calibrate with Sandstorm:</strong> play it from the start — wild mode flashes every beat at 136 BPM.
+                Fine-tune with ±5 BPM, then click <strong>Save calibration for current song</strong>.
+              </p>
+              <p class="subtitle" id="spotify-sync-runtime" style="margin-top:12px;"></p>
+            </div>
+
+            <div class="card panel" id="govee-panel">
+              <div class="panel-header">
+                <h2>Govee LAN</h2>
+                <p class="subtitle" id="govee-status">Local control via GoveeLAN — no cloud API key needed</p>
+              </div>
+              <p class="subtitle" style="margin-bottom:12px;">
+                Your phone uses Govee cloud. This dashboard uses <strong>local LAN</strong> — in Govee Home → each light → Settings → turn on <strong>LAN Control</strong>.
+                If you run <strong>GoveeLAN on this PC</strong>, close it first (only one app can use UDP port 4002).
+              </p>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
+                <input
+                  class="lighting-input"
+                  id="govee-scan-ips"
+                  type="text"
+                  placeholder="Optional device IPs (comma separated)"
+                  style="min-width:280px;"
+                />
+                <button class="btn btn-kick btn-compact" id="govee-scan-btn" type="button">Scan LAN</button>
+                <button class="btn btn-secondary btn-compact" id="govee-refresh-btn" type="button">Refresh list</button>
+              </div>
+              <div id="govee-devices-table"></div>
+              <div class="btn-row slots-actions" style="margin-top:16px;">
+                <button class="btn btn-secondary btn-compact" id="govee-save-selection-btn" type="button">Save selection</button>
+                <button class="btn btn-kick btn-compact" id="govee-test-pulse-btn" type="button">Test pulse</button>
+                <button class="btn btn-secondary btn-compact" id="govee-test-on-btn" type="button">Test on</button>
+                <button class="btn btn-secondary btn-compact" id="govee-test-off-btn" type="button">Test off</button>
+              </div>
+              <p class="subtitle" id="govee-test-status" style="margin-top:12px;"></p>
+            </div>
+
+            <div class="card panel" id="lighting-layout-panel">
+              <div class="panel-header">
+                <h2>Light layout</h2>
+                <p class="subtitle" id="lighting-layout-status">Drag lights to match your room — beat sync uses this map</p>
+              </div>
+              <p class="subtitle" style="margin-bottom:12px;">
+                Stack lights <strong>top to bottom</strong>. <strong>Color map</strong> lights each dot a different color (blue top / red bottom on dual strips).
+              </p>
+              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
+                <button class="btn btn-secondary btn-compact" id="lighting-layout-sync-btn" type="button">Sync from devices</button>
+                <label class="subtitle" for="lighting-layout-pattern">Flash pattern</label>
+                <select id="lighting-layout-pattern" class="lighting-input" style="min-width:180px;">
+                  <option value="unison">All together</option>
+                  <option value="chase">Chase (one per beat)</option>
+                  <option value="alternate">Alternate odds/evens</option>
+                  <option value="sides">Top vs bottom</option>
+                  <option value="rainbow">Rainbow (all, different colors)</option>
+                </select>
+                <button class="btn btn-secondary btn-compact" id="lighting-chat-off-btn" type="button">Music only (lights off)</button>
+                <button class="btn btn-secondary btn-compact" id="lighting-chat-on-btn" type="button">Resume lights</button>
+                <button class="btn btn-secondary btn-compact" id="lighting-layout-map-btn" type="button">Color map</button>
+                <button class="btn btn-secondary btn-compact" id="lighting-layout-split-btn" type="button">Split 2 strips</button>
+                <button class="btn btn-kick btn-compact" id="lighting-layout-save-btn" type="button">Save layout</button>
+                <button class="btn btn-secondary btn-compact" id="lighting-layout-test-btn" type="button">Test pattern</button>
+              </div>
+              <div class="lighting-layout-stage-wrap">
+                <div class="lighting-layout-stage" id="lighting-layout-stage" aria-label="Light layout stage">
+                  <span class="lighting-layout-label lighting-layout-label--top">Top</span>
+                  <span class="lighting-layout-label lighting-layout-label--bottom">Bottom</span>
+                </div>
+              </div>
+              <p class="subtitle" id="lighting-layout-hint" style="margin-top:12px;"></p>
+            </div>
+
+            <div class="card panel">
+              <h2>Roadmap</h2>
+              <table class="data-table">
+                <thead>
+                  <tr><th>Phase</th><th>Feature</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>1</td><td>Hue connect, pick lights, test controls</td><td>Active</td></tr>
+                  <tr><td>2</td><td>Govee LAN connect + beat sync with Hue</td><td>Active</td></tr>
+                  <tr><td>3</td><td>Stream alert triggers (sub, gift, follow)</td><td>Planned</td></tr>
+                  <tr><td>4</td><td>Spotify mood + beat pulse</td><td>Active</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="stake">
+            <header class="page-header">
+              <h1>Stake.us Race Leaderboard</h1>
+              <p class="subtitle">Live daily race standings from your Stake.us account</p>
+            </header>
+
+            <div class="card panel">
+              <h2>Connection</h2>
+              <div class="detail-card" id="stake-status"></div>
+            </div>
+
+            <div class="card panel">
+              <div class="panel-header">
+                <h2 id="stake-race-title">Active race</h2>
+                <button class="btn btn-secondary btn-compact" id="stake-refresh-btn" type="button">Refresh</button>
+              </div>
+              <div class="detail-card" id="stake-race-meta"></div>
+              <div id="stake-leaderboard-table"></div>
+            </div>
+
+            <div class="card panel">
+              <div class="panel-header">
+                <h2>Code <code id="stake-affiliate-code">na5ty</code> referral leaderboard</h2>
+                <div class="tab-row" id="stake-affiliate-tabs">
+                  <button class="tab active" data-period="month" type="button">This month</button>
+                  <button class="tab" data-period="30days" type="button">Last 30 days</button>
+                  <button class="tab" data-period="lifetime" type="button">Lifetime</button>
+                </div>
+              </div>
+              <p class="subtitle" id="stake-affiliate-note"></p>
+              <div class="detail-card" id="stake-affiliate-meta"></div>
+              <div id="stake-affiliate-table"></div>
+            </div>
+
+            <div class="card panel">
+              <h2>What this connection can read</h2>
+              <div class="two-col">
+                <div>
+                  <h3 class="subtitle" style="margin-bottom:8px;">Available now</h3>
+                  <ul class="stake-list" id="stake-available-stats"></ul>
+                </div>
+                <div>
+                  <h3 class="subtitle" style="margin-bottom:8px;">Blocked / not available</h3>
+                  <ul class="stake-list stake-list-muted" id="stake-blocked-stats"></ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="card panel">
+              <h2>OBS Browser Source URLs</h2>
+              <div id="stake-urls-table"></div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="bot">
+            <header class="page-header">
+              <h1>Chat Bot</h1>
+              <p class="subtitle">Custom commands and timed chat messages</p>
+            </header>
+
+            <div class="two-col">
+              <div class="card panel">
+                <h2>Add command</h2>
+                <form id="command-form" class="bot-form">
+                  <label>Trigger <input name="trigger" placeholder="!hello" required /></label>
+                  <label>Response <input name="response" placeholder="Hey {username}!" required /></label>
+                  <button class="btn btn-kick btn-compact" type="submit">Add command</button>
+                </form>
+              </div>
+              <div class="card panel">
+                <h2>Add timer</h2>
+                <form id="timer-form" class="bot-form">
+                  <label>Message <input name="message" placeholder="Follow for more!" required /></label>
+                  <label>Every (minutes) <input name="intervalMinutes" type="number" min="1" max="1440" value="10" required /></label>
+                  <button class="btn btn-kick btn-compact" type="submit">Add timer</button>
+                </form>
+              </div>
+            </div>
+
+            <div class="card panel">
+              <div class="panel-header">
+                <h2>Commands</h2>
+                <button class="btn btn-secondary btn-compact" id="test-bot-btn" type="button">Test chat</button>
+              </div>
+              <div id="commands-table"></div>
+            </div>
+
+            <div class="card panel">
+              <h2>Timers</h2>
+              <div id="timers-table"></div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="chat">
+            <header class="page-header">
+              <h1>Chat & Subs</h1>
+              <p class="subtitle">Live webhook events while streaming</p>
+            </header>
+            <div class="card panel">
+              <h2>Recent chat</h2>
+              <div id="messages-table"></div>
+            </div>
+            <div class="card panel">
+              <h2>Sub events</h2>
+              <div id="subs-table"></div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="rewards">
+            <header class="page-header">
+              <h1>Rewards</h1>
+              <p class="subtitle">Channel point rewards and redemptions</p>
+            </header>
+            <div class="card panel">
+              <h2>Channel rewards</h2>
+              <div id="rewards-table"></div>
+            </div>
+            <div class="card panel">
+              <h2>Pending redemptions</h2>
+              <div id="pending-table"></div>
+            </div>
+            <div class="card panel">
+              <h2>Accepted redemptions</h2>
+              <div id="accepted-table"></div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="leaderboard">
+            <header class="page-header">
+              <h1>Leaderboards</h1>
+              <p class="subtitle">KICKs and gifted subs — synced from Kick (week / month / lifetime)</p>
+              <div class="tab-row" id="leaderboard-tabs">
+                <button class="tab active" data-period="week" type="button">Week</button>
+                <button class="tab" data-period="month" type="button">Month</button>
+                <button class="tab" data-period="lifetime" type="button">Lifetime</button>
+              </div>
+            </header>
+            <div class="card panel">
+              <h2>KICKs leaderboard</h2>
+              <p class="subtitle">Top KICKs gifters on your channel</p>
+              <div id="leaderboard-table"></div>
+            </div>
+            <div class="card panel" style="margin-top:16px;">
+              <h2>Gifted subs leaderboard</h2>
+              <p class="subtitle" id="gifted-sub-leaderboard-note">Top gifted subscription supporters</p>
+              <div id="gifted-sub-leaderboard-table"></div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="settings">
+            <header class="page-header">
+              <h1>Settings</h1>
+              <p class="subtitle">API access and webhook subscriptions</p>
+            </header>
+            <div class="card panel">
+              <h2>API access</h2>
+              <div class="detail-card" id="api-access"></div>
+            </div>
+            <div class="card panel">
+              <h2>Webhook subscriptions</h2>
+              <div id="subscriptions-table"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <p class="error hidden" id="error-banner" role="alert"></p>
+    </main>
+
+    <script src="/app.js?v=33"></script>
+  </body>
+</html>

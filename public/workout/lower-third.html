@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Workout Lower Third</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <style>
+    body { background: transparent !important; }
+
+    .wrap {
+      position: fixed;
+      bottom: 40px;
+      left: 40px;
+      animation: slide-in 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes slide-in {
+      from { transform: translateX(-110%); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel lower-third-bar">
+      <div class="lt-stripe"></div>
+      <div class="lt-content">
+        <!-- Edit your name -->
+        <div class="lt-name">NA5TY</div>
+        <div class="lt-sub">
+          <span class="orange">1 Sub = 1 Min Treadmill</span> · <span class="blue">Weight Loss Journey</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

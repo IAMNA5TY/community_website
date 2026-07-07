@@ -1,0 +1,181 @@
+:root {
+  --bg-deep: #0a0a0a;
+  --bg-panel: #141414;
+  --bg-card: #1c1c1c;
+  --border: #2a2a2a;
+  --green: #00e701;
+  --green-dim: rgba(0, 231, 1, 0.12);
+  --green-glow: rgba(0, 231, 1, 0.35);
+  --gold: #ffb300;
+  --gold-dim: rgba(255, 179, 0, 0.12);
+  --white: #ffffff;
+  --text-muted: #9e9e9e;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI", "Arial Black", sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  background: transparent;
+  color: var(--white);
+}
+
+.stake-widget {
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.stake-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--green-dim);
+}
+
+.stake-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stake-brand h1 {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.stake-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stake-race {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stake-race h2 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--white);
+}
+
+.stake-race-meta {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.stake-race-meta strong {
+  color: var(--gold);
+}
+
+.stake-body {
+  padding: 10px 12px 14px;
+}
+
+.stake-row {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.stake-row.top1 {
+  border-color: rgba(255, 179, 0, 0.45);
+  background: var(--gold-dim);
+}
+
+.stake-row.top2,
+.stake-row.top3 {
+  border-color: rgba(0, 231, 1, 0.25);
+}
+
+.stake-rank {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--green);
+  text-align: center;
+}
+
+.stake-user {
+  min-width: 0;
+}
+
+.stake-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stake-name.hidden-user {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.stake-wagered {
+  margin-top: 2px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.stake-prize {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.stake-empty,
+.stake-error {
+  padding: 18px 14px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.stake-error {
+  color: #ff7043;
+}
+
+.stake-footer {
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: right;
+}

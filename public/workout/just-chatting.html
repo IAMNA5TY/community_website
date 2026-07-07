@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Workout Just Chatting Scene</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <link rel="stylesheet" href="../widgets/css/widgets-theme.css?v=10">
+  <style>
+    body { background: transparent !important; }
+
+    .rules-banner {
+      background: linear-gradient(90deg,
+        rgba(10, 10, 10, 0.75),
+        rgba(10, 10, 10, 0.85),
+        rgba(10, 10, 10, 0.75)
+      );
+    }
+
+    .rules-wrap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 8;
+    }
+
+    .rules-wrap .stream-alert-banner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .treadmill-panel {
+      position: absolute;
+      top: 90px;
+      right: 40px;
+      width: 340px;
+      z-index: 7;
+    }
+
+    .stats-left {
+      position: absolute;
+      top: 90px;
+      left: 40px;
+      width: 280px;
+      z-index: 7;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .lifts-panel {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      width: 280px;
+      z-index: 7;
+    }
+
+    .sub-panel {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      width: 200px;
+      z-index: 7;
+    }
+
+    .scene-title {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 7;
+      text-align: center;
+    }
+
+    .scene-title h1 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--white);
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+    }
+
+    .scene-title p {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-top: 4px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Rules banner -->
+  <div class="rules-wrap">
+    <div class="rules-banner" id="staticRulesBanner">
+      <div class="rules-item"><span class="num">1</span> SUB</div>
+      <div class="rules-arrow orange">→</div>
+      <div class="rules-item blue"><span class="num">1</span> MIN TREADMILL</div>
+      <div class="rules-arrow">→</div>
+      <div class="rules-item">💪 GET FIT</div>
+    </div>
+    <div class="rules-banner stream-alert-banner" id="alertBanner">
+      <div class="stream-alert-track" id="alertTrack"></div>
+    </div>
+  </div>
+
+  <!-- Weight + progress -->
+  <div class="stats-left">
+    <div class="panel orange-accent">
+      <div class="panel-header orange"><span class="icon">⚖️</span> Weight Tracker</div>
+      <div class="panel-body" id="weightPanel">
+        <div class="weight-display">
+          <span class="weight-number" data-weight>245</span>
+          <span class="weight-unit">lbs</span>
+        </div>
+        <div class="weight-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:0%"></div>
+          </div>
+          <div class="progress-labels">
+            <span>Start</span>
+            <span><span data-togo>45</span> lbs to go</span>
+            <span class="goal">Goal: <span data-goal>200</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel blue-accent" id="sessionStatsPanel">
+      <div class="panel-header blue"><span class="icon">📊</span> Session Stats</div>
+      <div class="panel-body">
+        <div class="stat-grid">
+          <div class="stat-box highlight">
+            <div class="stat-value" data-subs>0</div>
+            <div class="stat-label">Gifted Subs</div>
+          </div>
+          <div class="stat-box blue">
+            <div class="stat-value" data-messages>0</div>
+            <div class="stat-label">Messages</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Treadmill tracker -->
+  <div class="panel treadmill-panel orange-accent" id="treadmillPanel">
+    <div class="panel-header orange"><span class="icon">🏃</span> Treadmill Challenge</div>
+    <div class="panel-body treadmill-display">
+      <div class="treadmill-belt paused"></div>
+      <div class="treadmill-time">0:00</div>
+      <div class="treadmill-label">Time On Treadmill</div>
+      <div class="treadmill-status idle">
+        <span class="status-dot"></span> Waiting For Subs
+      </div>
+    </div>
+  </div>
+
+  <!-- Lift PRs -->
+  <div class="panel lifts-panel blue-accent" id="liftsPanel">
+    <div class="panel-header blue"><span class="icon">🏋️</span> Lift PRs</div>
+    <div class="panel-body">
+      <div class="lift-row">
+        <span class="lift-name">Bench</span>
+        <span class="lift-weight"><span data-lift="bench">225</span> <span>lbs</span></span>
+      </div>
+      <div class="lift-row">
+        <span class="lift-name">Squat</span>
+        <span class="lift-weight"><span data-lift="squat">315</span> <span>lbs</span></span>
+      </div>
+      <div class="lift-row">
+        <span class="lift-name">Deadlift</span>
+        <span class="lift-weight"><span data-lift="deadlift">405</span> <span>lbs</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time owed -->
+  <div class="panel sub-panel blue-accent" id="timeOwedPanel">
+    <div class="panel-header blue"><span class="icon">🏃</span> Time Owed</div>
+    <div class="panel-body sub-counter blue">
+      <div class="sub-count" data-time-owed>0</div>
+      <div class="stat-label" style="margin-top:6px;">Mins On Treadmill</div>
+    </div>
+  </div>
+
+  <div class="scene-title">
+    <h1>Just Chatting</h1>
+    <p>Workout Stream · Sub = Treadmill Time</p>
+  </div>
+
+  <script src="../widgets/js/stream-alerts.js?v=10"></script>
+  <script src="js/workout.js"></script>
+  <script>
+    initStreamAlerts({ displayMs: 5500 });
+    initWorkoutPage({
+      treadmill: document.getElementById("treadmillPanel"),
+      weight: document.getElementById("weightPanel"),
+      lifts: document.getElementById("liftsPanel"),
+      timeOwed: document.getElementById("timeOwedPanel"),
+      sessionStats: document.getElementById("sessionStatsPanel"),
+    });
+  </script>
+</body>
+</html>

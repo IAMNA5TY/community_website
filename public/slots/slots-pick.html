@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <title>Slots Pick Alert</title>
+
+  <link rel="stylesheet" href="css/slots-theme.css?v=9">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+
+</head>
+
+<body class="slots-pick-page">
+
+  <div class="pick-overlay show" id="pickOverlay">
+
+    <div class="slot-machine cabinet show stream-bg idle-promo" id="slotMachine">
+
+      <div class="slot-machine-top">
+
+        <span class="slot-machine-badge">Slot Pick</span>
+
+        <h1 class="slot-machine-title" id="slotTitle">Slot Requests</h1>
+
+        <p class="slot-machine-subtitle" id="slotSubtitle">Use code NA5TY on stake.us</p>
+
+      </div>
+
+
+
+      <div class="cabinet-body">
+
+        <div class="triple-reels" id="tripleReels">
+
+          <div class="reel-column">
+
+            <div class="reel-window triple">
+
+              <div class="reel-highlight"></div>
+
+              <div class="reel-track">
+
+                <div class="reel-inner" id="reelInner1"></div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="reel-column">
+
+            <div class="reel-window triple">
+
+              <div class="reel-highlight"></div>
+
+              <div class="reel-track">
+
+                <div class="reel-inner" id="reelInner2"></div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="reel-column">
+
+            <div class="reel-window triple">
+
+              <div class="reel-highlight"></div>
+
+              <div class="reel-track">
+
+                <div class="reel-inner" id="reelInner3"></div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="slot-lever" aria-hidden="true">
+
+          <div class="slot-lever-arm"></div>
+
+          <div class="slot-lever-knob"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <script src="js/slots-spin.js?v=10"></script>
+
+  <script src="js/slots-pick.js?v=9"></script>
+
+  <script>
+
+    startSlotsPickAlert({
+
+      reelInners: [
+
+        document.getElementById("reelInner1"),
+
+        document.getElementById("reelInner2"),
+
+        document.getElementById("reelInner3"),
+
+      ],
+
+    });
+
+  </script>
+
+</body>
+
+</html>
+

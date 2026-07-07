@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slots Widget</title>
+  <link rel="stylesheet" href="css/slots-theme.css?v=7">
+  <link rel="stylesheet" href="/css/stream-bg.css?v=2">
+  <style>
+    body.obs-mode {
+      padding: 8px;
+      min-width: 360px;
+      min-height: 280px;
+    }
+    #obsLoadError {
+      display: none;
+      margin: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(244, 67, 54, 0.15);
+      border: 1px solid rgba(244, 67, 54, 0.45);
+      color: #ff8a80;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+    #obsLoadError.show { display: block; }
+  </style>
+</head>
+<body>
+  <div id="obsLoadError">Cannot reach the dashboard — use <strong>http://127.0.0.1:3000</strong> in OBS (not localhost) and refresh cache.</div>
+  <div class="slots-widget stream-bg">
+    <div class="slots-header">
+      <h1>Slot Requests</h1>
+      <div class="slots-count"><strong id="queueCount">0</strong> in queue</div>
+    </div>
+    <div class="slots-body">
+      <div>
+        <div class="slots-section-title">Queue</div>
+        <div class="slots-queue" id="slotsQueue"></div>
+      </div>
+      <div>
+        <div class="slots-section-title" id="pickLabel">Last pick</div>
+        <div class="slots-pick" id="slotsPick">
+          <div class="mini-reel hidden" id="miniReel">
+            <div class="reel-window mini">
+              <div class="reel-highlight"></div>
+              <div class="reel-track">
+                <div class="reel-inner" id="miniReelInner"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mini-result" id="miniResult">
+            <div class="pick-placeholder">Waiting for !slots</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/slots-spin.js?v=10"></script>
+  <script src="js/slots.js?v=2"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      if (params.get("obs") === "1" || params.get("obs") === "true") {
+        document.body.classList.add("obs-mode");
+      }
+      let tries = 0;
+      const errEl = document.getElementById("obsLoadError");
+      async function probe() {
+        try {
+          const res = await fetch("/api/slots", { cache: "no-store" });
+          if (!res.ok) throw new Error("bad status");
+          if (errEl) errEl.classList.remove("show");
+        } catch {
+          tries += 1;
+          if (tries >= 3 && errEl) errEl.classList.add("show");
+          else setTimeout(probe, 1500);
+        }
+      }
+      probe();
+    })();
+
+    startSlotsPoll({
+      queue: document.getElementById("slotsQueue"),
+      pick: document.getElementById("slotsPick"),
+      pickLabel: document.getElementById("pickLabel"),
+      count: document.getElementById("queueCount"),
+      miniReel: document.getElementById("miniReel"),
+      miniReelInner: document.getElementById("miniReelInner"),
+      miniResult: document.getElementById("miniResult"),
+    });
+  </script>
+</body>
+</html>

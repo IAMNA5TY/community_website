@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slots Control Panel — NA5TY</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <style>
+    body {
+      background: var(--bg-deep) !important;
+      overflow-y: auto;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    body.embed {
+      background: transparent !important;
+      min-height: 0;
+    }
+
+    body.embed .dashboard {
+      max-width: none;
+      padding: 0;
+      gap: 12px;
+    }
+
+    body.embed .full-only {
+      display: none !important;
+    }
+
+    .dashboard {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 16px 32px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .dash-header {
+      text-align: center;
+    }
+
+    .dash-header h1 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .dash-header p {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .card-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .stat-box .val {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--orange-bright);
+      line-height: 1.1;
+    }
+
+    .stat-box.timer .val {
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-box .lbl {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .status-bar.idle {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .status-bar.active {
+      background: var(--orange-dim);
+      color: var(--orange-bright);
+      border: 1px solid rgba(255, 87, 34, 0.35);
+    }
+
+    .status-bar.paused {
+      background: rgba(79, 195, 247, 0.1);
+      color: var(--blue-bright);
+      border: 1px solid rgba(79, 195, 247, 0.25);
+    }
+
+    .status-bar .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: currentColor;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 10px;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--orange);
+      color: #1a0800;
+    }
+
+    .btn-green {
+      background: var(--green);
+      color: #0a1a0a;
+    }
+
+    .btn-dark {
+      background: var(--bg-card);
+      color: var(--white);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: rgba(244, 67, 54, 0.12);
+      color: #ff8a80;
+      border: 1px solid rgba(244, 67, 54, 0.25);
+    }
+
+    .btn-sm {
+      padding: 9px 10px;
+      font-size: 0.72rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 9px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--white);
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: var(--font);
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--orange);
+      box-shadow: 0 0 0 2px var(--orange-dim);
+    }
+
+    .btn-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+
+    .sub-label {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--green);
+      color: #0a1a0a;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 520px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .action-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <div class="dash-header full-only">
+      <h1>Slots Control Panel</h1>
+      <p>NA5TY · Daily 1-hour slots session · Synced to OBS</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Live stats</div>
+      <div class="stats-grid">
+        <div class="stat-box timer">
+          <div class="val" id="pvTimer">0:00</div>
+          <div class="lbl">Remaining</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" id="pvGoal">60</div>
+          <div class="lbl">Goal (min)</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" id="pvQueue">0</div>
+          <div class="lbl">Queue</div>
+        </div>
+        <div class="stat-box">
+          <div class="val" id="pvProgress">0%</div>
+          <div class="lbl">Progress</div>
+        </div>
+      </div>
+      <div class="status-bar idle" id="pvStatus">
+        <span class="dot"></span>
+        <span id="pvStatusText">Set your hour and start spinning</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Session controls</div>
+      <div class="action-grid">
+        <button class="btn btn-primary" onclick="doSetHour()">Set 1 Hour</button>
+        <button class="btn btn-green" onclick="doStart()">▶ Start</button>
+        <button class="btn btn-dark" onclick="doStop()">⏸ Pause</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sub-label">Custom time</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Minutes to bank</label>
+          <input type="number" id="inMinutes" min="0" step="1" value="60">
+        </div>
+        <div class="field">
+          <label>Daily goal (min)</label>
+          <input type="number" id="inGoal" min="1" step="1" value="60">
+        </div>
+      </div>
+      <div class="btn-pair">
+        <button class="btn btn-dark btn-sm" onclick="doSetMinutes()">Set minutes</button>
+        <button class="btn btn-dark btn-sm" onclick="doSetGoal()">Set goal</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sub-label">Adjust</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Add minutes</label>
+          <input type="number" id="inAddMins" min="1" step="1" value="5">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn btn-dark btn-sm" onclick="doAddMinutes()">+ Add time</button>
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" style="width:100%;margin-top:8px;" onclick="doReset()">Reset session timer</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Saved!</div>
+
+  <script src="js/slots-timer.js"></script>
+  <script>
+    function toast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2500);
+    }
+
+    async function fetchQueueCount() {
+      try {
+        const res = await fetch("/api/slots", { cache: "no-store" });
+        if (!res.ok) return 0;
+        const data = await res.json();
+        return data.requests?.length || 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    function refreshPreview(state, queueCount = 0) {
+      state = SlotsTimerActions.tick({ ...state });
+      const seconds = SlotsTimerActions.getSeconds(state);
+      const progress = SlotsTimerActions.getProgress(state, seconds);
+
+      document.getElementById("pvTimer").textContent = formatSlotsTime(seconds);
+      document.getElementById("pvGoal").textContent = state.dailyGoalMinutes || 60;
+      document.getElementById("pvQueue").textContent = queueCount;
+      document.getElementById("pvProgress").textContent = `${progress}%`;
+
+      const status = document.getElementById("pvStatus");
+      const statusText = document.getElementById("pvStatusText");
+
+      if (state.isRunning) {
+        status.className = "status-bar active";
+        statusText.textContent = `Running — ${formatSlotsTime(seconds)} left`;
+      } else if (seconds > 0) {
+        status.className = "status-bar paused";
+        statusText.textContent = `Paused at ${formatSlotsTime(seconds)}`;
+      } else {
+        status.className = "status-bar idle";
+        statusText.textContent = "Set your hour and hit Start";
+      }
+
+      document.getElementById("inGoal").value = state.dailyGoalMinutes || 60;
+    }
+
+    async function loadPanel() {
+      const [state, queueCount] = await Promise.all([
+        SlotsTimerStore.load(),
+        fetchQueueCount(),
+      ]);
+      refreshPreview(state, queueCount);
+    }
+
+    async function doSetHour() {
+      await SlotsTimerStore.postAction({ action: "setHour" });
+      toast("Set to 1 hour");
+      await loadPanel();
+    }
+
+    async function doSetMinutes() {
+      const minutes = parseInt(document.getElementById("inMinutes").value, 10) || 0;
+      await SlotsTimerStore.postAction({ action: "setMinutes", minutes });
+      toast(`Set to ${minutes} min`);
+      await loadPanel();
+    }
+
+    async function doSetGoal() {
+      const goalMinutes = parseInt(document.getElementById("inGoal").value, 10) || 60;
+      await SlotsTimerStore.postAction({ action: "setGoal", goalMinutes });
+      toast(`Goal set to ${goalMinutes} min`);
+      await loadPanel();
+    }
+
+    async function doAddMinutes() {
+      const count = parseInt(document.getElementById("inAddMins").value, 10) || 1;
+      await SlotsTimerStore.postAction({ action: "addMinutes", count });
+      toast(`+${count} min`);
+      await loadPanel();
+    }
+
+    async function doStart() {
+      try {
+        await SlotsTimerStore.postAction({ action: "start" });
+        toast("Slots timer started");
+      } catch {
+        toast("Set time first — try Set 1 Hour");
+      }
+      await loadPanel();
+    }
+
+    async function doStop() {
+      await SlotsTimerStore.postAction({ action: "stop" });
+      const state = await SlotsTimerStore.load();
+      toast(`Paused at ${formatSlotsTime(SlotsTimerActions.getSeconds(state))}`);
+      await loadPanel();
+    }
+
+    async function doReset() {
+      if (!confirm("Reset the slots session timer?")) return;
+      await SlotsTimerStore.postAction({ action: "reset" });
+      toast("Session reset");
+      await loadPanel();
+    }
+
+    if (new URLSearchParams(location.search).get("embed") === "1") {
+      document.body.classList.add("embed");
+    }
+
+    (async () => {
+      await loadPanel();
+      startSlotsTimerPoll(async (state) => {
+        const count = await fetchQueueCount();
+        refreshPreview(state, count);
+      });
+      window.addEventListener("slots-timer-update", async (event) => {
+        const count = await fetchQueueCount();
+        refreshPreview(event.detail, count);
+      });
+    })();
+  </script>
+</body>
+</html>

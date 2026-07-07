@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Beer Counter</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <link rel="stylesheet" href="css/drinking-theme.css">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+  <style>
+    body {
+      background: transparent !important;
+      margin: 0;
+      padding: 12px 0 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 100vh;
+      overflow: visible;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: var(--overlay-stack-width, 640px);
+      margin: 0 auto;
+    }
+
+    .beer-header-icon {
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel wrap orange-accent stream-bg" id="beerCounterPanel">
+    <div class="panel-header orange"><span class="icon">🍺</span> Shotgun &amp; Cheers</div>
+    <div class="panel-body" style="text-align:center;padding:20px 16px 18px;">
+      <div class="dual-counter-grid" style="max-width:360px;margin:0 auto;">
+        <div class="dual-counter-box shotgun">
+          <div class="beer-icon">🍺</div>
+          <div class="dual-val beer-count" data-beer-count>0</div>
+          <div class="dual-lbl">!shotgun</div>
+        </div>
+        <div class="dual-counter-box cheers">
+          <div class="beer-icon">🎉</div>
+          <div class="dual-val cheers-count" data-cheers-count>0</div>
+          <div class="dual-lbl">Cheers · chat cheers</div>
+        </div>
+      </div>
+      <div class="beer-progress" style="margin-top:16px;" aria-hidden="true">
+        <div class="beer-progress-fill"></div>
+      </div>
+      <div class="beer-label">Shotgun goal — <span data-beer-progress>0%</span> of <span data-beer-goal>12</span></div>
+      <div class="beer-cans" data-beer-cans></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;">
+        <div class="stat-box highlight">
+          <div class="stat-value" data-beer-lifetime>0</div>
+          <div class="stat-label">Beers all-time</div>
+        </div>
+        <div class="stat-box blue">
+          <div class="stat-value" data-cheers-lifetime>0</div>
+          <div class="stat-label">Cheers all-time</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/drinking.js?v=3"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const width = parseInt(params.get("width"), 10);
+    if (width > 0) {
+      document.documentElement.style.setProperty("--overlay-stack-width", `${width}px`);
+    }
+    initBeerCounterPage({ container: document.getElementById("beerCounterPanel") });
+  </script>
+</body>
+</html>

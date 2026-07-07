@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="stake.us">
+  <circle cx="60" cy="60" r="58" fill="#0d1f12" stroke="#00e701" stroke-width="3"/>
+  <text
+    x="60"
+    y="54"
+    text-anchor="middle"
+    fill="#00e701"
+    font-family="Segoe UI, Arial Black, sans-serif"
+    font-size="22"
+    font-weight="800"
+  >stake</text>
+  <text
+    x="60"
+    y="78"
+    text-anchor="middle"
+    fill="#ffffff"
+    font-family="Segoe UI, Arial, sans-serif"
+    font-size="18"
+    font-weight="700"
+  >.us</text>
+</svg>
