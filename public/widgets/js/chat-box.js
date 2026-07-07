@@ -97,7 +97,10 @@ function startChatBoxWidget(options = {}) {
 
   function showEmpty() {
     if (listEl.querySelector(".chat-empty")) return;
-    listEl.innerHTML = `<div class="chat-empty">Waiting for chat...</div>`;
+    const hint = obsMode
+      ? "Waiting for chat — needs Kick webhooks on na5ty.com"
+      : "Waiting for chat...";
+    listEl.innerHTML = `<div class="chat-empty">${hint}</div>`;
   }
 
   function createMessageElement(message, animate = true) {
@@ -226,7 +229,7 @@ function startChatBoxWidget(options = {}) {
 
   const pollMs = embedMode ? 1500 : obsMode ? 2500 : 5000;
   pollMessages();
-  if (!embedMode) connectEvents();
+  connectEvents();
   schedulePoll(pollMs);
 
   document.addEventListener("visibilitychange", () => {

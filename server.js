@@ -54,6 +54,7 @@ app.set("trust proxy", 1);
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || `${BASE_URL}/webhooks/kick`;
+const DEFAULT_BROADCASTER_ID = String(process.env.DEFAULT_BROADCASTER_ID || "1183030");
 
 function publicBaseUrl(req) {
   const fromEnv = String(process.env.BASE_URL || "").trim().replace(/\/$/, "");
@@ -333,7 +334,7 @@ app.get("/api/dashboard", async (req, res) => {
         controlWidget: `${BASE_URL}/slots/slots-control-panel.html?embed=1`,
       },
       widgetsUrls: {
-        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1`,
+        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
       },
@@ -360,6 +361,7 @@ app.get("/api/dashboard", async (req, res) => {
         scene: `${BASE_URL}/workout/just-chatting.html?obs=1`,
       },
       webhookReady: Boolean(req.session.webhookReady),
+      webhookError: req.session.webhookError || null,
       webhookUrl: WEBHOOK_URL,
       webhookNote:
         WEBHOOK_URL.includes("localhost") || WEBHOOK_URL.includes("127.0.0.1")
@@ -557,7 +559,8 @@ app.get("/api/chat/messages", (req, res) => {
   const broadcasterId =
     req.query.broadcasterId ||
     tokenStore.getPrimaryBroadcasterId() ||
-    workoutState.load().broadcasterUserId;
+    workoutState.load().broadcasterUserId ||
+    DEFAULT_BROADCASTER_ID;
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 25));
 
   if (!broadcasterId) {
@@ -567,6 +570,28 @@ app.get("/api/chat/messages", (req, res) => {
   res.json({
     broadcasterId: String(broadcasterId),
     messages: eventStore.getRecentMessages(broadcasterId, limit),
+  });
+});
+
+app.get("/api/chat/status", (req, res) => {
+  const broadcasterId =
+    req.query.broadcasterId ||
+    tokenStore.getPrimaryBroadcasterId() ||
+    workoutState.load().broadcasterUserId ||
+    DEFAULT_BROADCASTER_ID;
+  const messages = broadcasterId
+    ? eventStore.getRecentMessages(broadcasterId, 1)
+    : [];
+
+  res.json({
+    broadcasterId: broadcasterId ? String(broadcasterId) : null,
+    messageCount: broadcasterId
+      ? eventStore.getChannelData(broadcasterId).stats?.totalMessages ?? 0
+      : 0,
+    hasMessages: messages.length > 0,
+    webhookConfigured: Boolean(process.env.WEBHOOK_URL),
+    webhookUrl: WEBHOOK_URL,
+    liveChatRequiresWebhooks: true,
   });
 });
 

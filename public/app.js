@@ -640,7 +640,7 @@ function renderSlotsTimer(timer) {
   }
 }
 
-function renderWidgets(widgetsUrls, spotify = {}) {
+function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
   const urlsTable = document.getElementById("widgets-urls-table");
   if (urlsTable && widgetsUrls) {
     renderObsUrlTable(urlsTable, [
@@ -648,6 +648,25 @@ function renderWidgets(widgetsUrls, spotify = {}) {
       ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
       ["Now playing — Spotify (OBS)", widgetsUrls.nowPlaying],
     ]);
+  }
+
+  const chatStatusEl = document.getElementById("widgets-chat-status");
+  if (chatStatusEl) {
+    if (webhook.webhookNote) {
+      chatStatusEl.textContent = webhook.webhookNote;
+      chatStatusEl.className = "subtitle err";
+    } else if (webhook.webhookReady === false && webhook.webhookError) {
+      chatStatusEl.textContent = `Webhooks not registered — sign out and sign in again. (${webhook.webhookError})`;
+      chatStatusEl.className = "subtitle err";
+    } else if (webhook.webhookReady) {
+      chatStatusEl.textContent =
+        "Webhooks active. Live Kick chat flows to OBS. Use Send test chat to verify.";
+      chatStatusEl.className = "subtitle ok";
+    } else {
+      chatStatusEl.textContent =
+        "Sign in with Kick on na5ty.com to register webhooks, then chat will sync live.";
+      chatStatusEl.className = "subtitle";
+    }
   }
 
   const statusEl = document.getElementById("spotify-status");
@@ -1625,7 +1644,11 @@ function renderDashboard(data) {
   renderWorkout(data.workout, data.obsUrls);
   renderSlots(data.slots, data.slotsUrls, data.slotsTimer);
   renderDrinking(data.drinking, data.drinkingUrls);
-  renderWidgets(data.widgetsUrls, data.spotify);
+  renderWidgets(data.widgetsUrls, data.spotify, {
+    webhookReady: data.webhookReady,
+    webhookError: data.webhookError,
+    webhookNote: data.webhookNote,
+  });
   renderLighting(data.lighting);
   renderStakeUrls(data.stakeUrls);
   renderCommandsTable(data.bot?.commands || []);
@@ -2326,8 +2349,13 @@ document.getElementById("widgets-test-chat-btn")?.addEventListener("click", asyn
     body: JSON.stringify({ message: "Test message from Widgets tab", username: "TestViewer" }),
   });
   const data = await response.json();
-  if (!response.ok) return showError(data.error || "Chat test failed");
+  if (!response.ok) return showError(data.error || "Chat test failed — sign in with Kick first");
   showError("");
+  const chatStatusEl = document.getElementById("widgets-chat-status");
+  if (chatStatusEl) {
+    chatStatusEl.textContent = "Test message sent — chat box should update in a few seconds.";
+    chatStatusEl.className = "subtitle ok";
+  }
 });
 
 async function postTestAlert(type) {
