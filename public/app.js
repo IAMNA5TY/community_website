@@ -19,6 +19,22 @@ let dashboardData = null;
 let leaderboardPeriod = "week";
 let stakeAffiliatePeriod = "month";
 let currentPage = "overview";
+let dashboardRole = "owner";
+let allowedPages = [
+  "overview",
+  "only-pixels",
+  "workout",
+  "slots",
+  "drinking",
+  "widgets",
+  "lighting",
+  "stake",
+  "bot",
+  "chat",
+  "rewards",
+  "leaderboard",
+  "settings",
+];
 let hueDevicesCache = null;
 let hueDevicesRequestId = 0;
 let goveeDevicesCache = null;
@@ -89,7 +105,30 @@ function renderTable(container, columns, rows, emptyText) {
   `;
 }
 
+function applyNavAccess(me = {}) {
+  dashboardRole = me.role || (me.isOwner ? "owner" : "player");
+  if (Array.isArray(me.allowedPages) && me.allowedPages.length) {
+    allowedPages = me.allowedPages.slice();
+  }
+
+  document.querySelectorAll(".nav-link").forEach((link) => {
+    const page = link.dataset.page;
+    link.classList.toggle("hidden", !allowedPages.includes(page));
+  });
+
+  if (!allowedPages.includes(currentPage)) {
+    currentPage = allowedPages.includes("only-pixels")
+      ? "only-pixels"
+      : allowedPages[0] || "overview";
+  }
+}
+
 function showPage(page) {
+  if (allowedPages.length && !allowedPages.includes(page)) {
+    page = allowedPages.includes("only-pixels")
+      ? "only-pixels"
+      : allowedPages[0] || "overview";
+  }
   currentPage = page;
   document.querySelectorAll(".page-view").forEach((section) => {
     section.classList.toggle("active", section.dataset.page === page);
@@ -181,6 +220,13 @@ function renderStats(data) {
 function renderOverviewQuickLinks(data) {
   const container = document.getElementById("overview-obs-links");
   if (!container) return;
+
+  const isOwner = data.role === "owner" || dashboardRole === "owner";
+  if (!isOwner) {
+    container.innerHTML =
+      '<p class="subtitle">Open the <strong>Only Pixels</strong> tab to register and copy your in-game link code.</p>';
+    return;
+  }
 
   const links = [
     ["Chat box", data.widgetsUrls?.chatBox],
@@ -1687,6 +1733,13 @@ async function refreshStake() {
 function renderDashboard(data) {
   dashboardData = data;
   const profile = data.profile;
+  const isOwner = data.role === "owner" || dashboardRole === "owner";
+
+  applyNavAccess({
+    role: data.role,
+    allowedPages: data.allowedPages,
+    isOwner,
+  });
 
   document.getElementById("display-name").textContent = profile.displayName;
   document.getElementById("channel-meta").textContent = data.channel
@@ -1696,7 +1749,7 @@ function renderDashboard(data) {
   const avatar = document.getElementById("avatar");
   if (profile.profileImage) avatar.src = profile.profileImage;
 
-  if (data.webhookNote) {
+  if (isOwner && data.webhookNote) {
     webhookNotice.textContent = data.webhookNote;
     webhookNotice.classList.remove("hidden");
   } else {
@@ -1707,6 +1760,15 @@ function renderDashboard(data) {
   renderStats(data);
   renderChannelDetails(data.channel);
   renderOverviewQuickLinks(data);
+  refreshOnlyPixels(data);
+
+  if (!isOwner) {
+    loginView.classList.add("hidden");
+    dashboardView.classList.remove("hidden");
+    showPage(currentPage);
+    return;
+  }
+
   renderApiAccess(data);
   renderWorkout(data.workout, data.obsUrls);
   renderSlots(data.slots, data.slotsUrls, data.slotsTimer);
@@ -1727,7 +1789,6 @@ function renderDashboard(data) {
   renderRedemptionsTable("accepted-table", data.redemptions?.accepted || [], "No accepted redemptions.");
   renderSubscriptionsTable(data.eventSubscriptions || []);
   renderLeaderboards(data);
-  refreshOnlyPixels(data);
 
   loginView.classList.add("hidden");
   dashboardView.classList.remove("hidden");
@@ -1761,6 +1822,7 @@ async function loadDashboard() {
     return;
   }
 
+  applyNavAccess(me);
   showDashboardShell(me);
 
   const response = await fetch("/api/dashboard", { credentials: "same-origin" });
@@ -2925,7 +2987,7 @@ if (error) {
 loadDashboard();
 setInterval(loadDashboard, 15000);
 setInterval(() => {
-  if (currentPage === "leaderboard") {
+  if (currentPage === "leaderboard" && allowedPages.includes("leaderboard")) {
     refreshLeaderboards(true);
   }
 }, 60000);

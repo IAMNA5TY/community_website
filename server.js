@@ -53,6 +53,7 @@ const stakeAffiliate = require("./lib/stake-affiliate");
 const signInLog = require("./lib/sign-in-log");
 const kickRewardsStore = require("./lib/kick-rewards-store");
 const { createKickRewardsRouter } = require("./lib/kick-rewards-routes");
+const dashboardAccess = require("./lib/dashboard-access");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -76,7 +77,7 @@ function kickRedirectUri(req) {
 }
 
 function getAllowedBroadcasterIds() {
-  const raw = String(process.env.ALLOWED_BROADCASTER_IDS ?? "1183030").trim();
+  const raw = String(process.env.ALLOWED_BROADCASTER_IDS ?? "*").trim();
   if (!raw || raw === "*") return null;
   return new Set(
     raw
@@ -148,6 +149,17 @@ app.use(
     },
   })
 );
+
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api/")) return next();
+  if (!req.session?.user || req.session.user.provider !== "kick") return next();
+  if (dashboardAccess.isDashboardOwner(req.session.user)) return next();
+
+  const apiPath = req.path.replace(/^\/api/, "") || "/";
+  if (dashboardAccess.isPlayerAllowedApiPath(apiPath)) return next();
+  return res.status(403).json({ error: "Forbidden" });
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", createKickRewardsRouter(config));
 
@@ -359,11 +371,15 @@ app.get("/api/me", (req, res) => {
   }
 
   const { provider, profile, scope } = req.session.user;
+  const role = dashboardAccess.getDashboardRole(req.session.user);
   res.json({
     loggedIn: true,
     provider,
     profile,
     scope,
+    role,
+    allowedPages: dashboardAccess.getAllowedPages(req.session.user),
+    isOwner: role === "owner",
     webhookReady: Boolean(req.session.webhookReady),
     webhookUrl: WEBHOOK_URL,
   });
@@ -380,6 +396,9 @@ app.get("/api/auth/kick-info", (req, res) => {
 app.get("/api/admin/sign-ins", (req, res) => {
   const user = requireKickUser(req, res);
   if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
   res.json({ entries: signInLog.getRecent(50) });
 });
 
@@ -422,7 +441,28 @@ app.get("/api/dashboard", async (req, res) => {
     return res.status(401).json({ error: "Not signed in with Kick" });
   }
 
+  const user = req.session.user;
+  const isOwner = dashboardAccess.isDashboardOwner(user);
+
   try {
+    if (!isOwner) {
+      const dashboard = await kickApi.getDashboard(req, config.kick);
+      const stored = eventStore.getChannelData(user.profile.id);
+
+      return res.json({
+        role: "player",
+        allowedPages: dashboardAccess.getAllowedPages(user),
+        profile: dashboard.profile,
+        channel: dashboard.channel,
+        livestreamStats: dashboard.livestreamStats,
+        chat: stored,
+        webhookReady: false,
+        webhookError: null,
+        webhookUrl: WEBHOOK_URL,
+        webhookNote: null,
+      });
+    }
+
     await setupKickSubscriptions(req);
 
     const dashboard = await kickApi.getDashboard(req, config.kick);
@@ -434,6 +474,8 @@ app.get("/api/dashboard", async (req, res) => {
 
     res.json({
       ...dashboard,
+      role: "owner",
+      allowedPages: dashboardAccess.getAllowedPages(user),
       giftedSubLeaderboard,
       spotify: {
         configured: spotify.isConfigured(),
@@ -1875,6 +1917,9 @@ app.get("/auth/kick/callback", async (req, res) => {
       tokens
     );
 
+    const isOwner = dashboardAccess.isDashboardOwner({ profile: { id: userId } });
+    req.session.dashboardRole = isOwner ? "owner" : "player";
+
     signInLog.recordSignIn({ ...signInEntry, allowed: true });
 
     try {
@@ -1885,21 +1930,23 @@ app.get("/auth/kick/callback", async (req, res) => {
       console.warn("[kick-rewards] register on login:", error.message);
     }
 
-    try {
-      await setupKickSubscriptions(req);
-    } catch (error) {
-      req.session.webhookReady = false;
-      req.session.webhookError = error.message;
+    if (isOwner) {
+      try {
+        await setupKickSubscriptions(req);
+      } catch (error) {
+        req.session.webhookReady = false;
+        req.session.webhookError = error.message;
+      }
+
+      try {
+        workoutState.setBroadcaster(kickUser.user_id);
+        botEngine.refreshTimersForBroadcaster(kickUser.user_id, config.kick);
+      } catch (error) {
+        console.warn("[auth] post-login setup:", error.message);
+      }
     }
 
-    try {
-      workoutState.setBroadcaster(kickUser.user_id);
-      botEngine.refreshTimersForBroadcaster(kickUser.user_id, config.kick);
-    } catch (error) {
-      console.warn("[auth] post-login setup:", error.message);
-    }
-
-    redirectWithSession(req, res, "/");
+    redirectWithSession(req, res, isOwner ? "/" : "/#only-pixels");
   } catch (err) {
     redirectWithSession(req, res, `/?error=${encodeURIComponent(err.message)}`);
   }
