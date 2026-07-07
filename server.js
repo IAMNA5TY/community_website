@@ -137,7 +137,7 @@ app.use(
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production" ? "auto" : false,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   })
@@ -185,12 +185,16 @@ function saveUserSession(req, profile, tokens) {
     scope: tokens.scope || null,
   };
 
-  tokenStore.saveBroadcasterToken(profile.id, {
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token || null,
-    expiresAt: req.session.user.expiresAt,
-    username: profile.username,
-  });
+  try {
+    tokenStore.saveBroadcasterToken(profile.id, {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token || null,
+      expiresAt: req.session.user.expiresAt,
+      username: profile.username,
+    });
+  } catch (error) {
+    console.warn("[auth] token store save failed:", error.message);
+  }
 }
 
 function redirectWithSession(req, res, url) {
@@ -246,10 +250,6 @@ app.get("/api/admin/sign-ins", (req, res) => {
 app.get("/api/dashboard", async (req, res) => {
   if (!req.session.user || req.session.user.provider !== "kick") {
     return res.status(401).json({ error: "Not signed in with Kick" });
-  }
-  if (!isAllowedBroadcaster(req.session.user.profile.id)) {
-    req.session.destroy(() => {});
-    return res.status(403).json({ error: "access_denied" });
   }
 
   try {
@@ -340,11 +340,6 @@ app.get("/api/dashboard", async (req, res) => {
 function requireKickUser(req, res) {
   if (!req.session.user || req.session.user.provider !== "kick") {
     res.status(401).json({ error: "Not signed in with Kick" });
-    return null;
-  }
-  if (!isAllowedBroadcaster(req.session.user.profile.id, req.session.user.profile.username)) {
-    req.session.destroy(() => {});
-    res.status(403).json({ error: "access_denied" });
     return null;
   }
   return req.session.user;
@@ -1436,6 +1431,10 @@ app.get("/auth/kick/callback", async (req, res) => {
       signInLog.recordSignIn({ ...signInEntry, allowed: false });
       return res.redirect("/?error=access_denied");
     }
+
+    await new Promise((resolve, reject) => {
+      req.session.regenerate((err) => (err ? reject(err) : resolve()));
+    });
 
     saveUserSession(
       req,

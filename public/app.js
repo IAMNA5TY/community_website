@@ -1603,12 +1603,32 @@ function showLogin() {
   loginView.classList.remove("hidden");
 }
 
+function showDashboardShell(me) {
+  const profile = me?.profile || {};
+  document.getElementById("display-name").textContent =
+    profile.displayName || profile.username || "Streamer";
+  document.getElementById("channel-meta").textContent = profile.username
+    ? `@${profile.username}`
+    : "";
+  const avatar = document.getElementById("avatar");
+  if (avatar && profile.profileImage) avatar.src = profile.profileImage;
+  loginView.classList.add("hidden");
+  dashboardView.classList.remove("hidden");
+}
+
 async function loadDashboard() {
+  const meResponse = await fetch("/api/me", { credentials: "same-origin" });
+  const me = await meResponse.json().catch(() => ({ loggedIn: false }));
+
+  if (!me.loggedIn) {
+    showLogin();
+    return;
+  }
+
+  showDashboardShell(me);
+
   const response = await fetch("/api/dashboard", { credentials: "same-origin" });
-  if (response.status === 401 || response.status === 403) {
-    if (response.status === 403) {
-      showError("This dashboard is private. Your Kick account is not authorized to sign in.");
-    }
+  if (response.status === 401) {
     showLogin();
     return;
   }
@@ -2655,7 +2675,8 @@ if (error) {
     kick_not_configured: "Kick is not configured.",
     invalid_state: "Login session expired. Please try again.",
     invalid_spotify_state: "Spotify login expired. Click Connect Spotify again.",
-    invalid redirect uri: "Kick redirect URI mismatch. Add the URL shown below in Kick Developer settings, then try again.",
+    "invalid redirect uri":
+      "Kick redirect URI mismatch. Add the URL shown below in Kick Developer settings, then try again.",
     access_denied: "This dashboard is private. Your Kick account is not authorized to sign in.",
   };
   showError(friendly[error] || decodeURIComponent(error));
