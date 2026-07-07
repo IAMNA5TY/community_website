@@ -665,28 +665,28 @@ async function refreshWidgetsChatStatus(chatStatusEl, webhook = {}) {
       return;
     }
 
-    if (hookStatus?.chatWebhookActive) {
+    if (health?.chatWebhookActive) {
       chatStatusEl.textContent =
-        "Kick chat webhook is active. Type in chat or click Send test chat.";
+        "Kick chat webhook is active. Click Send test chat or type in Kick chat.";
       chatStatusEl.className = "subtitle ok";
       return;
     }
 
-    if (hookStatus?.webhookError) {
-      chatStatusEl.textContent = `Webhook setup failed: ${hookStatus.webhookError}. Sign out and sign in again.`;
+    if (health?.subscriptionError) {
+      chatStatusEl.textContent = `Webhook check failed: ${health.subscriptionError}`;
       chatStatusEl.className = "subtitle err";
       return;
     }
 
     if (!health?.kickSignedInOnServer) {
       chatStatusEl.textContent =
-        "Sign in with Kick on na5ty.com first — then click Send test chat.";
+        "Sign in with Kick on na5ty.com, then click Register webhooks.";
       chatStatusEl.className = "subtitle err";
       return;
     }
 
     chatStatusEl.textContent =
-      "Signed in but no chat yet. In Kick Developer, set Webhook URL to https://na5ty.com/webhooks/kick then sign in again.";
+      "Webhook URL saved in Kick — now click Register webhooks, then Send test chat.";
     chatStatusEl.className = "subtitle";
   } catch {
     chatStatusEl.textContent =
@@ -2380,6 +2380,32 @@ document.getElementById("spotify-sync-calibrate-btn")?.addEventListener("click",
   if (dashboardData?.lighting?.sync) {
     dashboardData.lighting.sync.runtime = data.runtime;
     renderSpotifySync(dashboardData.lighting.sync, dashboardData.lighting.hue);
+  }
+});
+
+document.getElementById("widgets-register-webhooks-btn")?.addEventListener("click", async () => {
+  const chatStatusEl = document.getElementById("widgets-chat-status");
+  if (chatStatusEl) {
+    chatStatusEl.textContent = "Registering webhooks with Kick...";
+    chatStatusEl.className = "subtitle";
+  }
+
+  const response = await fetch("/api/webhooks/reregister", { method: "POST" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (chatStatusEl) {
+      chatStatusEl.textContent = data.error || data.webhookError || "Register failed — sign in with Kick first";
+      chatStatusEl.className = "subtitle err";
+    }
+    return showError(data.error || data.webhookError || "Webhook register failed");
+  }
+
+  showError("");
+  if (chatStatusEl) {
+    chatStatusEl.textContent = data.chatWebhookActive
+      ? "Webhooks registered — click Send test chat."
+      : `Registered but chat webhook missing. ${data.webhookError || ""}`.trim();
+    chatStatusEl.className = data.chatWebhookActive ? "subtitle ok" : "subtitle err";
   }
 });
 

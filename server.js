@@ -210,11 +210,16 @@ function redirectWithSession(req, res, url) {
 async function setupKickSubscriptions(req) {
   try {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
-    await kickApi.subscribeToChannelEvents(accessToken);
+    await kickApi.subscribeToChannelEvents(
+      accessToken,
+      req.session.user.profile.id
+    );
     req.session.webhookReady = true;
+    req.session.webhookError = null;
   } catch (error) {
     req.session.webhookReady = false;
     req.session.webhookError = error.message;
+    console.warn("[webhooks] subscribe failed:", error.message);
   }
 }
 
@@ -288,6 +293,10 @@ app.get("/api/dashboard", async (req, res) => {
   }
 
   try {
+    if (!req.session.webhookReady) {
+      await setupKickSubscriptions(req);
+    }
+
     const dashboard = await kickApi.getDashboard(req, config.kick);
     const stored = eventStore.getChannelData(req.session.user.profile.id);
     const giftedSubLeaderboard = await giftedSubLeaderboardApi.getGiftedSubLeaderboard(
@@ -599,25 +608,72 @@ app.get("/api/chat/status", (req, res) => {
   });
 });
 
-app.get("/api/webhooks/health", (req, res) => {
+app.get("/api/webhooks/health", async (req, res) => {
   const broadcasterId = DEFAULT_BROADCASTER_ID;
   const token = tokenStore.getBroadcasterToken(broadcasterId);
   const messageCount =
     eventStore.getChannelData(broadcasterId).stats?.totalMessages ?? 0;
+
+  let subscribedEvents = [];
+  let chatWebhookActive = false;
+  let subscriptionError = null;
+
+  if (token?.accessToken) {
+    try {
+      const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
+        broadcasterId,
+        config.kick
+      );
+      const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
+      subscribedEvents = subs.map((sub) => sub.event);
+      chatWebhookActive = subscribedEvents.includes("chat.message.sent");
+    } catch (error) {
+      subscriptionError = error.message;
+    }
+  }
 
   res.json({
     ok: true,
     webhookUrl: WEBHOOK_URL,
     kickSignedInOnServer: Boolean(token?.accessToken),
     messageCount,
+    subscribedEvents,
+    chatWebhookActive,
+    subscriptionError,
     setup: [
       "Kick Developer → Webhooks → URL must be https://na5ty.com/webhooks/kick",
-      "Railway → WEBHOOK_URL=https://na5ty.com/webhooks/kick",
-      "Sign in at https://na5ty.com (registers chat.message.sent with Kick)",
-      "Widgets tab → Send test chat (proves OBS + dashboard without going live)",
-      "Live chat fills in when viewers type in your Kick chat",
+      "Sign out and sign in at na5ty.com after saving the webhook URL",
+      "Widgets → Register webhooks, then Send test chat",
+      "Live chat works when viewers type in Kick chat",
     ],
   });
+});
+
+app.post("/api/webhooks/reregister", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  await setupKickSubscriptions(req);
+
+  try {
+    const accessToken = await kickApi.ensureAccessToken(req, config.kick);
+    const subs = await kickApi.getEventSubscriptions(accessToken, user.profile.id);
+    const events = subs.map((sub) => sub.event);
+
+    res.json({
+      ok: Boolean(req.session.webhookReady),
+      webhookReady: Boolean(req.session.webhookReady),
+      webhookError: req.session.webhookError || null,
+      subscribedEvents: events,
+      chatWebhookActive: events.includes("chat.message.sent"),
+    });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      webhookReady: false,
+      webhookError: error.message,
+    });
+  }
 });
 
 app.get("/api/webhooks/status", async (req, res) => {

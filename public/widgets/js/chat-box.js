@@ -97,9 +97,7 @@ function startChatBoxWidget(options = {}) {
 
   function showEmpty() {
     if (listEl.querySelector(".chat-empty")) return;
-    const hint = obsMode
-      ? "Waiting for chat — needs Kick webhooks on na5ty.com"
-      : "Waiting for chat...";
+    const hint = "No messages yet — na5ty.com → Widgets → Send test chat";
     listEl.innerHTML = `<div class="chat-empty">${hint}</div>`;
   }
 
