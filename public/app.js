@@ -110,6 +110,9 @@ function showPage(page) {
   if (page === "leaderboard") {
     refreshLeaderboards(true);
   }
+  if (page === "only-pixels") {
+    refreshOnlyPixels(dashboardData);
+  }
 }
 
 function renderStreamHero(data) {
@@ -182,13 +185,18 @@ function renderOverviewQuickLinks(data) {
   const links = [
     ["Chat box", data.widgetsUrls?.chatBox],
     ["Stream alerts", data.widgetsUrls?.streamAlerts],
-    ["Kick City rewards", "/kick-city.html"],
     ["Slots timer", data.slotsUrls?.timer],
     ["Slots widget", data.slotsUrls?.widget],
     ["Now playing", data.widgetsUrls?.nowPlaying],
   ];
 
   renderObsUrlTable(container, links);
+  container.insertAdjacentHTML(
+    "beforeend",
+    `<p class="subtitle" style="margin-top:12px;">
+      <button type="button" class="btn btn-kick btn-compact" data-goto-page="only-pixels">Only Pixels — register &amp; link code</button>
+    </p>`
+  );
 }
 
 function renderChannelDetails(channel) {
@@ -1719,6 +1727,7 @@ function renderDashboard(data) {
   renderRedemptionsTable("accepted-table", data.redemptions?.accepted || [], "No accepted redemptions.");
   renderSubscriptionsTable(data.eventSubscriptions || []);
   renderLeaderboards(data);
+  refreshOnlyPixels(data);
 
   loginView.classList.add("hidden");
   dashboardView.classList.remove("hidden");
@@ -1770,6 +1779,13 @@ async function loadDashboard() {
 }
 
 document.addEventListener("click", (event) => {
+  const onlyPixelsLink = event.target.closest("[data-goto-page='only-pixels']");
+  if (onlyPixelsLink) {
+    event.preventDefault();
+    showPage("only-pixels");
+    return;
+  }
+
   const button = event.target.closest(".copy-url-btn");
   if (button) {
     const url = button.dataset.url || "";
@@ -2933,3 +2949,170 @@ async function loadKickRedirectHint() {
 }
 
 loadKickRedirectHint();
+
+const onlyPixelsState = { currentUsername: "", bound: false };
+
+function setOnlyPixelsLinkCode(code) {
+  const box = document.getElementById("only-pixels-code-box");
+  const value = document.getElementById("only-pixels-code-value");
+  if (!box || !value) return;
+  value.textContent = code || "------";
+  box.hidden = !code;
+}
+
+function setOnlyPixelsStatus(message, type = "") {
+  const el = document.getElementById("only-pixels-register-status");
+  if (!el) return;
+  el.textContent = message || "";
+  el.className = `only-pixels-note${type ? ` ${type}` : ""}`;
+}
+
+async function registerOnlyPixelsUsername(kickUsername) {
+  const response = await fetch("/api/rewards/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kickUsername }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Register failed");
+  return data;
+}
+
+function renderOnlyPixelsStats(streamers) {
+  const panel = document.getElementById("only-pixels-stats");
+  if (!panel) return;
+
+  const entries = Object.entries(streamers || {});
+  if (!entries.length) {
+    panel.innerHTML =
+      "<p class=\"subtitle\">No chat data yet — register, link in-game, then chat on Kick.</p>";
+    return;
+  }
+
+  panel.innerHTML = entries
+    .map(([slug, row]) => {
+      const keywords = Object.entries(row.keywords_24h || {})
+        .map(([key, count]) => `${key}: ${count}`)
+        .join(", ");
+      return `
+        <div class="only-pixels-stat">
+          <div>
+            <strong>${escapeHtml(slug)}</strong>
+            <div class="only-pixels-stat-meta">${escapeHtml(keywords || "No keywords yet")}</div>
+          </div>
+          <div style="text-align:right;">
+            <div>${escapeHtml(String(row.message_count_24h || 0))} msgs (24h)</div>
+            <div class="only-pixels-stat-meta">${escapeHtml(String(row.gift_kicks_all_time || 0))} KICKS gifted</div>
+          </div>
+        </div>`;
+    })
+    .join("");
+}
+
+async function loadOnlyPixelsRegistration(username) {
+  if (!username) return;
+  try {
+    const response = await fetch(`/api/rewards/register/${encodeURIComponent(username)}`);
+    if (!response.ok) return;
+    const data = await response.json();
+    onlyPixelsState.currentUsername = data.registration?.kickUsername || username;
+    setOnlyPixelsLinkCode(data.registration?.linkCode);
+    setOnlyPixelsStatus(
+      `Registered as ${onlyPixelsState.currentUsername}. Copy your link code for in-game.`,
+      "ok"
+    );
+  } catch {
+    // ignore
+  }
+}
+
+function bindOnlyPixelsEvents() {
+  if (onlyPixelsState.bound) return;
+  onlyPixelsState.bound = true;
+
+  document.getElementById("only-pixels-register-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = document.getElementById("only-pixels-username");
+    const kickUsername = input?.value?.trim();
+    if (!kickUsername) return;
+
+    setOnlyPixelsStatus("Registering...");
+    try {
+      const data = await registerOnlyPixelsUsername(kickUsername);
+      onlyPixelsState.currentUsername = data.registration.kickUsername;
+      setOnlyPixelsStatus(
+        `Registered as ${onlyPixelsState.currentUsername}. Use the link code below in the Kick Menu.`,
+        "ok"
+      );
+      const lookup = document.getElementById("only-pixels-lookup-username");
+      if (lookup) lookup.value = onlyPixelsState.currentUsername;
+      setOnlyPixelsLinkCode(data.linkCode || data.registration?.linkCode);
+    } catch (error) {
+      setOnlyPixelsStatus(error.message, "err");
+    }
+  });
+
+  document.getElementById("only-pixels-copy-code")?.addEventListener("click", async () => {
+    const code = document.getElementById("only-pixels-code-value")?.textContent?.trim();
+    if (!code || code === "------") return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setOnlyPixelsStatus("Link code copied.", "ok");
+    } catch {
+      setOnlyPixelsStatus("Could not copy — select the code manually.", "err");
+    }
+  });
+
+  document.getElementById("only-pixels-refresh-code")?.addEventListener("click", async () => {
+    const username =
+      onlyPixelsState.currentUsername ||
+      document.getElementById("only-pixels-username")?.value?.trim();
+    if (!username) return;
+    setOnlyPixelsStatus("Refreshing link code...");
+    try {
+      const data = await registerOnlyPixelsUsername(username);
+      setOnlyPixelsLinkCode(data.linkCode || data.registration?.linkCode);
+      setOnlyPixelsStatus("Link code refreshed.", "ok");
+    } catch (error) {
+      setOnlyPixelsStatus(error.message, "err");
+    }
+  });
+
+  document.getElementById("only-pixels-lookup-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const kickUsername = document.getElementById("only-pixels-lookup-username")?.value?.trim();
+    const panel = document.getElementById("only-pixels-stats");
+    if (!kickUsername || !panel) return;
+    panel.innerHTML = "<p class=\"subtitle\">Loading...</p>";
+    try {
+      const response = await fetch(`/api/rewards/summary/${encodeURIComponent(kickUsername)}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Lookup failed");
+      renderOnlyPixelsStats(data.streamers);
+    } catch (error) {
+      panel.innerHTML = `<p class="only-pixels-note err">${escapeHtml(error.message)}</p>`;
+    }
+  });
+}
+
+function refreshOnlyPixels(dashboard) {
+  bindOnlyPixelsEvents();
+  const profile = dashboard?.profile;
+  const usernameInput = document.getElementById("only-pixels-username");
+  const lookupInput = document.getElementById("only-pixels-lookup-username");
+  const kickName = profile?.username || "";
+
+  if (kickName && usernameInput && !usernameInput.value) {
+    usernameInput.value = kickName;
+  }
+  if (kickName && lookupInput && !lookupInput.value) {
+    lookupInput.value = kickName;
+  }
+  if (kickName) {
+    loadOnlyPixelsRegistration(kickName);
+  }
+}
+
+if (location.hash === "#only-pixels") {
+  currentPage = "only-pixels";
+}
