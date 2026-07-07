@@ -856,6 +856,13 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   gap: 4px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .tab-row { display: flex; gap: 8px; }
 
 .tab {

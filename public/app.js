@@ -103,6 +103,9 @@ function showPage(page) {
   if (page === "settings") {
     refreshSignInLog();
   }
+  if (page === "leaderboard") {
+    refreshLeaderboards(true);
+  }
 }
 
 function renderStreamHero(data) {
@@ -513,7 +516,17 @@ function renderSubscriptionsTable(subscriptions) {
   );
 }
 
-function renderLeaderboardTable(entries) {
+function renderLeaderboardTable(entries, meta = {}) {
+  const subtitle = document
+    .getElementById("leaderboard-table")
+    ?.closest(".card")
+    ?.querySelector(".subtitle");
+  if (subtitle) {
+    subtitle.textContent = meta.error
+      ? `Could not load KICKs leaderboard (${meta.error})`
+      : "Top KICKs gifters on your channel";
+  }
+
   renderTable(
     document.getElementById("leaderboard-table"),
     [
@@ -530,12 +543,15 @@ function renderLeaderboardTable(entries) {
 function renderGiftedSubLeaderboardTable(entries, meta = {}) {
   const noteEl = document.getElementById("gifted-sub-leaderboard-note");
   if (noteEl) {
-    noteEl.textContent =
-      meta.source === "kick.com"
-        ? "Top gifted subscription supporters — same data as Kick’s channel leaderboard"
-        : meta.error
-          ? `Could not load from Kick (${meta.error})`
-          : "Top gifted subscription supporters";
+    if (meta.source === "kick.com" && !meta.error) {
+      noteEl.textContent = meta.stale
+        ? "Showing cached gifted sub data — live refresh failed, retrying soon"
+        : "Top gifted subscription supporters — same data as Kick’s channel leaderboard";
+    } else if (meta.error) {
+      noteEl.textContent = `Could not load from Kick (${meta.error})`;
+    } else {
+      noteEl.textContent = "Top gifted subscription supporters";
+    }
   }
 
   renderTable(
@@ -553,11 +569,40 @@ function renderGiftedSubLeaderboardTable(entries, meta = {}) {
 
 function renderLeaderboards(data) {
   const period = leaderboardPeriod;
-  renderLeaderboardTable(data.leaderboard?.[period] || []);
+  renderLeaderboardTable(data.leaderboard?.[period] || [], { error: data.leaderboard?.error });
   renderGiftedSubLeaderboardTable(data.giftedSubLeaderboard?.[period] || [], {
     source: data.giftedSubLeaderboard?.source,
     error: data.giftedSubLeaderboard?.error,
+    stale: data.giftedSubLeaderboard?.stale,
   });
+
+  const updatedEl = document.getElementById("leaderboard-updated-at");
+  if (updatedEl) {
+    const stamp =
+      data.giftedSubLeaderboard?.updatedAt || data.leaderboardUpdatedAt || null;
+    updatedEl.textContent = stamp
+      ? `Last updated ${new Date(stamp).toLocaleString()}`
+      : "";
+  }
+}
+
+async function refreshLeaderboards(force = false) {
+  const response = await fetch(`/api/leaderboards${force ? "?refresh=1" : ""}`, {
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    showError(error.error || "Failed to refresh leaderboards");
+    return;
+  }
+
+  const payload = await response.json();
+  dashboardData = dashboardData || {};
+  dashboardData.leaderboard = payload.leaderboard;
+  dashboardData.giftedSubLeaderboard = payload.giftedSubLeaderboard;
+  dashboardData.leaderboardUpdatedAt = payload.updatedAt;
+  renderLeaderboards(dashboardData);
+  showError("");
 }
 
 function formatSlotsTimer(seconds) {
@@ -1683,6 +1728,10 @@ leaderboardTabs.addEventListener("click", (event) => {
   renderLeaderboards(dashboardData);
 });
 
+document.getElementById("leaderboard-refresh-btn")?.addEventListener("click", () => {
+  refreshLeaderboards(true);
+});
+
 commandForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(commandForm);
@@ -2693,6 +2742,11 @@ if (error) {
 
 loadDashboard();
 setInterval(loadDashboard, 15000);
+setInterval(() => {
+  if (currentPage === "leaderboard") {
+    refreshLeaderboards(true);
+  }
+}, 60000);
 
 async function loadKickRedirectHint() {
   const hint = document.getElementById("kick-redirect-hint");

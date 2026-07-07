@@ -247,6 +247,40 @@ app.get("/api/admin/sign-ins", (req, res) => {
   res.json({ entries: signInLog.getRecent(50) });
 });
 
+app.get("/api/leaderboards", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    const accessToken = await kickApi.ensureAccessToken(req, config.kick);
+    const channel = await kickApi.getChannel(accessToken).catch(() => null);
+    const slug =
+      channel?.slug ||
+      user.profile?.username?.toLowerCase?.() ||
+      String(user.profile?.username || "").toLowerCase();
+    const force = req.query.refresh === "1" || req.query.refresh === "true";
+
+    const [kicksLeaderboard, giftedSubLeaderboard] = await Promise.all([
+      kickApi.getLeaderboard(accessToken, 25).catch((error) => ({
+        week: [],
+        month: [],
+        lifetime: [],
+        error: error.message,
+      })),
+      giftedSubLeaderboardApi.getGiftedSubLeaderboard(slug, 25, { force }),
+    ]);
+
+    res.json({
+      slug,
+      leaderboard: kicksLeaderboard,
+      giftedSubLeaderboard,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/dashboard", async (req, res) => {
   if (!req.session.user || req.session.user.provider !== "kick") {
     return res.status(401).json({ error: "Not signed in with Kick" });
@@ -1521,6 +1555,11 @@ app.post("/webhooks/kick", (req, res) => {
         console.log(
           `Sub webhook: ${eventType} ×${quantity} (${gifter}) giftees=${gifteeCount}`
         );
+        const slug =
+          payload.channel?.slug ||
+          payload.broadcaster?.channel_slug ||
+          payload.broadcaster?.username;
+        giftedSubLeaderboardApi.clearCache(slug);
       } else {
         console.log(`Sub webhook: ${eventType} ×${quantity} (${gifter})`);
       }
@@ -1534,6 +1573,13 @@ app.post("/webhooks/kick", (req, res) => {
       console.log(
         `Alert webhook: ${eventType} (${alert.username})`
       );
+    }
+    if (eventType === "kicks.gifted") {
+      const slug =
+        payload.channel?.slug ||
+        payload.broadcaster?.channel_slug ||
+        payload.broadcaster?.username;
+      giftedSubLeaderboardApi.clearCache(slug);
     }
   }
 

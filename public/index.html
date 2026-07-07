@@ -743,12 +743,18 @@
             <header class="page-header">
               <h1>Leaderboards</h1>
               <p class="subtitle">KICKs and gifted subs — synced from Kick (week / month / lifetime)</p>
-              <div class="tab-row" id="leaderboard-tabs">
-                <button class="tab active" data-period="week" type="button">Week</button>
-                <button class="tab" data-period="month" type="button">Month</button>
-                <button class="tab" data-period="lifetime" type="button">Lifetime</button>
+              <div class="header-actions">
+                <button class="btn btn-secondary btn-compact" id="leaderboard-refresh-btn" type="button">
+                  Refresh
+                </button>
+                <div class="tab-row" id="leaderboard-tabs">
+                  <button class="tab active" data-period="week" type="button">Week</button>
+                  <button class="tab" data-period="month" type="button">Month</button>
+                  <button class="tab" data-period="lifetime" type="button">Lifetime</button>
+                </div>
               </div>
             </header>
+            <p class="subtitle" id="leaderboard-updated-at" style="margin:0;"></p>
             <div class="card panel">
               <h2>KICKs leaderboard</h2>
               <p class="subtitle">Top KICKs gifters on your channel</p>
@@ -786,6 +792,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=36"></script>
+    <script src="/app.js?v=37"></script>
   </body>
 </html>
