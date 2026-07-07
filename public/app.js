@@ -3017,10 +3017,17 @@ async function loadOnlyPixelsRegistration(username) {
     const data = await response.json();
     onlyPixelsState.currentUsername = data.registration?.kickUsername || username;
     setOnlyPixelsLinkCode(data.registration?.linkCode);
-    setOnlyPixelsStatus(
-      `Registered as ${onlyPixelsState.currentUsername}. Copy your link code for in-game.`,
-      "ok"
-    );
+    if (data.registration?.gameLicense) {
+      setOnlyPixelsStatus(
+        `Registered as ${onlyPixelsState.currentUsername}. In-game account already linked — open /kickmenu to confirm.`,
+        "ok"
+      );
+    } else {
+      setOnlyPixelsStatus(
+        `Registered as ${onlyPixelsState.currentUsername}. Copy your link code if you still need to link in FiveM.`,
+        "ok"
+      );
+    }
   } catch {
     // ignore
   }
@@ -3040,8 +3047,11 @@ function bindOnlyPixelsEvents() {
     try {
       const data = await registerOnlyPixelsUsername(kickUsername);
       onlyPixelsState.currentUsername = data.registration.kickUsername;
+      const linked = Boolean(data.registration?.gameLicense);
       setOnlyPixelsStatus(
-        `Registered as ${onlyPixelsState.currentUsername}. Use the link code below in the Kick Menu.`,
+        linked
+          ? `Registered as ${onlyPixelsState.currentUsername}. In-game is already linked.`
+          : `Registered as ${onlyPixelsState.currentUsername}. Use the link code below in the Kick Menu.`,
         "ok"
       );
       const lookup = document.getElementById("only-pixels-lookup-username");
