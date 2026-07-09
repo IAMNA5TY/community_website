@@ -16,6 +16,8 @@ const testBotBtn = document.getElementById("test-bot-btn");
 const leaderboardTabs = document.getElementById("leaderboard-tabs");
 
 let dashboardData = null;
+let sessionProfile = null;
+let sessionRole = "player";
 let leaderboardPeriod = "week";
 let stakeAffiliatePeriod = "month";
 let currentPage = "overview";
@@ -1796,6 +1798,10 @@ function renderDashboard(data) {
 }
 
 function showLogin() {
+  sessionProfile = null;
+  sessionRole = "player";
+  onlyPixelsState.signedIn = false;
+  onlyPixelsState.currentUsername = "";
   dashboardView.classList.add("hidden");
   loginView.classList.remove("hidden");
 }
@@ -1823,14 +1829,16 @@ async function loadDashboard() {
   }
 
   applyNavAccess(me);
+  sessionProfile = me.profile || null;
+  sessionRole = me.role || (me.isOwner ? "owner" : "player");
   showDashboardShell(me);
-  if (me.kickRewards) {
-    dashboardData = dashboardData || {};
-    dashboardData.kickRewards = me.kickRewards;
-    dashboardData.profile = me.profile;
-    dashboardData.role = me.role;
-    refreshOnlyPixels(dashboardData);
-  }
+
+  dashboardData = dashboardData || {};
+  dashboardData.profile = me.profile;
+  dashboardData.role = sessionRole;
+  if (me.kickRewards) dashboardData.kickRewards = me.kickRewards;
+  refreshOnlyPixels(dashboardData);
+  showPage(currentPage);
 
   const response = await fetch("/api/dashboard", { credentials: "same-origin" });
   if (response.status === 401) {
@@ -3019,7 +3027,7 @@ async function loadKickRedirectHint() {
 
 loadKickRedirectHint();
 
-const onlyPixelsState = { currentUsername: "", bound: false };
+const onlyPixelsState = { currentUsername: "", signedIn: false, bound: false };
 
 function setOnlyPixelsLinkCode(code) {
   const box = document.getElementById("only-pixels-code-box");
@@ -3067,11 +3075,16 @@ function setOnlyPixelsSignedInLabel(username, role) {
   el.innerHTML = `Signed in as <strong>@${escapeHtml(username)}</strong>${role === "owner" ? " · broadcaster" : ""}`;
 }
 
-function renderOnlyPixelsPointsHero(summary) {
+function renderOnlyPixelsPointsHero(summary, { signedInUsername } = {}) {
   const hero = document.getElementById("only-pixels-points-hero");
   if (!hero) return;
 
   if (!summary) {
+    const username = signedInUsername || onlyPixelsState.currentUsername || "";
+    if (username) {
+      hero.innerHTML = `<p class="subtitle">Loading Kick Points for <strong>@${escapeHtml(username)}</strong>...</p>`;
+      return;
+    }
     hero.innerHTML = '<p class="subtitle">Sign in with Kick above to see your points.</p>';
     return;
   }
@@ -3174,18 +3187,15 @@ function renderOnlyPixelsStats(streamers) {
 
 async function loadOnlyPixelsStats(kickUsername, { quiet = false } = {}) {
   const panel = document.getElementById("only-pixels-stats");
-  const hero = document.getElementById("only-pixels-points-hero");
   if (!kickUsername) {
     renderOnlyPixelsPointsHero(null);
     if (panel) panel.innerHTML = "";
     return null;
   }
 
+  renderOnlyPixelsPointsHero(null, { signedInUsername: kickUsername });
   if (!quiet && panel) {
     panel.innerHTML = '<p class="subtitle">Loading...</p>';
-  }
-  if (!quiet && hero) {
-    hero.innerHTML = '<p class="subtitle">Loading your points...</p>';
   }
 
   const response = await fetch(`/api/rewards/summary/${encodeURIComponent(kickUsername)}`);
@@ -3312,8 +3322,8 @@ function bindOnlyPixelsEvents() {
 
 function refreshOnlyPixels(dashboard) {
   bindOnlyPixelsEvents();
-  const profile = dashboard?.profile;
-  const role = dashboard?.role || dashboardRole || "player";
+  const profile = dashboard?.profile || sessionProfile;
+  const role = dashboard?.role || sessionRole || dashboardRole || "player";
   const isOwner = role === "owner";
   const usernameInput = document.getElementById("only-pixels-username");
   const lookupInput = document.getElementById("only-pixels-lookup-username");
@@ -3326,16 +3336,19 @@ function refreshOnlyPixels(dashboard) {
 
   if (kickName) {
     onlyPixelsState.currentUsername = kickName;
+    onlyPixelsState.signedIn = true;
     setOnlyPixelsSignedInLabel(kickName, role);
     if (usernameInput) usernameInput.value = kickName;
     if (lookupInput) lookupInput.value = kickName;
-  } else {
+  } else if (!onlyPixelsState.signedIn) {
     setOnlyPixelsSignedInLabel("", role);
+    renderOnlyPixelsPointsHero(null);
   }
 
   if (dashboard?.kickRewards) {
     applyOnlyPixelsSummary(dashboard.kickRewards);
   } else if (kickName) {
+    renderOnlyPixelsPointsHero(null, { signedInUsername: kickName });
     loadOnlyPixelsStats(kickName, { quiet: true }).catch((error) => {
       const panel = document.getElementById("only-pixels-stats");
       if (panel) {

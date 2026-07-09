@@ -394,10 +394,9 @@ app.get("/api/me", (req, res) => {
   const { provider, profile, scope } = req.session.user;
   const role = dashboardAccess.getDashboardRole(req.session.user);
   const kickUsername = profile?.username || "";
-  const kickRewards =
-    kickUsername && role !== "owner"
-      ? kickRewardsStore.getRewardsSummary(kickUsername)
-      : null;
+  const kickRewards = kickUsername
+    ? kickRewardsStore.getRewardsSummary(kickUsername)
+    : null;
   res.json({
     loggedIn: true,
     provider,
@@ -507,10 +506,20 @@ app.get("/api/dashboard", async (req, res) => {
       dashboard.channel?.slug,
       25
     );
+    const kickUsername =
+      user.profile?.username || dashboard.profile?.username || "";
+    const kickRewards = kickUsername
+      ? kickRewardsStore.getRewardsSummary(kickUsername)
+      : null;
+    const registration = kickUsername
+      ? kickRewardsStore.getRegistration(kickUsername)
+      : null;
 
     res.json({
       ...dashboard,
       role: "owner",
+      kickRewards,
+      registration,
       allowedPages: dashboardAccess.getAllowedPages(user),
       giftedSubLeaderboard,
       spotify: {
