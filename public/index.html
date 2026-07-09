@@ -181,12 +181,22 @@
               </div>
             </div>
 
-            <div class="card panel">
-              <h2>Your chat stats</h2>
-              <p class="subtitle">Message counts from the last 24 hours (updates when you chat on Kick).</p>
+            <div class="card panel only-pixels-points">
+              <div class="only-pixels-points-head">
+                <div>
+                  <h2>Your Kick Points</h2>
+                  <p class="subtitle">Channels where you have points — and the chat commands to use in each streamer&apos;s Kick chat (whole message, one word).</p>
+                </div>
+                <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-refresh-stats">
+                  Refresh
+                </button>
+              </div>
+              <div class="only-pixels-points-hero" id="only-pixels-points-hero">
+                <p class="subtitle">Sign in or register above to see your points.</p>
+              </div>
               <form class="only-pixels-form" id="only-pixels-lookup-form">
                 <input id="only-pixels-lookup-username" placeholder="Kick username" required />
-                <button class="btn btn-secondary" type="submit">Check stats</button>
+                <button class="btn btn-secondary" type="submit">Check another user</button>
               </form>
               <div class="only-pixels-stats" id="only-pixels-stats"></div>
             </div>

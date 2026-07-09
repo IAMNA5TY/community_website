@@ -3040,35 +3040,135 @@ async function registerOnlyPixelsUsername(kickUsername) {
   return data;
 }
 
+function renderOnlyPixelsPointsHero(summary) {
+  const hero = document.getElementById("only-pixels-points-hero");
+  if (!hero) return;
+
+  if (!summary) {
+    hero.innerHTML = '<p class="subtitle">Sign in or register above to see your points.</p>';
+    return;
+  }
+
+  const total = Number(summary.total_messages_24h || 0);
+  const channels = Number(summary.active_channels || 0);
+  const username = summary.kickUsername || "";
+  hero.innerHTML = `
+    <div class="only-pixels-points-total">${escapeHtml(String(total))}</div>
+    <div class="only-pixels-points-label">
+      Kick Points (24h) for <strong>@${escapeHtml(username)}</strong>
+      ${channels > 0 ? ` · active in ${channels} channel${channels === 1 ? "" : "s"}` : " · chat on a partnered streamer to earn"}
+    </div>`;
+}
+
+function renderOnlyPixelsCommandGroups(commands) {
+  const list = Array.isArray(commands) ? commands : [];
+  if (!list.length) {
+    return '<p class="only-pixels-stat-meta">No commands configured for this channel.</p>';
+  }
+
+  const groups = new Map();
+  for (const cmd of list) {
+    const key = cmd.group || "other";
+    if (!groups.has(key)) {
+      groups.set(key, { label: cmd.groupLabel || key, items: [] });
+    }
+    groups.get(key).items.push(cmd);
+  }
+
+  return [...groups.values()]
+    .map((group) => {
+      const chips = group.items
+        .map(
+          (cmd) => `
+            <span class="only-pixels-cmd" title="${escapeHtml(cmd.description || "")}">
+              <code>${escapeHtml(cmd.chat)}</code>
+              <span class="only-pixels-cmd-desc">${escapeHtml(cmd.description || "")}</span>
+            </span>`
+        )
+        .join("");
+      return `
+        <div class="only-pixels-cmd-group">
+          <div class="only-pixels-cmd-label">${escapeHtml(group.label)}</div>
+          <div class="only-pixels-cmd-list">${chips}</div>
+        </div>`;
+    })
+    .join("");
+}
+
+function renderOnlyPixelsKeywordUsage(usage) {
+  const rows = Array.isArray(usage) ? usage : [];
+  if (!rows.length) {
+    return '<span class="only-pixels-stat-meta">No command keywords used yet — regular chat still earns points.</span>';
+  }
+  return rows
+    .map((row) => `<span class="only-pixels-used-chip"><code>${escapeHtml(row.chat)}</code> ×${escapeHtml(String(row.count))}</span>`)
+    .join("");
+}
+
 function renderOnlyPixelsStats(streamers) {
   const panel = document.getElementById("only-pixels-stats");
   if (!panel) return;
 
-  const entries = Object.entries(streamers || {});
+  const entries = Object.entries(streamers || {}).sort(
+    (a, b) => Number(b[1]?.message_count_24h || 0) - Number(a[1]?.message_count_24h || 0)
+  );
+
   if (!entries.length) {
     panel.innerHTML =
-      "<p class=\"subtitle\">No chat data yet — register, link in-game, then chat on Kick.</p>";
+      '<p class="subtitle">No points yet — chat in a partnered Kick channel, then hit Refresh.</p>';
     return;
   }
 
   panel.innerHTML = entries
     .map(([slug, row]) => {
-      const keywords = Object.entries(row.keywords_24h || {})
-        .map(([key, count]) => `${key}: ${count}`)
-        .join(", ");
+      const msgs = Number(row.message_count_24h || 0);
+      const gifts = Number(row.gift_kicks_all_time || 0);
       return `
-        <div class="only-pixels-stat">
-          <div>
-            <strong>${escapeHtml(slug)}</strong>
-            <div class="only-pixels-stat-meta">${escapeHtml(keywords || "No keywords yet")}</div>
+        <article class="only-pixels-streamer-card">
+          <div class="only-pixels-stat-head">
+            <div>
+              <strong class="only-pixels-streamer-name">@${escapeHtml(slug)}</strong>
+              <div class="only-pixels-stat-meta">${escapeHtml(String(msgs))} Kick Points (24h)${gifts > 0 ? ` · ${gifts} KICKS gifted` : ""}</div>
+            </div>
+            <div class="only-pixels-pts-badge">${escapeHtml(String(msgs))}</div>
           </div>
-          <div style="text-align:right;">
-            <div>${escapeHtml(String(row.message_count_24h || 0))} msgs (24h)</div>
-            <div class="only-pixels-stat-meta">${escapeHtml(String(row.gift_kicks_all_time || 0))} KICKS gifted</div>
+          <div class="only-pixels-used-row">
+            <span class="only-pixels-used-label">Used today</span>
+            ${renderOnlyPixelsKeywordUsage(row.keyword_usage)}
           </div>
-        </div>`;
+          <div class="only-pixels-commands">
+            <div class="only-pixels-commands-title">Chat commands</div>
+            ${renderOnlyPixelsCommandGroups(row.chat_commands)}
+          </div>
+        </article>`;
     })
     .join("");
+}
+
+async function loadOnlyPixelsStats(kickUsername, { quiet = false } = {}) {
+  const panel = document.getElementById("only-pixels-stats");
+  const hero = document.getElementById("only-pixels-points-hero");
+  if (!kickUsername) {
+    renderOnlyPixelsPointsHero(null);
+    if (panel) panel.innerHTML = "";
+    return null;
+  }
+
+  if (!quiet && panel) {
+    panel.innerHTML = '<p class="subtitle">Loading...</p>';
+  }
+  if (!quiet && hero) {
+    hero.innerHTML = '<p class="subtitle">Loading your points...</p>';
+  }
+
+  const response = await fetch(`/api/rewards/summary/${encodeURIComponent(kickUsername)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Lookup failed");
+
+  onlyPixelsState.lastSummary = data;
+  renderOnlyPixelsPointsHero(data);
+  renderOnlyPixelsStats(data.streamers);
+  return data;
 }
 
 async function loadOnlyPixelsRegistration(username) {
@@ -3090,6 +3190,7 @@ async function loadOnlyPixelsRegistration(username) {
         "ok"
       );
     }
+    loadOnlyPixelsStats(onlyPixelsState.currentUsername, { quiet: true }).catch(() => {});
   } catch {
     // ignore
   }
@@ -3119,6 +3220,7 @@ function bindOnlyPixelsEvents() {
       const lookup = document.getElementById("only-pixels-lookup-username");
       if (lookup) lookup.value = onlyPixelsState.currentUsername;
       setOnlyPixelsLinkCode(data.linkCode || data.registration?.linkCode);
+      loadOnlyPixelsStats(onlyPixelsState.currentUsername, { quiet: true }).catch(() => {});
     } catch (error) {
       setOnlyPixelsStatus(error.message, "err");
     }
@@ -3153,16 +3255,31 @@ function bindOnlyPixelsEvents() {
   document.getElementById("only-pixels-lookup-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const kickUsername = document.getElementById("only-pixels-lookup-username")?.value?.trim();
-    const panel = document.getElementById("only-pixels-stats");
-    if (!kickUsername || !panel) return;
-    panel.innerHTML = "<p class=\"subtitle\">Loading...</p>";
+    if (!kickUsername) return;
     try {
-      const response = await fetch(`/api/rewards/summary/${encodeURIComponent(kickUsername)}`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Lookup failed");
-      renderOnlyPixelsStats(data.streamers);
+      await loadOnlyPixelsStats(kickUsername);
     } catch (error) {
-      panel.innerHTML = `<p class="only-pixels-note err">${escapeHtml(error.message)}</p>`;
+      const panel = document.getElementById("only-pixels-stats");
+      if (panel) {
+        panel.innerHTML = `<p class="only-pixels-note err">${escapeHtml(error.message)}</p>`;
+      }
+    }
+  });
+
+  document.getElementById("only-pixels-refresh-stats")?.addEventListener("click", async () => {
+    const kickUsername =
+      onlyPixelsState.currentUsername ||
+      document.getElementById("only-pixels-lookup-username")?.value?.trim() ||
+      document.getElementById("only-pixels-username")?.value?.trim();
+    if (!kickUsername) {
+      setOnlyPixelsStatus("Register or enter your Kick username first.", "err");
+      return;
+    }
+    try {
+      await loadOnlyPixelsStats(kickUsername);
+      setOnlyPixelsStatus("Points refreshed.", "ok");
+    } catch (error) {
+      setOnlyPixelsStatus(error.message, "err");
     }
   });
 }
@@ -3172,7 +3289,7 @@ function refreshOnlyPixels(dashboard) {
   const profile = dashboard?.profile;
   const usernameInput = document.getElementById("only-pixels-username");
   const lookupInput = document.getElementById("only-pixels-lookup-username");
-  const kickName = profile?.username || "";
+  const kickName = profile?.username || onlyPixelsState.currentUsername || "";
 
   if (kickName && usernameInput && !usernameInput.value) {
     usernameInput.value = kickName;
@@ -3181,7 +3298,9 @@ function refreshOnlyPixels(dashboard) {
     lookupInput.value = kickName;
   }
   if (kickName) {
+    onlyPixelsState.currentUsername = kickName;
     loadOnlyPixelsRegistration(kickName);
+    loadOnlyPixelsStats(kickName, { quiet: true }).catch(() => {});
   }
 }
 
