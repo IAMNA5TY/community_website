@@ -1824,6 +1824,13 @@ async function loadDashboard() {
 
   applyNavAccess(me);
   showDashboardShell(me);
+  if (me.kickRewards) {
+    dashboardData = dashboardData || {};
+    dashboardData.kickRewards = me.kickRewards;
+    dashboardData.profile = me.profile;
+    dashboardData.role = me.role;
+    refreshOnlyPixels(dashboardData);
+  }
 
   const response = await fetch("/api/dashboard", { credentials: "same-origin" });
   if (response.status === 401) {
@@ -3040,23 +3047,43 @@ async function registerOnlyPixelsUsername(kickUsername) {
   return data;
 }
 
+function applyOnlyPixelsSummary(summary) {
+  if (!summary) return;
+  onlyPixelsState.lastSummary = summary;
+  onlyPixelsState.currentUsername = summary.kickUsername || onlyPixelsState.currentUsername;
+  renderOnlyPixelsPointsHero(summary);
+  renderOnlyPixelsStats(summary.streamers);
+}
+
+function setOnlyPixelsSignedInLabel(username, role) {
+  const el = document.getElementById("only-pixels-signed-in");
+  if (!el) return;
+  if (!username) {
+    el.classList.add("hidden");
+    el.textContent = "";
+    return;
+  }
+  el.classList.remove("hidden");
+  el.innerHTML = `Signed in as <strong>@${escapeHtml(username)}</strong>${role === "owner" ? " · broadcaster" : ""}`;
+}
+
 function renderOnlyPixelsPointsHero(summary) {
   const hero = document.getElementById("only-pixels-points-hero");
   if (!hero) return;
 
   if (!summary) {
-    hero.innerHTML = '<p class="subtitle">Sign in or register above to see your points.</p>';
+    hero.innerHTML = '<p class="subtitle">Sign in with Kick above to see your points.</p>';
     return;
   }
 
   const total = Number(summary.total_messages_24h || 0);
   const channels = Number(summary.active_channels || 0);
-  const username = summary.kickUsername || "";
+  const username = summary.kickUsername || onlyPixelsState.currentUsername || "";
   hero.innerHTML = `
     <div class="only-pixels-points-total">${escapeHtml(String(total))}</div>
     <div class="only-pixels-points-label">
       Kick Points (24h) for <strong>@${escapeHtml(username)}</strong>
-      ${channels > 0 ? ` · active in ${channels} channel${channels === 1 ? "" : "s"}` : " · chat on a partnered streamer to earn"}
+      ${channels > 0 ? ` · ${channels} channel${channels === 1 ? "" : "s"} with points` : " · chat on a partnered streamer to earn"}
     </div>`;
 }
 
@@ -3166,8 +3193,7 @@ async function loadOnlyPixelsStats(kickUsername, { quiet = false } = {}) {
   if (!response.ok) throw new Error(data.error || "Lookup failed");
 
   onlyPixelsState.lastSummary = data;
-  renderOnlyPixelsPointsHero(data);
-  renderOnlyPixelsStats(data.streamers);
+  applyOnlyPixelsSummary(data);
   return data;
 }
 
@@ -3287,20 +3313,43 @@ function bindOnlyPixelsEvents() {
 function refreshOnlyPixels(dashboard) {
   bindOnlyPixelsEvents();
   const profile = dashboard?.profile;
+  const role = dashboard?.role || dashboardRole || "player";
+  const isOwner = role === "owner";
   const usernameInput = document.getElementById("only-pixels-username");
   const lookupInput = document.getElementById("only-pixels-lookup-username");
+  const lookupForm = document.getElementById("only-pixels-lookup-form");
   const kickName = profile?.username || onlyPixelsState.currentUsername || "";
 
-  if (kickName && usernameInput && !usernameInput.value) {
-    usernameInput.value = kickName;
+  if (lookupForm) {
+    lookupForm.classList.toggle("hidden", !isOwner);
   }
-  if (kickName && lookupInput && !lookupInput.value) {
-    lookupInput.value = kickName;
-  }
+
   if (kickName) {
     onlyPixelsState.currentUsername = kickName;
+    setOnlyPixelsSignedInLabel(kickName, role);
+    if (usernameInput) usernameInput.value = kickName;
+    if (lookupInput) lookupInput.value = kickName;
+  } else {
+    setOnlyPixelsSignedInLabel("", role);
+  }
+
+  if (dashboard?.kickRewards) {
+    applyOnlyPixelsSummary(dashboard.kickRewards);
+  } else if (kickName) {
+    loadOnlyPixelsStats(kickName, { quiet: true }).catch((error) => {
+      const panel = document.getElementById("only-pixels-stats");
+      if (panel) {
+        panel.innerHTML = `<p class="only-pixels-note err">${escapeHtml(error.message)}</p>`;
+      }
+    });
+  }
+
+  if (kickName) {
     loadOnlyPixelsRegistration(kickName);
-    loadOnlyPixelsStats(kickName, { quiet: true }).catch(() => {});
+  }
+
+  if (dashboard?.registration?.linkCode) {
+    setOnlyPixelsLinkCode(dashboard.registration.linkCode);
   }
 }
 

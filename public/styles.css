@@ -1168,6 +1168,16 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   color: var(--kick);
 }
 
+.only-pixels-signed-in {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.only-pixels-signed-in strong {
+  color: var(--kick);
+}
+
 .only-pixels-points-head {
   display: flex;
   justify-content: space-between;

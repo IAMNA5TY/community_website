@@ -393,6 +393,11 @@ app.get("/api/me", (req, res) => {
 
   const { provider, profile, scope } = req.session.user;
   const role = dashboardAccess.getDashboardRole(req.session.user);
+  const kickUsername = profile?.username || "";
+  const kickRewards =
+    kickUsername && role !== "owner"
+      ? kickRewardsStore.getRewardsSummary(kickUsername)
+      : null;
   res.json({
     loggedIn: true,
     provider,
@@ -401,6 +406,7 @@ app.get("/api/me", (req, res) => {
     role,
     allowedPages: dashboardAccess.getAllowedPages(req.session.user),
     isOwner: role === "owner",
+    kickRewards,
     webhookReady: Boolean(req.session.webhookReady),
     webhookUrl: WEBHOOK_URL,
   });
@@ -469,6 +475,13 @@ app.get("/api/dashboard", async (req, res) => {
     if (!isOwner) {
       const dashboard = await kickApi.getDashboard(req, config.kick);
       const stored = eventStore.getChannelData(user.profile.id);
+      const kickUsername = user.profile?.username || dashboard.profile?.username || "";
+      const kickRewards = kickUsername
+        ? kickRewardsStore.getRewardsSummary(kickUsername)
+        : null;
+      const registration = kickUsername
+        ? kickRewardsStore.getRegistration(kickUsername)
+        : null;
 
       return res.json({
         role: "player",
@@ -477,6 +490,8 @@ app.get("/api/dashboard", async (req, res) => {
         channel: dashboard.channel,
         livestreamStats: dashboard.livestreamStats,
         chat: stored,
+        kickRewards,
+        registration,
         webhookReady: false,
         webhookError: null,
         webhookUrl: WEBHOOK_URL,
