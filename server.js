@@ -376,6 +376,48 @@ async function subscribeMonitoredStreamerWebhooks(broadcasterId) {
   );
 }
 
+async function bootstrapKickRewardPartners() {
+  kickRewardsStore.ensureDefaultPartners();
+  const slugsNeedingIds = kickRewardsStore
+    .listMonitoredChannels()
+    .filter((row) => !row.broadcasterId)
+    .map((row) => row.slug);
+
+  if (!slugsNeedingIds.length) return kickRewardsStore.listMonitoredChannels();
+
+  const token = tokenStore.getBroadcasterToken(DEFAULT_BROADCASTER_ID);
+  if (!token?.accessToken) return kickRewardsStore.listMonitoredChannels();
+
+  try {
+    const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
+      DEFAULT_BROADCASTER_ID,
+      config.kick
+    );
+    for (let i = 0; i < slugsNeedingIds.length; i += 50) {
+      const channels = await kickApi.getChannelsBySlugs(
+        accessToken,
+        slugsNeedingIds.slice(i, i + 50)
+      );
+      for (const channel of channels) {
+        const slug = String(channel.slug || "").toLowerCase();
+        const broadcasterId = channel.broadcaster_user_id
+          ? String(channel.broadcaster_user_id)
+          : null;
+        if (slug && broadcasterId) {
+          kickRewardsStore.upsertMonitoredStreamer(slug, broadcasterId);
+          subscribeMonitoredStreamerWebhooks(broadcasterId).catch((error) => {
+            console.warn(`[kick-rewards] partner webhook subscribe failed for ${slug}:`, error.message);
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("[kick-rewards] partner broadcaster id lookup failed:", error.message);
+  }
+
+  return kickRewardsStore.listMonitoredChannels();
+}
+
 function resolveWebhookBroadcasterId(payload) {
   return (
     payload.broadcaster?.user_id ||
@@ -2152,7 +2194,9 @@ webhook.loadPublicKey().then(async () => {
     );
   }
   await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
+  await bootstrapKickRewardPartners();
   if (String(process.env.KICK_PUSHER_MONITOR || "1") !== "0") {
+    kickPusherMonitor.refreshTargets();
     kickPusherMonitor.start();
   } else {
     console.log("[pusher-monitor] disabled (KICK_PUSHER_MONITOR=0)");
