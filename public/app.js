@@ -3490,11 +3490,30 @@ function bindOnlyPixelsPartnerEvents() {
     }
   });
 
-  document.getElementById("only-pixels-partners-refresh")?.addEventListener("click", () => {
+  document.getElementById("only-pixels-partners-refresh")?.addEventListener("click", async () => {
     setOnlyPixelsPartnersStatus("Refreshing…");
-    loadOnlyPixelsPartners()
-      .then(() => setOnlyPixelsPartnersStatus(""))
-      .catch((error) => setOnlyPixelsPartnersStatus(error.message, "err"));
+    try {
+      await loadOnlyPixelsPartners();
+      // Nudge chat reconnect for partners still missing a chatroom.
+      const response = await fetch("/api/monitor/status");
+      const data = await response.json().catch(() => ({}));
+      const failed = (data.pusher?.streamers || []).filter(
+        (row) => row.slug && !row.connected && /chatroom/i.test(String(row.lastError || ""))
+      );
+      for (const row of failed.slice(0, 3)) {
+        await fetch(`/api/rewards/partners/${encodeURIComponent(row.slug)}/reconnect-chat`, {
+          method: "POST",
+        }).catch(() => null);
+      }
+      setOnlyPixelsPartnersStatus(
+        failed.length
+          ? `Refreshed — reconnecting chat for ${Math.min(3, failed.length)} partner(s)…`
+          : "",
+        failed.length ? "ok" : ""
+      );
+    } catch (error) {
+      setOnlyPixelsPartnersStatus(error.message, "err");
+    }
   });
 
   document.getElementById("only-pixels-partners-list")?.addEventListener("click", async (event) => {

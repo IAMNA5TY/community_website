@@ -338,7 +338,22 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
     return;
   }
 
-  const broadcasterIds = kickRewardsStore.getMonitoredBroadcasterIds();
+  const chatSlugs =
+    typeof kickRewardsStore.getChatMonitorSlugs === "function"
+      ? kickRewardsStore.getChatMonitorSlugs()
+      : kickRewardsStore.getMonitoredStreamers();
+  const broadcasterIds = [
+    ...new Set(
+      chatSlugs
+        .map((slug) => kickRewardsStore.getBroadcasterIdForSlug(slug))
+        .filter(Boolean)
+        .map(String)
+    ),
+  ];
+  // Always include the owner channel.
+  if (!broadcasterIds.includes(DEFAULT_BROADCASTER_ID)) {
+    broadcasterIds.unshift(DEFAULT_BROADCASTER_ID);
+  }
   const force = Boolean(options.webhookUrlChanged);
 
   for (const broadcasterId of broadcasterIds) {
@@ -363,9 +378,13 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
     } catch (error) {
       webhookSubscription.noteResult(broadcasterId, { error: error.message });
       console.warn(`[webhooks] boot subscribe failed for ${broadcasterId}:`, error.message);
+      if (/rate limit/i.test(error.message)) {
+        // Stop the burst — remaining partners will retry on the next boot/timer pass.
+        break;
+      }
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
 
