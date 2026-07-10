@@ -3404,14 +3404,13 @@ function renderOnlyPixelsPartners(streamers) {
         if (row.locked) statusBits.push("Locked (env)");
         else if (row.inStore) statusBits.push("Monitored — can remove");
         else statusBits.push("From env");
-        statusBits.push(chatOn ? "chat ON" : "chat OFF");
+        statusBits.push(chatOn ? "chat auto" : "chat pending");
         if (row.chatroomId) statusBits.push(`room ${row.chatroomId}`);
         const removeBtn = row.locked
           ? '<button class="btn btn-secondary btn-compact" type="button" disabled title="Locked in server env">Locked</button>'
           : `<button class="btn btn-secondary btn-compact" type="button" data-remove-partner="${escapeHtml(slug)}">Remove</button>`;
-        const chatBtn = chatOn
-          ? `<button class="btn btn-secondary btn-compact" type="button" data-reconnect-chat="${escapeHtml(slug)}">Reconnect chat</button>`
-          : `<button class="btn btn-kick btn-compact" type="button" data-enable-chat="${escapeHtml(slug)}">Enable chat</button>`;
+        // Chat connects automatically; Reconnect is only a manual fallback.
+        const chatBtn = `<button class="btn btn-secondary btn-compact" type="button" data-reconnect-chat="${escapeHtml(slug)}" title="Manual fallback — chat should connect on its own">Reconnect</button>`;
         return `
         <div class="only-pixels-partner-row">
           <div class="only-pixels-partner-meta">
