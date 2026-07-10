@@ -3467,7 +3467,10 @@ function bindOnlyPixelsPartnerEvents() {
       if (!response.ok) throw new Error(data.error || "Add failed");
       if (input) input.value = "";
       setOnlyPixelsPartnersStatus(`Added @${slug} — chat monitoring is live (no restart).`, "ok");
-      renderOnlyPixelsPartners(data.streamers || []);
+      if (Array.isArray(data.streamers) && data.streamers.length) {
+        renderOnlyPixelsPartners(data.streamers);
+      }
+      await loadOnlyPixelsPartners();
     } catch (error) {
       setOnlyPixelsPartnersStatus(error.message, "err");
     }
