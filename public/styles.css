@@ -1380,6 +1380,13 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   min-width: 88px;
 }
 
+.only-pixels-partner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .btn-row {
   display: flex;
   gap: 10px;

@@ -3399,22 +3399,30 @@ function renderOnlyPixelsPartners(streamers) {
       .map((row) => {
         const slug = row.slug || "";
         const id = row.broadcasterId ? `id ${escapeHtml(String(row.broadcasterId))}` : "id pending";
-        const locked = row.locked
-          ? '<span>Locked (env)</span>'
-          : row.inStore
-            ? "<span>Monitored — can remove</span>"
-            : "<span>From env</span>";
+        const chatOn = row.chatPriority === true;
+        const statusBits = [];
+        if (row.locked) statusBits.push("Locked (env)");
+        else if (row.inStore) statusBits.push("Monitored — can remove");
+        else statusBits.push("From env");
+        statusBits.push(chatOn ? "chat ON" : "chat OFF");
+        if (row.chatroomId) statusBits.push(`room ${row.chatroomId}`);
         const removeBtn = row.locked
           ? '<button class="btn btn-secondary btn-compact" type="button" disabled title="Locked in server env">Locked</button>'
           : `<button class="btn btn-secondary btn-compact" type="button" data-remove-partner="${escapeHtml(slug)}">Remove</button>`;
+        const chatBtn = chatOn
+          ? `<button class="btn btn-secondary btn-compact" type="button" data-reconnect-chat="${escapeHtml(slug)}">Reconnect chat</button>`
+          : `<button class="btn btn-kick btn-compact" type="button" data-enable-chat="${escapeHtml(slug)}">Enable chat</button>`;
         return `
         <div class="only-pixels-partner-row">
           <div class="only-pixels-partner-meta">
             <strong>@${escapeHtml(slug)}</strong>
-            ${locked}
+            <span>${statusBits.map((bit) => escapeHtml(bit)).join(" · ")}</span>
             <span>${id}</span>
           </div>
-          ${removeBtn}
+          <div class="only-pixels-partner-actions">
+            ${chatBtn}
+            ${removeBtn}
+          </div>
         </div>`;
       })
       .join("");
