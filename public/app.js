@@ -3325,7 +3325,11 @@ function refreshOnlyPixels(dashboard) {
   bindOnlyPixelsEvents();
   const profile = dashboard?.profile || sessionProfile;
   const role = dashboard?.role || sessionRole || dashboardRole || "player";
-  const isOwner = role === "owner";
+  const isOwner =
+    role === "owner" ||
+    dashboard?.isOwner === true ||
+    dashboardRole === "owner" ||
+    sessionRole === "owner";
   const usernameInput = document.getElementById("only-pixels-username");
   const lookupInput = document.getElementById("only-pixels-lookup-username");
   const lookupForm = document.getElementById("only-pixels-lookup-form");
@@ -3334,6 +3338,9 @@ function refreshOnlyPixels(dashboard) {
   if (lookupForm) {
     lookupForm.classList.toggle("hidden", !isOwner);
   }
+
+  // Always resolve partners panel visibility first so it isn't stuck hidden behind cache/order bugs.
+  refreshOnlyPixelsPartners(isOwner);
 
   if (kickName) {
     onlyPixelsState.currentUsername = kickName;
@@ -3365,8 +3372,6 @@ function refreshOnlyPixels(dashboard) {
   if (dashboard?.registration?.linkCode) {
     setOnlyPixelsLinkCode(dashboard.registration.linkCode);
   }
-
-  refreshOnlyPixelsPartners(isOwner);
 }
 
 async function loadOnlyPixelsPartners() {
@@ -3421,9 +3426,18 @@ function setOnlyPixelsPartnersStatus(message, type = "") {
 
 function refreshOnlyPixelsPartners(isOwner) {
   const panel = document.getElementById("only-pixels-partners-panel");
-  if (!panel) return;
-  panel.classList.toggle("hidden", !isOwner);
-  if (!isOwner) return;
+  if (!panel) {
+    console.warn("[only-pixels] partners panel missing from DOM — hard refresh the page");
+    return;
+  }
+  if (isOwner) {
+    panel.classList.remove("hidden");
+    panel.hidden = false;
+  } else {
+    panel.classList.add("hidden");
+    panel.hidden = true;
+    return;
+  }
   loadOnlyPixelsPartners().catch((error) => {
     setOnlyPixelsPartnersStatus(error.message, "err");
     const list = document.getElementById("only-pixels-partners-list");

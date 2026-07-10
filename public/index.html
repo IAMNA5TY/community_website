@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=5" />
+    <link rel="stylesheet" href="/styles.css?v=6" />
   </head>
   <body>
     <main class="page">
@@ -181,27 +181,6 @@
               </div>
             </div>
 
-            <div class="card panel only-pixels-points">
-              <div class="only-pixels-points-head">
-                <div>
-                  <h2>Your Kick Points</h2>
-                  <p class="subtitle">Channels where you have points — and the chat commands to use in each streamer&apos;s Kick chat (whole message, one word).</p>
-                </div>
-                <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-refresh-stats">
-                  Refresh
-                </button>
-              </div>
-              <div class="only-pixels-points-hero" id="only-pixels-points-hero">
-                <p class="subtitle">Loading your Kick Points...</p>
-              </div>
-              <p class="only-pixels-signed-in hidden" id="only-pixels-signed-in"></p>
-              <form class="only-pixels-form hidden" id="only-pixels-lookup-form">
-                <input id="only-pixels-lookup-username" placeholder="Kick username" />
-                <button class="btn btn-secondary" type="submit">Check another user</button>
-              </form>
-              <div class="only-pixels-stats" id="only-pixels-stats"></div>
-            </div>
-
             <div class="card panel only-pixels-partners hidden" id="only-pixels-partners-panel">
               <div class="only-pixels-points-head">
                 <div>
@@ -228,6 +207,27 @@
               <div class="only-pixels-partners-list" id="only-pixels-partners-list">
                 <p class="subtitle">Loading partners...</p>
               </div>
+            </div>
+
+            <div class="card panel only-pixels-points">
+              <div class="only-pixels-points-head">
+                <div>
+                  <h2>Your Kick Points</h2>
+                  <p class="subtitle">Channels where you have points — and the chat commands to use in each streamer&apos;s Kick chat (whole message, one word).</p>
+                </div>
+                <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-refresh-stats">
+                  Refresh
+                </button>
+              </div>
+              <div class="only-pixels-points-hero" id="only-pixels-points-hero">
+                <p class="subtitle">Loading your Kick Points...</p>
+              </div>
+              <p class="only-pixels-signed-in hidden" id="only-pixels-signed-in"></p>
+              <form class="only-pixels-form hidden" id="only-pixels-lookup-form">
+                <input id="only-pixels-lookup-username" placeholder="Kick username" />
+                <button class="btn btn-secondary" type="submit">Check another user</button>
+              </form>
+              <div class="only-pixels-stats" id="only-pixels-stats"></div>
             </div>
           </section>
 
@@ -941,6 +941,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=43"></script>
+    <script src="/app.js?v=44"></script>
   </body>
 </html>
