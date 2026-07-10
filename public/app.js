@@ -3525,6 +3525,34 @@ function bindOnlyPixelsPartnerEvents() {
   });
 
   document.getElementById("only-pixels-partners-list")?.addEventListener("click", async (event) => {
+    const enableBtn = event.target.closest("[data-enable-chat], [data-reconnect-chat]");
+    if (enableBtn) {
+      const slug =
+        enableBtn.getAttribute("data-enable-chat") ||
+        enableBtn.getAttribute("data-reconnect-chat");
+      if (!slug) return;
+      setOnlyPixelsPartnersStatus(`Connecting chat for @${slug}…`);
+      try {
+        const response = await fetch(`/api/rewards/partners/${encodeURIComponent(slug)}/reconnect-chat`, {
+          method: "POST",
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Chat connect failed");
+        const connected = Boolean(data.pusher?.connected || data.pusher?.chatroomId);
+        setOnlyPixelsPartnersStatus(
+          connected
+            ? `Chat connected for @${slug}.`
+            : `Enabled @${slug} — chatroom still connecting, try again in 20s.`,
+          connected ? "ok" : "ok"
+        );
+        if (Array.isArray(data.streamers)) renderOnlyPixelsPartners(data.streamers);
+        else await loadOnlyPixelsPartners();
+      } catch (error) {
+        setOnlyPixelsPartnersStatus(error.message, "err");
+      }
+      return;
+    }
+
     const btn = event.target.closest("[data-remove-partner]");
     if (!btn) return;
     const slug = btn.getAttribute("data-remove-partner");
