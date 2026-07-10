@@ -2004,7 +2004,9 @@ app.get("/auth/kick/callback", async (req, res) => {
       tokens
     );
 
-    const isOwner = dashboardAccess.isDashboardOwner({ profile: { id: userId } });
+    const isOwner = dashboardAccess.isDashboardOwner({
+      profile: { id: userId, username: kickUser.name },
+    });
     req.session.dashboardRole = isOwner ? "owner" : "player";
 
     signInLog.recordSignIn({ ...signInEntry, allowed: true });
