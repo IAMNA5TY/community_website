@@ -1354,6 +1354,8 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
 }
 
 .only-pixels-partner-meta {
@@ -1361,6 +1363,7 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .only-pixels-partner-meta strong {
@@ -1374,6 +1377,7 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
 
 .only-pixels-partner-row .btn {
   flex-shrink: 0;
+  min-width: 88px;
 }
 
 .btn-row {

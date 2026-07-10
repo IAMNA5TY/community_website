@@ -3392,19 +3392,22 @@ function renderOnlyPixelsPartners(streamers) {
     list.innerHTML = '<p class="subtitle">No partners yet — add a Kick username above.</p>';
     return;
   }
-  list.innerHTML = streamers
-    .map((row) => {
-      const slug = row.slug || "";
-      const id = row.broadcasterId ? `id ${escapeHtml(String(row.broadcasterId))}` : "id pending";
-      const locked = row.locked
-        ? '<span>Locked (env)</span>'
-        : row.inStore
-          ? "<span>Monitored</span>"
-          : "<span>From env / sync</span>";
-      const removeBtn = row.locked
-        ? '<button class="btn btn-secondary btn-compact" type="button" disabled title="Locked in server env">Locked</button>'
-        : `<button class="btn btn-secondary btn-compact" type="button" data-remove-partner="${escapeHtml(slug)}">Remove</button>`;
-      return `
+  const countLabel = `<p class="subtitle" style="margin-bottom:8px;">${streamers.length} partnered channel${streamers.length === 1 ? "" : "s"}</p>`;
+  list.innerHTML =
+    countLabel +
+    streamers
+      .map((row) => {
+        const slug = row.slug || "";
+        const id = row.broadcasterId ? `id ${escapeHtml(String(row.broadcasterId))}` : "id pending";
+        const locked = row.locked
+          ? '<span>Locked (env)</span>'
+          : row.inStore
+            ? "<span>Monitored — can remove</span>"
+            : "<span>From env</span>";
+        const removeBtn = row.locked
+          ? '<button class="btn btn-secondary btn-compact" type="button" disabled title="Locked in server env">Locked</button>'
+          : `<button class="btn btn-secondary btn-compact" type="button" data-remove-partner="${escapeHtml(slug)}">Remove</button>`;
+        return `
         <div class="only-pixels-partner-row">
           <div class="only-pixels-partner-meta">
             <strong>@${escapeHtml(slug)}</strong>
@@ -3413,8 +3416,8 @@ function renderOnlyPixelsPartners(streamers) {
           </div>
           ${removeBtn}
         </div>`;
-    })
-    .join("");
+      })
+      .join("");
 }
 
 function setOnlyPixelsPartnersStatus(message, type = "") {
@@ -3466,10 +3469,21 @@ function bindOnlyPixelsPartnerEvents() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Add failed");
       if (input) input.value = "";
-      setOnlyPixelsPartnersStatus(`Added @${slug} — chat monitoring is live (no restart).`, "ok");
-      if (Array.isArray(data.streamers) && data.streamers.length) {
-        renderOnlyPixelsPartners(data.streamers);
+      const addedSlug = (data.streamer?.slug || slug).toLowerCase();
+      setOnlyPixelsPartnersStatus(
+        data.message || `Added @${addedSlug} — chat monitoring is live (no restart).`,
+        "ok"
+      );
+      let streamers = Array.isArray(data.streamers) ? data.streamers.slice() : [];
+      if (!streamers.some((row) => String(row.slug || "").toLowerCase() === addedSlug)) {
+        streamers.unshift({
+          slug: addedSlug,
+          broadcasterId: data.streamer?.broadcasterId || null,
+          inStore: true,
+          locked: false,
+        });
       }
+      renderOnlyPixelsPartners(streamers);
       await loadOnlyPixelsPartners();
     } catch (error) {
       setOnlyPixelsPartnersStatus(error.message, "err");
