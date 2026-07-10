@@ -3235,6 +3235,7 @@ async function loadOnlyPixelsRegistration(username) {
 function bindOnlyPixelsEvents() {
   if (onlyPixelsState.bound) return;
   onlyPixelsState.bound = true;
+  bindOnlyPixelsPartnerEvents();
 
   document.getElementById("only-pixels-register-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -3364,6 +3365,126 @@ function refreshOnlyPixels(dashboard) {
   if (dashboard?.registration?.linkCode) {
     setOnlyPixelsLinkCode(dashboard.registration.linkCode);
   }
+
+  refreshOnlyPixelsPartners(isOwner);
+}
+
+async function loadOnlyPixelsPartners() {
+  const list = document.getElementById("only-pixels-partners-list");
+  if (!list) return;
+  const response = await fetch("/api/rewards/partners");
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || data.message || "Failed to load partners");
+  }
+  renderOnlyPixelsPartners(data.streamers || []);
+}
+
+function renderOnlyPixelsPartners(streamers) {
+  const list = document.getElementById("only-pixels-partners-list");
+  if (!list) return;
+  if (!streamers.length) {
+    list.innerHTML = '<p class="subtitle">No partners yet — add a Kick username above.</p>';
+    return;
+  }
+  list.innerHTML = streamers
+    .map((row) => {
+      const slug = row.slug || "";
+      const id = row.broadcasterId ? `id ${escapeHtml(String(row.broadcasterId))}` : "id pending";
+      const locked = row.locked
+        ? '<span>Locked (env)</span>'
+        : row.inStore
+          ? "<span>Monitored</span>"
+          : "<span>From env / sync</span>";
+      const removeBtn = row.locked
+        ? '<button class="btn btn-secondary btn-compact" type="button" disabled title="Locked in server env">Locked</button>'
+        : `<button class="btn btn-secondary btn-compact" type="button" data-remove-partner="${escapeHtml(slug)}">Remove</button>`;
+      return `
+        <div class="only-pixels-partner-row">
+          <div class="only-pixels-partner-meta">
+            <strong>@${escapeHtml(slug)}</strong>
+            ${locked}
+            <span>${id}</span>
+          </div>
+          ${removeBtn}
+        </div>`;
+    })
+    .join("");
+}
+
+function setOnlyPixelsPartnersStatus(message, type = "") {
+  const el = document.getElementById("only-pixels-partners-status");
+  if (!el) return;
+  el.textContent = message || "";
+  el.className = `only-pixels-note${type ? ` ${type}` : ""}`;
+}
+
+function refreshOnlyPixelsPartners(isOwner) {
+  const panel = document.getElementById("only-pixels-partners-panel");
+  if (!panel) return;
+  panel.classList.toggle("hidden", !isOwner);
+  if (!isOwner) return;
+  loadOnlyPixelsPartners().catch((error) => {
+    setOnlyPixelsPartnersStatus(error.message, "err");
+    const list = document.getElementById("only-pixels-partners-list");
+    if (list) {
+      list.innerHTML = `<p class="only-pixels-note err">${escapeHtml(error.message)}</p>`;
+    }
+  });
+}
+
+function bindOnlyPixelsPartnerEvents() {
+  if (onlyPixelsState.partnersBound) return;
+  onlyPixelsState.partnersBound = true;
+
+  document.getElementById("only-pixels-partners-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = document.getElementById("only-pixels-partner-slug");
+    const slug = input?.value?.trim().replace(/^@/, "") || "";
+    if (!slug) return;
+    setOnlyPixelsPartnersStatus("Adding…");
+    try {
+      const response = await fetch("/api/rewards/partners", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Add failed");
+      if (input) input.value = "";
+      setOnlyPixelsPartnersStatus(`Added @${slug} — chat monitoring is live (no restart).`, "ok");
+      renderOnlyPixelsPartners(data.streamers || []);
+    } catch (error) {
+      setOnlyPixelsPartnersStatus(error.message, "err");
+    }
+  });
+
+  document.getElementById("only-pixels-partners-refresh")?.addEventListener("click", () => {
+    setOnlyPixelsPartnersStatus("Refreshing…");
+    loadOnlyPixelsPartners()
+      .then(() => setOnlyPixelsPartnersStatus(""))
+      .catch((error) => setOnlyPixelsPartnersStatus(error.message, "err"));
+  });
+
+  document.getElementById("only-pixels-partners-list")?.addEventListener("click", async (event) => {
+    const btn = event.target.closest("[data-remove-partner]");
+    if (!btn) return;
+    const slug = btn.getAttribute("data-remove-partner");
+    if (!slug) return;
+    if (!confirm(`Remove @${slug} from site chat monitoring?`)) return;
+    setOnlyPixelsPartnersStatus(`Removing @${slug}…`);
+    try {
+      const response = await fetch(`/api/rewards/partners/${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Remove failed");
+      setOnlyPixelsPartnersStatus(`Removed @${slug}.`, "ok");
+      renderOnlyPixelsPartners(data.streamers || []);
+    } catch (error) {
+      setOnlyPixelsPartnersStatus(error.message, "err");
+    }
+  });
 }
 
 if (location.hash === "#only-pixels") {

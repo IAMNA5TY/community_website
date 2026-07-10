@@ -139,7 +139,7 @@
           <section class="page-view" data-page="only-pixels">
             <header class="page-header">
               <h1>Only Pixels</h1>
-              <p class="subtitle">Kick City registration, link codes, and FiveM rewards — more coming soon</p>
+              <p class="subtitle">Kick City registration, link codes, partnered streamers, and FiveM rewards</p>
             </header>
 
             <div class="card panel only-pixels-register">
@@ -200,6 +200,34 @@
                 <button class="btn btn-secondary" type="submit">Check another user</button>
               </form>
               <div class="only-pixels-stats" id="only-pixels-stats"></div>
+            </div>
+
+            <div class="card panel only-pixels-partners hidden" id="only-pixels-partners-panel">
+              <div class="only-pixels-points-head">
+                <div>
+                  <h2>Partnered streamers</h2>
+                  <p class="subtitle">
+                    Who the site monitors for Kick chat &amp; points. Add/remove here — live, no site restart.
+                    Also add them in Kick City in-game for Who&apos;s Live.
+                  </p>
+                </div>
+                <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-partners-refresh">
+                  Refresh
+                </button>
+              </div>
+              <form class="only-pixels-form" id="only-pixels-partners-form">
+                <input
+                  id="only-pixels-partner-slug"
+                  placeholder="Kick username (e.g. mikepressure74)"
+                  autocomplete="off"
+                  required
+                />
+                <button class="btn btn-kick" type="submit">Add partner</button>
+              </form>
+              <p class="only-pixels-note" id="only-pixels-partners-status"></p>
+              <div class="only-pixels-partners-list" id="only-pixels-partners-list">
+                <p class="subtitle">Loading partners...</p>
+              </div>
             </div>
           </section>
 

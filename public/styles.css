@@ -1339,6 +1339,43 @@ h2 { font-size: 1.125rem; margin-bottom: 16px; }
   margin-top: 4px;
 }
 
+.only-pixels-partners-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.only-pixels-partner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.only-pixels-partner-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.only-pixels-partner-meta strong {
+  font-size: 0.95rem;
+}
+
+.only-pixels-partner-meta span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.only-pixels-partner-row .btn {
+  flex-shrink: 0;
+}
+
 .btn-row {
   display: flex;
   gap: 10px;
