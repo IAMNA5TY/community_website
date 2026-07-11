@@ -72,18 +72,37 @@ const WorkoutStore = {
       const state = { ...this.defaults(), ...await res.json() };
       this._cache = WorkoutStoreActions.tick(state);
       this._useApi = true;
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify(this._cache));
+      } catch {
+        /* ignore */
+      }
       return { ...this._cache };
     } catch {
-      if (this._cache) {
+      if (this._cache && (this._cache.minutesBank || 0) > 0) {
         return { ...WorkoutStoreActions.tick({ ...this._cache }) };
       }
-      this._cache = WorkoutStoreActions.tick(this.loadLocal());
+      const local = this.loadLocal();
+      if ((local.minutesBank || 0) === 0 && this._cache && (this._cache.minutesBank || 0) > 0) {
+        return { ...WorkoutStoreActions.tick({ ...this._cache }) };
+      }
+      this._cache = WorkoutStoreActions.tick(local);
       return { ...this._cache };
     }
   },
 
   async save(state) {
     state = WorkoutStoreActions.tick({ ...state });
+    // Never POST a zero wipe over a known good bank (OBS stale localStorage).
+    const cachedBank = this._cache?.minutesBank || 0;
+    if ((state.minutesBank || 0) === 0 && cachedBank > 0 && !state.isRunning) {
+      state = {
+        ...state,
+        minutesBank: cachedBank,
+        minutesRemaining: cachedBank,
+        _secondsLeft: this._cache._secondsLeft || cachedBank * 60,
+      };
+    }
     try {
       const res = await this.fetchApi(API_STATE, {
         method: "POST",
@@ -448,23 +467,32 @@ function renderAll(options, state) {
 }
 
 function initWorkoutPage(options = {}) {
-  // Show UI immediately — never wait on server
-  const defaults = WorkoutStore.loadLocal();
-  renderAll(options, defaults);
+  const obs = isObsMode();
+
+  // OBS: never paint localStorage zeros first — that stuck overlays at 0:00 after restarts.
+  if (!obs) {
+    const defaults = WorkoutStore.loadLocal();
+    renderAll(options, defaults);
+  }
 
   WorkoutStore.parseUrl().then(({ state }) => {
     lastStateNonce = state.stateNonce ?? -1;
     renderAll(options, state);
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+    } catch {
+      /* ignore */
+    }
   });
 
   window.addEventListener("workout-update", (e) => renderAll(options, e.detail));
 
   startWorkoutSync({
     onUpdate: (state) => renderAll(options, state),
-    pollMs: isObsMode() ? 200 : 300,
+    pollMs: obs ? 200 : 300,
   });
 
-  return defaults;
+  return obs ? null : WorkoutStore.loadLocal();
 }
 
 const WORKOUT_URLS = {
