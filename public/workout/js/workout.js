@@ -130,6 +130,8 @@ const WorkoutStore = {
 };
 
 const WorkoutStoreActions = {
+  STALE_EXPIRE_MS: 90 * 1000,
+
   getSeconds(state) {
     if (state.isRunning && state.treadmillEndAt) {
       return Math.max(0, Math.ceil((state.treadmillEndAt - Date.now()) / 1000));
@@ -137,18 +139,38 @@ const WorkoutStoreActions = {
     return state._secondsLeft || state.minutesBank * 60;
   },
 
+  pauseKeepBank(state) {
+    state.isRunning = false;
+    state.treadmillEndAt = null;
+    const seconds =
+      state._secondsLeft > 0
+        ? state._secondsLeft
+        : Math.max(0, (state.minutesBank || 0) * 60);
+    state._secondsLeft = seconds;
+    state.minutesBank = Math.max(state.minutesBank || 0, Math.ceil(seconds / 60));
+    state.minutesRemaining = state.minutesBank;
+    return state;
+  },
+
   tick(state) {
     if (state.isRunning && state.treadmillEndAt) {
-      const remaining = Math.max(0, Math.ceil((state.treadmillEndAt - Date.now()) / 1000));
-      state._secondsLeft = remaining;
-      state.minutesBank = Math.ceil(remaining / 60);
-      state.minutesRemaining = state.minutesBank;
+      const remainingMs = state.treadmillEndAt - Date.now();
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
       if (remaining <= 0) {
+        const overdueMs = Date.now() - state.treadmillEndAt;
+        // After a site restart, endAt is stale — never write 0 back to the server.
+        if (overdueMs > this.STALE_EXPIRE_MS) {
+          return this.pauseKeepBank(state);
+        }
         state.isRunning = false;
         state.treadmillEndAt = null;
         state._secondsLeft = 0;
         state.minutesBank = 0;
         state.minutesRemaining = 0;
+      } else {
+        state._secondsLeft = remaining;
+        state.minutesBank = Math.ceil(remaining / 60);
+        state.minutesRemaining = state.minutesBank;
       }
     }
     return state;
@@ -189,7 +211,11 @@ const WorkoutActions = {
 
   stopTreadmill(state) {
     if (state.isRunning && state.treadmillEndAt) {
-      const remaining = Math.max(0, Math.ceil((state.treadmillEndAt - Date.now()) / 1000));
+      const remainingMs = state.treadmillEndAt - Date.now();
+      if (remainingMs <= 0 && Date.now() - state.treadmillEndAt > WorkoutStoreActions.STALE_EXPIRE_MS) {
+        return WorkoutStoreActions.pauseKeepBank(state);
+      }
+      const remaining = Math.max(0, Math.ceil(remainingMs / 1000));
       state._secondsLeft = remaining;
       state.minutesBank = Math.ceil(remaining / 60);
       state.minutesRemaining = state.minutesBank;
@@ -264,7 +290,17 @@ function isObsMode() {
 }
 
 async function pushWorkoutUpdate(onUpdate, state) {
+  const beforeBank = state.minutesBank || 0;
   const ticked = WorkoutStoreActions.tick({ ...state });
+  // Only persist a real finish — never a stale zero after restart/update.
+  if (state.isRunning && !ticked.isRunning && (ticked.minutesBank || 0) === 0 && beforeBank > 0) {
+    const endAt = state.treadmillEndAt || 0;
+    const overdue = endAt ? Date.now() - endAt : 0;
+    if (overdue > WorkoutStoreActions.STALE_EXPIRE_MS) {
+      onUpdate(ticked);
+      return ticked;
+    }
+  }
   if (state.isRunning && !ticked.isRunning) {
     await WorkoutStore.save(ticked);
     onUpdate(ticked);
