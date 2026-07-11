@@ -639,12 +639,16 @@ app.get("/api/dashboard", async (req, res) => {
         controlPanel: `${BASE_URL}/workout/control-panel.html`,
         controlWidget: `${BASE_URL}/workout/control-panel.html?embed=1`,
         sceneWidget: `${BASE_URL}/workout/widget-scene.html`,
-        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1`,
-        stats: `${BASE_URL}/workout/workout-stats.html?obs=1`,
-        rules: `${BASE_URL}/workout/rules-banner.html?obs=1`,
-        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1`,
-        scene: `${BASE_URL}/workout/just-chatting.html?obs=1`,
+        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=12`,
+        stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=12`,
+        rules: `${BASE_URL}/workout/rules-banner.html?obs=1&v=12`,
+        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1&v=12`,
+        scene: `${BASE_URL}/workout/just-chatting.html?obs=1&v=12`,
       },
+      obsHostNote:
+        BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1")
+          ? "Local OBS only — for stream use https://na5ty.com workout URLs so dashboard + OBS share one bank."
+          : "Use these na5ty.com links in OBS (do not mix with localhost).",
       webhookReady: Boolean(req.session.webhookReady),
       webhookError: req.session.webhookError || null,
       webhookUrl: WEBHOOK_URL,
@@ -2219,8 +2223,34 @@ webhook.loadPublicKey().then(async () => {
       `[webhooks] URL changed ${previousUrl} -> ${WEBHOOK_URL} — re-registering subscriptions`
     );
   }
+
+  // One-time cleanup: delete leftover chat.message.sent webhooks (Pusher owns chat now).
+  try {
+    const token = tokenStore.getBroadcasterToken(DEFAULT_BROADCASTER_ID);
+    if (token?.accessToken && typeof kickApi.purgeChatMessageSubscriptions === "function") {
+      const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
+        DEFAULT_BROADCASTER_ID,
+        config.kick
+      );
+      const purged = await kickApi.purgeChatMessageSubscriptions(accessToken);
+      if (purged.deleted > 0) {
+        console.log(`[webhooks] purged ${purged.deleted} leftover chat.message.sent subscription(s)`);
+      } else {
+        console.log("[webhooks] no leftover chat.message.sent subscriptions");
+      }
+    }
+  } catch (error) {
+    console.warn("[webhooks] chat purge skipped:", error.message);
+  }
+
   await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
   await bootstrapKickRewardPartners();
+  if (typeof kickRewardsStore.dedupePartnerSlugVariants === "function") {
+    kickRewardsStore.dedupePartnerSlugVariants();
+  }
+  if (typeof kickRewardsStore.pruneChatPriorityToActive === "function") {
+    kickRewardsStore.pruneChatPriorityToActive();
+  }
   if (String(process.env.KICK_PUSHER_MONITOR || "1") !== "0") {
     kickPusherMonitor.refreshTargets();
     kickPusherMonitor.start();

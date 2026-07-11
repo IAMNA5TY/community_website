@@ -458,6 +458,11 @@ function renderWorkout(workout, obsUrls) {
   const running = workout?.isRunning ? " · timer running" : "";
   workoutPreview.textContent = `${name} owes ${minutes} minute${minutes === 1 ? "" : "s"} on the treadmill${running}`;
 
+  const hostNote = document.getElementById("obs-host-note");
+  if (hostNote && dashboardData?.obsHostNote) {
+    hostNote.textContent = dashboardData.obsHostNote;
+  }
+
   renderEmbedCodes();
 
   if (obsUrlsTable && obsUrls) {
