@@ -234,18 +234,18 @@ function buildWebhookNote(req) {
   const broadcasterId = req.session.user?.profile?.id;
   if (broadcasterId && webhookSubscription.isRateLimited(broadcasterId)) {
     const retryAt = webhookSubscription.rateLimitRetryAt(broadcasterId);
-    return `Kick API rate limit — subscription setup paused until ${retryAt ? new Date(retryAt).toLocaleTimeString() : "later"}. Your webhook URL should still be ${WEBHOOK_URL} in Kick Developer → Enable Webhooks. Chat may already work if you were subscribed before — type in Kick chat to test.`;
+    return `Kick API rate limit — subscription setup paused until ${retryAt ? new Date(retryAt).toLocaleTimeString() : "later"}. Chat still works via Pusher (no webhook needed). Sub/gift webhooks will retry after the pause.`;
   }
 
   if (!req.session.webhookReady) {
     const err = req.session.webhookError;
     if (err && /rate limit/i.test(err)) {
-      return `Kick API rate limit — wait 10–15 minutes, then refresh this page (do not spam sign-in). Webhook URL in Kick Developer must be ${WEBHOOK_URL}.`;
+      return `Kick API rate limit — wait a bit, then refresh. Chat still works via Pusher. Webhook URL for subs/gifts: ${WEBHOOK_URL}.`;
     }
     if (err) {
-      return `${err} In Kick Developer, open your app → Enable Webhooks → Webhook URL = ${WEBHOOK_URL} (this is separate from Redirect URLs).`;
+      return `${err} In Kick Developer → Enable Webhooks, set Webhook URL = ${WEBHOOK_URL} (for subs/gifts — chat uses Pusher).`;
     }
-    return `In Kick Developer → Enable Webhooks, set Webhook URL to ${WEBHOOK_URL}. Redirect URLs are only for sign-in. Sign in once after saving — the site re-registers on restart.`;
+    return `Chat is read via Pusher (no chat webhook needed). For subs/gifts, set Kick Developer → Enable Webhooks → ${WEBHOOK_URL}.`;
   }
 
   return null;
@@ -290,25 +290,35 @@ async function setupKickSubscriptions(req, options = {}) {
     }
 
     const events = subscriptionEventsFromList(subs);
-    const chatActive = events.includes("chat.message.sent");
+    // Chat is via Pusher — "ready" means we have a token + non-chat webhooks (or Pusher on).
+    const hasSubEvents = events.some((name) => String(name).startsWith("channel.subscription"));
+    const pusherOn = String(process.env.KICK_PUSHER_MONITOR || "1") !== "0";
+    req.session.webhookReady = hasSubEvents || pusherOn || events.length > 0;
+    req.session.webhookError = null;
 
-    req.session.webhookReady = chatActive;
-    req.session.webhookError = chatActive
-      ? null
-      : "chat.message.sent not subscribed — check Kick Developer webhook URL";
-
-    webhookSubscription.noteResult(broadcasterId, { events, chatActive });
+    webhookSubscription.noteResult(broadcasterId, {
+      events,
+      chatActive: pusherOn || events.includes("chat.message.sent"),
+    });
 
     console.log(
-      `[webhooks] ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
+      `[webhooks] ${broadcasterId}: ready (chat=Pusher, events=${events.join(", ") || "none"})`
     );
   } catch (error) {
     webhookSubscription.noteResult(broadcasterId, { error: error.message });
-    if (/rate limit/i.test(error.message) && webhookSubscription.getCachedChatActive(broadcasterId)) {
-      req.session.webhookReady = true;
-      req.session.webhookError = null;
-      console.warn("[webhooks] rate limited but using cached ready state:", error.message);
-      return;
+    if (/rate limit/i.test(error.message)) {
+      // Chat doesn't need webhooks — still mark ready so the banner isn't scary.
+      if (String(process.env.KICK_PUSHER_MONITOR || "1") !== "0") {
+        req.session.webhookReady = true;
+        req.session.webhookError = null;
+        console.warn("[webhooks] rate limited — chat via Pusher, sub webhooks will retry later");
+        return;
+      }
+      if (webhookSubscription.getCachedChatActive(broadcasterId)) {
+        req.session.webhookReady = true;
+        req.session.webhookError = null;
+        return;
+      }
     }
     req.session.webhookReady = false;
     req.session.webhookError = error.message;
@@ -338,22 +348,9 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
     return;
   }
 
-  const chatSlugs =
-    typeof kickRewardsStore.getChatMonitorSlugs === "function"
-      ? kickRewardsStore.getChatMonitorSlugs()
-      : kickRewardsStore.getMonitoredStreamers();
-  const broadcasterIds = [
-    ...new Set(
-      chatSlugs
-        .map((slug) => kickRewardsStore.getBroadcasterIdForSlug(slug))
-        .filter(Boolean)
-        .map(String)
-    ),
-  ];
-  // Always include the owner channel.
-  if (!broadcasterIds.includes(DEFAULT_BROADCASTER_ID)) {
-    broadcasterIds.unshift(DEFAULT_BROADCASTER_ID);
-  }
+  // Only the owner channel needs Kick webhooks (subs/gifts for workout).
+  // Partner chat is Pusher-only — mass partner subscribe is what rate-limits Kick.
+  const broadcasterIds = [String(DEFAULT_BROADCASTER_ID)];
   const force = Boolean(options.webhookUrlChanged);
 
   for (const broadcasterId of broadcasterIds) {
@@ -368,18 +365,21 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
     try {
       const subs = force
         ? await kickApi.resubscribeChannelEvents(accessToken, broadcasterId)
-        : await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+        : await kickApi.subscribeToChannelEvents(accessToken, broadcasterId, {
+            includeChat: false,
+          });
       const events = subscriptionEventsFromList(subs);
-      const chatActive = events.includes("chat.message.sent");
-      webhookSubscription.noteResult(broadcasterId, { events, chatActive });
+      webhookSubscription.noteResult(broadcasterId, {
+        events,
+        chatActive: String(process.env.KICK_PUSHER_MONITOR || "1") !== "0",
+      });
       console.log(
-        `[webhooks] boot ${broadcasterId}: ${chatActive ? "ready" : "incomplete"} (${events.join(", ") || "no events"})`
+        `[webhooks] boot ${broadcasterId}: non-chat events (${events.join(", ") || "none"}) — partner chat via Pusher`
       );
     } catch (error) {
       webhookSubscription.noteResult(broadcasterId, { error: error.message });
       console.warn(`[webhooks] boot subscribe failed for ${broadcasterId}:`, error.message);
       if (/rate limit/i.test(error.message)) {
-        // Stop the burst — remaining partners will retry on the next boot/timer pass.
         break;
       }
     }
@@ -877,7 +877,7 @@ app.get("/api/chat/status", (req, res) => {
     kickSignedInOnServer: Boolean(token?.accessToken),
     webhookConfigured: Boolean(process.env.WEBHOOK_URL),
     webhookUrl: WEBHOOK_URL,
-    liveChatRequiresWebhooks: true,
+    liveChatRequiresWebhooks: false,
   });
 });
 
@@ -932,9 +932,14 @@ app.get("/api/webhooks/debug", async (req, res) => {
 
 function buildWebhookDebugHints({ subscribedEvents, storedByBroadcaster, broadcasterId, debug }) {
   const hints = [];
+  const pusherOn = String(process.env.KICK_PUSHER_MONITOR || "1") !== "0";
 
   if (!subscribedEvents.includes("chat.message.sent")) {
-    hints.push("chat.message.sent is not subscribed — sign in at na5ty.com");
+    if (pusherOn) {
+      hints.push("chat.message.sent webhook skipped on purpose — partner/owner chat is read via Pusher");
+    } else {
+      hints.push("chat.message.sent is not subscribed — sign in at na5ty.com");
+    }
   }
 
   if (debug.kickHits === 0 && debug.totalHits > 0) {
