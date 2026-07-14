@@ -269,7 +269,7 @@ function renderOverviewQuickLinks(data) {
   const isOwner = data.role === "owner" || dashboardRole === "owner";
   if (!isOwner) {
     container.innerHTML =
-      '<p class="subtitle">Open the <strong>Only Pixels</strong> tab to register and copy your in-game link code.</p>';
+      '<p class="subtitle">Open <strong>Only Pixels</strong> to register and copy your in-game link code.</p>';
     return;
   }
 
@@ -282,12 +282,6 @@ function renderOverviewQuickLinks(data) {
   ];
 
   renderObsUrlTable(container, links);
-  container.insertAdjacentHTML(
-    "beforeend",
-    `<p class="subtitle" style="margin-top:12px;">
-      <button type="button" class="btn btn-kick btn-compact" data-goto-page="only-pixels">Only Pixels — register &amp; link code</button>
-    </p>`
-  );
 }
 
 function renderChannelDetails(channel) {

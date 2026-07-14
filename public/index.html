@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=10" />
+    <link rel="stylesheet" href="/styles.css?v=11" />
   </head>
   <body>
     <main class="page">
@@ -78,7 +78,11 @@
               <p class="nav-group__label">Stream</p>
               <button class="nav-link active" data-page="overview" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16M8 16V9m4 7V7m4 9v-5"/></svg></span>
-                <span class="nav-label">Stream stats</span>
+                <span class="nav-label">Dashboard</span>
+              </button>
+              <button class="nav-link" data-page="channel" type="button">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19c1.8-3 4.2-4.5 7-4.5S16.2 16 18 19"/></svg></span>
+                <span class="nav-label">Channel</span>
               </button>
               <button class="nav-link" data-page="chat" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 6h14v9H9l-4 4V6z"/></svg></span>
@@ -159,7 +163,7 @@
             <header class="page-header overview-header">
               <div>
                 <h1>Dashboard</h1>
-                <p class="subtitle">Stream status, channel info, and shortcuts to your tools</p>
+                <p class="subtitle">Live status and shortcuts to your stream tools</p>
               </div>
             </header>
 
@@ -174,15 +178,20 @@
                 </label>
               </div>
               <div class="hub-grid" id="hub-grid">
+                <button class="hub-card" type="button" data-goto-page="channel" data-page="channel" data-hub-filter="channel profile description category">
+                  <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19c1.8-3 4.2-4.5 7-4.5S16.2 16 18 19"/></svg></span>
+                  <strong>Channel</strong>
+                  <span>Description, category, tags, and other Kick channel details.</span>
+                </button>
                 <button class="hub-card" type="button" data-goto-page="only-pixels" data-page="only-pixels" data-hub-filter="only pixels kick city fivem">
                   <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
                   <strong>Only Pixels</strong>
                   <span>Register for Kick City, grab your link code, and track Kick points.</span>
                 </button>
-                <button class="hub-card" type="button" data-goto-page="widgets" data-page="widgets" data-hub-filter="widgets alerts chat spotify overlay">
+                <button class="hub-card" type="button" data-goto-page="widgets" data-page="widgets" data-hub-filter="widgets alerts chat spotify overlay obs">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
                   <strong>Widgets</strong>
-                  <span>Stream alerts, Kick chat box, and Spotify now playing for OBS.</span>
+                  <span>Alerts, chat box, Spotify, and OBS browser source quick links.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="bot" data-page="bot" data-hub-filter="chat bot commands timers">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="8" width="14" height="10" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9 16h6"/></svg></span>
@@ -216,17 +225,18 @@
                 </button>
               </div>
             </div>
+          </section>
 
-            <div class="overview-grid">
-              <div class="card panel">
-                <h2>Channel</h2>
-                <div class="detail-card" id="channel-details"></div>
+          <section class="page-view" data-page="channel">
+            <header class="page-header">
+              <div>
+                <h1>Channel</h1>
+                <p class="subtitle">Your Kick channel profile details from the API</p>
               </div>
-              <div class="card panel">
-                <h2>OBS quick links</h2>
-                <p class="subtitle">Copy these into OBS browser sources — they sync through na5ty.com</p>
-                <div id="overview-obs-links"></div>
-              </div>
+            </header>
+            <div class="card panel">
+              <h2>Channel info</h2>
+              <div class="detail-card" id="channel-details"></div>
             </div>
           </section>
 
@@ -580,6 +590,12 @@
               <h1>Widgets</h1>
               <p class="subtitle">OBS overlays that match your stream theme</p>
             </header>
+
+            <div class="card panel">
+              <h2>OBS quick links</h2>
+              <p class="subtitle">Most-used browser sources — full lists live on each tool page too</p>
+              <div id="overview-obs-links"></div>
+            </div>
 
             <div class="widgets-layout widgets-layout--dual">
               <div class="card panel widgets-preview-card">
@@ -1035,6 +1051,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=49"></script>
+    <script src="/app.js?v=50"></script>
   </body>
 </html>
