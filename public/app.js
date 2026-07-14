@@ -118,11 +118,53 @@ function applyNavAccess(me = {}) {
     link.classList.toggle("hidden", !allowedPages.includes(page));
   });
 
+  document.querySelectorAll(".hub-card[data-page]").forEach((card) => {
+    const page = card.dataset.page;
+    card.classList.toggle("hidden", !allowedPages.includes(page));
+  });
+
+  document.querySelectorAll(".nav-group").forEach((group) => {
+    const visible = [...group.querySelectorAll(".nav-link")].some(
+      (link) => !link.classList.contains("hidden")
+    );
+    group.classList.toggle("hidden", !visible);
+  });
+
+  const hubSection = document.querySelector(".hub-section");
+  if (hubSection) {
+    const anyHub = [...document.querySelectorAll(".hub-card[data-page]")].some(
+      (card) => !card.classList.contains("hidden")
+    );
+    hubSection.classList.toggle("hidden", !anyHub);
+  }
+
   if (!allowedPages.includes(currentPage)) {
     currentPage = allowedPages.includes("only-pixels")
       ? "only-pixels"
       : allowedPages[0] || "overview";
   }
+}
+
+function closeMobileNav() {
+  document.body.classList.remove("nav-open");
+}
+
+function openMobileNav() {
+  document.body.classList.add("nav-open");
+}
+
+function filterHubCards(query = "") {
+  const q = query.trim().toLowerCase();
+  document.querySelectorAll(".hub-card[data-page]").forEach((card) => {
+    const page = card.dataset.page;
+    const allowed = !allowedPages.length || allowedPages.includes(page);
+    if (!allowed) {
+      card.classList.add("hidden");
+      return;
+    }
+    const haystack = `${card.dataset.hubFilter || ""} ${card.textContent || ""}`.toLowerCase();
+    card.classList.toggle("hidden", Boolean(q) && !haystack.includes(q));
+  });
 }
 
 function showPage(page) {
@@ -138,6 +180,7 @@ function showPage(page) {
   document.querySelectorAll(".nav-link").forEach((link) => {
     link.classList.toggle("active", link.dataset.page === page);
   });
+  closeMobileNav();
   if (page === "lighting" && dashboardData?.lighting?.hue?.connected) {
     ensureHueDevicesLoaded();
   }
@@ -1809,6 +1852,7 @@ function showLogin() {
   onlyPixelsState.currentUsername = "";
   dashboardView.classList.add("hidden");
   loginView.classList.remove("hidden");
+  document.body.classList.remove("is-dashboard", "nav-open");
 }
 
 function showDashboardShell(me) {
@@ -1822,6 +1866,8 @@ function showDashboardShell(me) {
   if (avatar && profile.profileImage) avatar.src = profile.profileImage;
   loginView.classList.add("hidden");
   dashboardView.classList.remove("hidden");
+  document.body.classList.add("is-dashboard");
+  closeMobileNav();
 }
 
 async function loadDashboard() {
@@ -1861,10 +1907,14 @@ async function loadDashboard() {
 }
 
 document.addEventListener("click", (event) => {
-  const onlyPixelsLink = event.target.closest("[data-goto-page='only-pixels']");
-  if (onlyPixelsLink) {
+  const gotoLink = event.target.closest("[data-goto-page]");
+  if (gotoLink) {
     event.preventDefault();
-    showPage("only-pixels");
+    const page = gotoLink.dataset.gotoPage;
+    showPage(page);
+    if (page === "slots") refreshSlots();
+    if (page === "drinking") refreshDrinking();
+    if (page === "stake") refreshStake();
     return;
   }
 
@@ -1891,6 +1941,18 @@ mainNav.addEventListener("click", (event) => {
   if (link.dataset.page === "slots") refreshSlots();
   if (link.dataset.page === "drinking") refreshDrinking();
   if (link.dataset.page === "stake") refreshStake();
+});
+
+const menuToggle = document.getElementById("menu-toggle");
+const sidebarClose = document.getElementById("sidebar-close");
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+const hubSearchInput = document.getElementById("hub-search-input");
+
+menuToggle?.addEventListener("click", () => openMobileNav());
+sidebarClose?.addEventListener("click", () => closeMobileNav());
+sidebarBackdrop?.addEventListener("click", () => closeMobileNav());
+hubSearchInput?.addEventListener("input", (event) => {
+  filterHubCards(event.target.value || "");
 });
 
 logoutBtn.addEventListener("click", async () => {
