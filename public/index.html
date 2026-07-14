@@ -7,81 +7,48 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=8" />
+    <link rel="stylesheet" href="/styles.css?v=9" />
   </head>
   <body>
     <main class="page">
       <section class="login-shell" id="login-view">
-        <div class="login-hero card">
-          <div class="login-hero__badge">Only Pixels · Kick City</div>
-          <h1 class="login-hero__title">Welcome to <span class="login-hero__accent">NA5TY</span></h1>
-          <p class="login-hero__lead">
-            Sign in with your Kick account to register for in-game rewards, link your character,
-            and track your chat activity — all in one place.
+        <div class="login-stage">
+          <p class="login-kicker">Only Pixels · Kick City</p>
+          <h1 class="login-brand">NA5TY</h1>
+          <p class="login-tagline">
+            Sign in with Kick to register for in-game rewards, link your character,
+            and track chat activity.
           </p>
 
-          <ul class="login-feature-list">
-            <li>
-              <span class="login-feature-icon" aria-hidden="true">🎮</span>
-              <div>
-                <strong>Kick City rewards</strong>
-                <span>Register on Only Pixels and get a link code for FiveM</span>
-              </div>
-            </li>
-            <li>
-              <span class="login-feature-icon" aria-hidden="true">💬</span>
-              <div>
-                <strong>Chat tracked automatically</strong>
-                <span>Your Kick messages count toward rewards when you’re live in city</span>
-              </div>
-            </li>
-            <li>
-              <span class="login-feature-icon" aria-hidden="true">📊</span>
-              <div>
-                <strong>Your stats</strong>
-                <span>See your channel info and 24h activity after you sign in</span>
-              </div>
-            </li>
-          </ul>
-
-          <ol class="login-steps">
-            <li>Sign in with Kick below</li>
-            <li>Open <strong>Only Pixels</strong> → Register</li>
-            <li>In-game: <code>/kickmenu</code> → paste your link code</li>
-          </ol>
-
-          <p class="login-hero__foot">
-            Watch live at
-            <a href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">kick.com/na5ty</a>
-          </p>
-        </div>
-
-        <div class="login-panel card">
-          <div class="brand">
-            <p class="eyebrow">Get started</p>
-            <h2>Sign in</h2>
-            <p class="subtitle">
-              Use the same Kick username you chat with in stream. One account — website + in-game.
-            </p>
-          </div>
-          <div class="actions">
+          <div class="login-cta">
             <a class="btn btn-kick btn-kick-lg" href="/auth/kick">
               <span class="btn-icon" aria-hidden="true">K</span>
               Sign in with Kick
             </a>
-            <button class="btn btn-twitch btn-disabled" type="button" disabled>
-              <span class="btn-icon" aria-hidden="true">T</span>
+            <button class="btn btn-ghost btn-disabled" type="button" disabled>
               Twitch — Coming Soon
             </button>
           </div>
-          <p class="login-panel__note">
-            New here? You’ll land on <strong>Only Pixels</strong> after sign-in to grab your link code.
-            Stream dashboard tools are private to the broadcaster.
+
+          <p class="login-note">
+            Use the same Kick username you chat with on stream.
+            After sign-in you’ll land on <strong>Only Pixels</strong> for your link code.
           </p>
-          <p class="subtitle hidden" id="kick-redirect-hint" style="margin-top:16px;font-size:0.85rem;"></p>
+
+          <ol class="login-steps">
+            <li><span class="login-steps__n">01</span> Sign in with Kick</li>
+            <li><span class="login-steps__n">02</span> Open <strong>Only Pixels</strong> → Register</li>
+            <li><span class="login-steps__n">03</span> In-game <code>/kickmenu</code> → paste your link code</li>
+          </ol>
+
+          <p class="login-live">
+            Watch live at
+            <a href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">kick.com/na5ty</a>
+          </p>
+          <p class="subtitle hidden" id="kick-redirect-hint"></p>
         </div>
       </section>
 
