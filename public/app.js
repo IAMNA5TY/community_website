@@ -269,7 +269,7 @@ function renderOverviewQuickLinks(data) {
   const isOwner = data.role === "owner" || dashboardRole === "owner";
   if (!isOwner) {
     container.innerHTML =
-      '<p class="subtitle">Open <strong>Only Pixels</strong> to submit a Kick City streamer application.</p>';
+      '<p class="subtitle">Open <strong>Only Pixels</strong> to submit a Streamer Rewards partnership application.</p>';
     return;
   }
 
@@ -3129,13 +3129,13 @@ function renderOnlyPixelsApplication(application) {
     state === "approved"
       ? "Approved — partnership ready"
       : state === "banned"
-        ? "Banned from Kick City"
+        ? "Streamer partnership denied"
         : "Pending staff review";
   note.textContent =
     state === "approved"
       ? "Register as a Streamer in the in-city Kick menu with this same username. Partnership activates automatically."
       : state === "banned"
-        ? application.reason || "This account cannot register, earn points, tip, or use Kick City rewards."
+        ? application.reason || "You still have full viewer access, including chat rewards, tips, and viewer claims."
         : "Staff will review your streamer application. You can still claim viewer rewards in city while pending.";
 }
 
@@ -3490,21 +3490,22 @@ function renderOnlyPixelsPartners(applications) {
       .map((row) => {
         const slug = row.kickUsername || "";
         const status = row.status || "pending";
+        const statusLabel = status === "banned" ? "PARTNERSHIP DENIED" : status.toUpperCase();
         let actions = "";
         if (status === "pending") {
           actions = `
             <button class="btn btn-kick btn-compact" type="button" data-partner-action="approve" data-partner-slug="${escapeHtml(slug)}">Approve</button>
-            <button class="btn btn-secondary btn-compact" type="button" data-partner-action="ban" data-partner-slug="${escapeHtml(slug)}">Ban</button>`;
+            <button class="btn btn-secondary btn-compact" type="button" data-partner-action="ban" data-partner-slug="${escapeHtml(slug)}">Deny partnership</button>`;
         } else if (status === "approved") {
-          actions = `<button class="btn btn-secondary btn-compact" type="button" data-partner-action="ban" data-partner-slug="${escapeHtml(slug)}">Ban</button>`;
+          actions = `<button class="btn btn-secondary btn-compact" type="button" data-partner-action="ban" data-partner-slug="${escapeHtml(slug)}">Revoke partnership</button>`;
         } else {
-          actions = `<button class="btn btn-secondary btn-compact" type="button" data-partner-action="unban" data-partner-slug="${escapeHtml(slug)}">Unban to pending</button>`;
+          actions = `<button class="btn btn-secondary btn-compact" type="button" data-partner-action="unban" data-partner-slug="${escapeHtml(slug)}">Return to pending</button>`;
         }
         return `
         <div class="only-pixels-partner-row">
           <div class="only-pixels-partner-meta">
             <strong>@${escapeHtml(slug)}</strong>
-            <span>${escapeHtml(status.toUpperCase())}${row.broadcasterId ? ` · Kick id ${escapeHtml(String(row.broadcasterId))}` : ""}</span>
+            <span>${escapeHtml(statusLabel)}${row.broadcasterId ? ` · Kick id ${escapeHtml(String(row.broadcasterId))}` : ""}</span>
             ${row.reason ? `<span>Reason: ${escapeHtml(row.reason)}</span>` : ""}
             ${row.moderatedBy ? `<span>Last action by @${escapeHtml(row.moderatedBy)}</span>` : ""}
           </div>
@@ -3568,10 +3569,10 @@ function bindOnlyPixelsPartnerEvents() {
     if (!slug || !action) return;
     let reason = "";
     if (action === "ban") {
-      reason = prompt(`Optional ban reason for @${slug}:`, "") || "";
-      if (!confirm(`Ban @${slug} from all Kick City features?`)) return;
+      reason = prompt(`Optional partnership denial reason for @${slug}:`, "") || "";
+      if (!confirm(`Deny streamer partnership for @${slug}? They will keep viewer access.`)) return;
     }
-    setOnlyPixelsPartnersStatus(`${action === "approve" ? "Approving" : action === "ban" ? "Banning" : "Unbanning"} @${slug}…`);
+    setOnlyPixelsPartnersStatus(`${action === "approve" ? "Approving" : action === "ban" ? "Denying partnership for" : "Returning"} @${slug}…`);
     try {
       const response = await fetch(`/api/rewards/partner-applications/${encodeURIComponent(slug)}/${action}`, {
         method: "POST",
