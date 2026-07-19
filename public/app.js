@@ -269,7 +269,7 @@ function renderOverviewQuickLinks(data) {
   const isOwner = data.role === "owner" || dashboardRole === "owner";
   if (!isOwner) {
     container.innerHTML =
-      '<p class="subtitle">Open <strong>Only Pixels</strong> to register and copy your in-game link code.</p>';
+      '<p class="subtitle">Open <strong>Only Pixels</strong> to submit a Kick City streamer application.</p>';
     return;
   }
 
@@ -3133,10 +3133,10 @@ function renderOnlyPixelsApplication(application) {
         : "Pending staff review";
   note.textContent =
     state === "approved"
-      ? "Link this same Kick account in city and your streamer partnership will activate automatically."
+      ? "Register as a Streamer in the in-city Kick menu with this same username. Partnership activates automatically."
       : state === "banned"
         ? application.reason || "This account cannot register, earn points, tip, or use Kick City rewards."
-        : "You can link as a viewer now. Streamer partnership activates after staff approval.";
+        : "Staff will review your streamer application. You can still claim viewer rewards in city while pending.";
 }
 
 async function loadOnlyPixelsApplication() {
@@ -3307,18 +3307,10 @@ async function loadOnlyPixelsRegistration(username) {
     if (!response.ok) return;
     const data = await response.json();
     onlyPixelsState.currentUsername = data.registration?.kickUsername || username;
-    setOnlyPixelsLinkCode(data.registration?.linkCode);
-    if (data.registration?.gameLicense) {
-      setOnlyPixelsStatus(
-        `Registered as ${onlyPixelsState.currentUsername}. In-game account already linked — open /kickmenu to confirm.`,
-        "ok"
-      );
-    } else {
-      setOnlyPixelsStatus(
-        `Registered as ${onlyPixelsState.currentUsername}. Copy your link code if you still need to link in FiveM.`,
-        "ok"
-      );
-    }
+    setOnlyPixelsStatus(
+      `Streamer application submitted as @${onlyPixelsState.currentUsername}. Staff will review it here.`,
+      "ok"
+    );
     loadOnlyPixelsStats(onlyPixelsState.currentUsername, { quiet: true }).catch(() => {});
   } catch {
     // ignore
@@ -3336,20 +3328,16 @@ function bindOnlyPixelsEvents() {
     const kickUsername = input?.value?.trim();
     if (!kickUsername) return;
 
-    setOnlyPixelsStatus("Registering...");
+    setOnlyPixelsStatus("Submitting streamer application...");
     try {
       const data = await registerOnlyPixelsUsername(kickUsername);
       onlyPixelsState.currentUsername = data.registration.kickUsername;
-      const linked = Boolean(data.registration?.gameLicense);
       setOnlyPixelsStatus(
-        linked
-          ? `Registered as ${onlyPixelsState.currentUsername}. In-game is already linked.`
-          : `Registered as ${onlyPixelsState.currentUsername}. Use the link code below in the Kick Menu.`,
+        `Streamer application submitted as @${onlyPixelsState.currentUsername}. Staff will review it here.`,
         "ok"
       );
       const lookup = document.getElementById("only-pixels-lookup-username");
       if (lookup) lookup.value = onlyPixelsState.currentUsername;
-      setOnlyPixelsLinkCode(data.linkCode || data.registration?.linkCode);
       renderOnlyPixelsApplication(data.application);
       loadOnlyPixelsStats(onlyPixelsState.currentUsername, { quiet: true }).catch(() => {});
     } catch (error) {

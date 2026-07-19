@@ -247,15 +247,15 @@
             </header>
 
             <div class="card panel only-pixels-register">
-              <h2>Register for Kick City</h2>
+              <h2>Apply as a Kick City Streamer</h2>
               <p class="subtitle">
-                Register your Kick username here, then link in-game with <code>/kickmenu</code> →
-                <strong>Link Kick account</strong> — no chat commands.
+                First register as a <strong>Streamer</strong> in the in-city Kick menu. Then sign in
+                here with the same Kick account and submit your application for staff review.
               </p>
               <ol class="only-pixels-steps">
-                <li>Register your Kick username below (auto-filled when signed in).</li>
-                <li>Copy your <strong>link code</strong>.</li>
-                <li>In FiveM: <code>/kickmenu</code> → paste the code.</li>
+                <li>In FiveM: open <code>/kickmenu</code> and choose <strong>Register as a Streamer</strong>.</li>
+                <li>Sign in here with that same Kick username.</li>
+                <li>Submit below. Staff will approve, ban, or return your application to pending.</li>
               </ol>
               <form class="only-pixels-form" id="only-pixels-register-form">
                 <input
@@ -265,30 +265,15 @@
                   autocomplete="username"
                   required
                 />
-                <button class="btn btn-kick" type="submit">Register</button>
+                <button class="btn btn-kick" type="submit">Submit streamer application</button>
               </form>
               <p class="only-pixels-note" id="only-pixels-register-status"></p>
               <div class="only-pixels-code-box" id="only-pixels-application-box" hidden>
                 <p class="eyebrow" style="margin-bottom:4px;">Partner application</p>
                 <div id="only-pixels-application-status">Pending staff review</div>
                 <p class="subtitle" id="only-pixels-application-note" style="margin:8px 0 0;">
-                  You can link as a viewer now. Streamer partnership activates after staff approval.
+                  Your streamer partnership activates automatically after staff approval.
                 </p>
-              </div>
-              <div class="only-pixels-code-box" id="only-pixels-code-box" hidden>
-                <p class="eyebrow" style="margin-bottom:4px;">In-game link code</p>
-                <div class="only-pixels-code" id="only-pixels-code-value">------</div>
-                <p class="subtitle" style="margin-bottom:12px;">
-                  Open <code>/kickmenu</code> → <strong>Link Kick account</strong> → enter this code.
-                </p>
-                <div class="btn-row">
-                  <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-copy-code">
-                    Copy code
-                  </button>
-                  <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-refresh-code">
-                    Refresh code
-                  </button>
-                </div>
               </div>
             </div>
 
