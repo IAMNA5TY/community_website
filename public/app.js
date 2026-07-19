@@ -3116,6 +3116,38 @@ async function registerOnlyPixelsUsername(kickUsername) {
   return data;
 }
 
+function renderOnlyPixelsApplication(application) {
+  const box = document.getElementById("only-pixels-application-box");
+  const status = document.getElementById("only-pixels-application-status");
+  const note = document.getElementById("only-pixels-application-note");
+  if (!box || !status || !note) return;
+  box.hidden = !application;
+  if (!application) return;
+
+  const state = String(application.status || "pending");
+  status.textContent =
+    state === "approved"
+      ? "Approved — partnership ready"
+      : state === "banned"
+        ? "Banned from Kick City"
+        : "Pending staff review";
+  note.textContent =
+    state === "approved"
+      ? "Link this same Kick account in city and your streamer partnership will activate automatically."
+      : state === "banned"
+        ? application.reason || "This account cannot register, earn points, tip, or use Kick City rewards."
+        : "You can link as a viewer now. Streamer partnership activates after staff approval.";
+}
+
+async function loadOnlyPixelsApplication() {
+  const response = await fetch("/api/rewards/partner-application");
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Could not load partner application");
+  renderOnlyPixelsApplication(data.application);
+  refreshOnlyPixelsPartners(Boolean(data.isStaff));
+  return data;
+}
+
 function applyOnlyPixelsSummary(summary) {
   if (!summary) return;
   onlyPixelsState.lastSummary = summary;
@@ -3318,6 +3350,7 @@ function bindOnlyPixelsEvents() {
       const lookup = document.getElementById("only-pixels-lookup-username");
       if (lookup) lookup.value = onlyPixelsState.currentUsername;
       setOnlyPixelsLinkCode(data.linkCode || data.registration?.linkCode);
+      renderOnlyPixelsApplication(data.application);
       loadOnlyPixelsStats(onlyPixelsState.currentUsername, { quiet: true }).catch(() => {});
     } catch (error) {
       setOnlyPixelsStatus(error.message, "err");
@@ -3400,14 +3433,18 @@ function refreshOnlyPixels(dashboard) {
     lookupForm.classList.toggle("hidden", !isOwner);
   }
 
-  // Always resolve partners panel visibility first so it isn't stuck hidden behind cache/order bugs.
-  refreshOnlyPixelsPartners(isOwner);
+  loadOnlyPixelsApplication().catch((error) => {
+    setOnlyPixelsStatus(error.message, "err");
+  });
 
   if (kickName) {
     onlyPixelsState.currentUsername = kickName;
     onlyPixelsState.signedIn = true;
     setOnlyPixelsSignedInLabel(kickName, role);
-    if (usernameInput) usernameInput.value = kickName;
+    if (usernameInput) {
+      usernameInput.value = kickName;
+      usernameInput.readOnly = true;
+    }
     if (lookupInput) lookupInput.value = kickName;
   } else if (!onlyPixelsState.signedIn) {
     setOnlyPixelsSignedInLabel("", role);
@@ -3438,50 +3475,53 @@ function refreshOnlyPixels(dashboard) {
 async function loadOnlyPixelsPartners() {
   const list = document.getElementById("only-pixels-partners-list");
   if (!list) return;
-  const response = await fetch("/api/rewards/partners");
+  const response = await fetch("/api/rewards/partner-applications");
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.error || data.message || "Failed to load partners");
+    throw new Error(data.error || data.message || "Failed to load applications");
   }
-  renderOnlyPixelsPartners(data.streamers || []);
+  renderOnlyPixelsPartners(data.applications || []);
 }
 
-function renderOnlyPixelsPartners(streamers) {
+function renderOnlyPixelsPartners(applications) {
   const list = document.getElementById("only-pixels-partners-list");
   if (!list) return;
-  if (!streamers.length) {
-    list.innerHTML = '<p class="subtitle">No partners yet — add a Kick username above.</p>';
+  if (!applications.length) {
+    list.innerHTML = '<p class="subtitle">No applications yet.</p>';
     return;
   }
-  const countLabel = `<p class="subtitle" style="margin-bottom:8px;">${streamers.length} partnered channel${streamers.length === 1 ? "" : "s"}</p>`;
+  const counts = applications.reduce((bag, row) => {
+    const status = row.status || "pending";
+    bag[status] = (bag[status] || 0) + 1;
+    return bag;
+  }, {});
+  const countLabel = `<p class="subtitle" style="margin-bottom:8px;">${counts.pending || 0} pending · ${counts.approved || 0} approved · ${counts.banned || 0} banned</p>`;
   list.innerHTML =
     countLabel +
-    streamers
+    applications
       .map((row) => {
-        const slug = row.slug || "";
-        const id = row.broadcasterId ? `id ${escapeHtml(String(row.broadcasterId))}` : "id pending";
-        const chatOn = row.chatPriority === true;
-        const statusBits = [];
-        if (row.locked) statusBits.push("Locked (env)");
-        else if (row.inStore) statusBits.push("Monitored — can remove");
-        else statusBits.push("From env");
-        statusBits.push(chatOn ? "chat auto" : "chat pending");
-        if (row.chatroomId) statusBits.push(`room ${row.chatroomId}`);
-        const removeBtn = row.locked
-          ? '<button class="btn btn-secondary btn-compact" type="button" disabled title="Locked in server env">Locked</button>'
-          : `<button class="btn btn-secondary btn-compact" type="button" data-remove-partner="${escapeHtml(slug)}">Remove</button>`;
-        // Chat connects automatically; Reconnect is only a manual fallback.
-        const chatBtn = `<button class="btn btn-secondary btn-compact" type="button" data-reconnect-chat="${escapeHtml(slug)}" title="Manual fallback — chat should connect on its own">Reconnect</button>`;
+        const slug = row.kickUsername || "";
+        const status = row.status || "pending";
+        let actions = "";
+        if (status === "pending") {
+          actions = `
+            <button class="btn btn-kick btn-compact" type="button" data-partner-action="approve" data-partner-slug="${escapeHtml(slug)}">Approve</button>
+            <button class="btn btn-secondary btn-compact" type="button" data-partner-action="ban" data-partner-slug="${escapeHtml(slug)}">Ban</button>`;
+        } else if (status === "approved") {
+          actions = `<button class="btn btn-secondary btn-compact" type="button" data-partner-action="ban" data-partner-slug="${escapeHtml(slug)}">Ban</button>`;
+        } else {
+          actions = `<button class="btn btn-secondary btn-compact" type="button" data-partner-action="unban" data-partner-slug="${escapeHtml(slug)}">Unban to pending</button>`;
+        }
         return `
         <div class="only-pixels-partner-row">
           <div class="only-pixels-partner-meta">
             <strong>@${escapeHtml(slug)}</strong>
-            <span>${statusBits.map((bit) => escapeHtml(bit)).join(" · ")}</span>
-            <span>${id}</span>
+            <span>${escapeHtml(status.toUpperCase())}${row.broadcasterId ? ` · Kick id ${escapeHtml(String(row.broadcasterId))}` : ""}</span>
+            ${row.reason ? `<span>Reason: ${escapeHtml(row.reason)}</span>` : ""}
+            ${row.moderatedBy ? `<span>Last action by @${escapeHtml(row.moderatedBy)}</span>` : ""}
           </div>
           <div class="only-pixels-partner-actions">
-            ${chatBtn}
-            ${removeBtn}
+            ${actions}
           </div>
         </div>`;
       })
@@ -3495,13 +3535,13 @@ function setOnlyPixelsPartnersStatus(message, type = "") {
   el.className = `only-pixels-note${type ? ` ${type}` : ""}`;
 }
 
-function refreshOnlyPixelsPartners(isOwner) {
+function refreshOnlyPixelsPartners(isStaff) {
   const panel = document.getElementById("only-pixels-partners-panel");
   if (!panel) {
     console.warn("[only-pixels] partners panel missing from DOM — hard refresh the page");
     return;
   }
-  if (isOwner) {
+  if (isStaff) {
     panel.classList.remove("hidden");
     panel.hidden = false;
   } else {
@@ -3522,111 +3562,38 @@ function bindOnlyPixelsPartnerEvents() {
   if (onlyPixelsState.partnersBound) return;
   onlyPixelsState.partnersBound = true;
 
-  document.getElementById("only-pixels-partners-form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const input = document.getElementById("only-pixels-partner-slug");
-    const slug = input?.value?.trim().replace(/^@/, "") || "";
-    if (!slug) return;
-    setOnlyPixelsPartnersStatus("Adding…");
-    try {
-      const response = await fetch("/api/rewards/partners", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Add failed");
-      if (input) input.value = "";
-      const addedSlug = (data.streamer?.slug || slug).toLowerCase();
-      setOnlyPixelsPartnersStatus(
-        data.message || `Added @${addedSlug} — chat monitoring is live (no restart).`,
-        "ok"
-      );
-      let streamers = Array.isArray(data.streamers) ? data.streamers.slice() : [];
-      if (!streamers.some((row) => String(row.slug || "").toLowerCase() === addedSlug)) {
-        streamers.unshift({
-          slug: addedSlug,
-          broadcasterId: data.streamer?.broadcasterId || null,
-          inStore: true,
-          locked: false,
-        });
-      }
-      renderOnlyPixelsPartners(streamers);
-      await loadOnlyPixelsPartners();
-    } catch (error) {
-      setOnlyPixelsPartnersStatus(error.message, "err");
-    }
-  });
-
   document.getElementById("only-pixels-partners-refresh")?.addEventListener("click", async () => {
     setOnlyPixelsPartnersStatus("Refreshing…");
     try {
       await loadOnlyPixelsPartners();
-      // Nudge chat reconnect for partners still missing a chatroom.
-      const response = await fetch("/api/monitor/status");
-      const data = await response.json().catch(() => ({}));
-      const failed = (data.pusher?.streamers || []).filter(
-        (row) => row.slug && !row.connected && /chatroom/i.test(String(row.lastError || ""))
-      );
-      for (const row of failed.slice(0, 3)) {
-        await fetch(`/api/rewards/partners/${encodeURIComponent(row.slug)}/reconnect-chat`, {
-          method: "POST",
-        }).catch(() => null);
-      }
-      setOnlyPixelsPartnersStatus(
-        failed.length
-          ? `Refreshed — reconnecting chat for ${Math.min(3, failed.length)} partner(s)…`
-          : "",
-        failed.length ? "ok" : ""
-      );
+      setOnlyPixelsPartnersStatus("");
     } catch (error) {
       setOnlyPixelsPartnersStatus(error.message, "err");
     }
   });
 
   document.getElementById("only-pixels-partners-list")?.addEventListener("click", async (event) => {
-    const enableBtn = event.target.closest("[data-enable-chat], [data-reconnect-chat]");
-    if (enableBtn) {
-      const slug =
-        enableBtn.getAttribute("data-enable-chat") ||
-        enableBtn.getAttribute("data-reconnect-chat");
-      if (!slug) return;
-      setOnlyPixelsPartnersStatus(`Connecting chat for @${slug}…`);
-      try {
-        const response = await fetch(`/api/rewards/partners/${encodeURIComponent(slug)}/reconnect-chat`, {
-          method: "POST",
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Chat connect failed");
-        const connected = Boolean(data.pusher?.connected || data.pusher?.chatroomId);
-        setOnlyPixelsPartnersStatus(
-          connected
-            ? `Chat connected for @${slug}.`
-            : `Enabled @${slug} — chatroom still connecting, try again in 20s.`,
-          connected ? "ok" : "ok"
-        );
-        if (Array.isArray(data.streamers)) renderOnlyPixelsPartners(data.streamers);
-        else await loadOnlyPixelsPartners();
-      } catch (error) {
-        setOnlyPixelsPartnersStatus(error.message, "err");
-      }
-      return;
-    }
-
-    const btn = event.target.closest("[data-remove-partner]");
+    const btn = event.target.closest("[data-partner-action]");
     if (!btn) return;
-    const slug = btn.getAttribute("data-remove-partner");
-    if (!slug) return;
-    if (!confirm(`Remove @${slug} from site chat monitoring?`)) return;
-    setOnlyPixelsPartnersStatus(`Removing @${slug}…`);
+    const slug = btn.getAttribute("data-partner-slug");
+    const action = btn.getAttribute("data-partner-action");
+    if (!slug || !action) return;
+    let reason = "";
+    if (action === "ban") {
+      reason = prompt(`Optional ban reason for @${slug}:`, "") || "";
+      if (!confirm(`Ban @${slug} from all Kick City features?`)) return;
+    }
+    setOnlyPixelsPartnersStatus(`${action === "approve" ? "Approving" : action === "ban" ? "Banning" : "Unbanning"} @${slug}…`);
     try {
-      const response = await fetch(`/api/rewards/partners/${encodeURIComponent(slug)}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/rewards/partner-applications/${encodeURIComponent(slug)}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Remove failed");
-      setOnlyPixelsPartnersStatus(`Removed @${slug}.`, "ok");
-      renderOnlyPixelsPartners(data.streamers || []);
+      if (!response.ok) throw new Error(data.error || "Moderation action failed");
+      setOnlyPixelsPartnersStatus(`@${slug} is now ${data.application?.status || action}.`, "ok");
+      renderOnlyPixelsPartners(data.applications || []);
     } catch (error) {
       setOnlyPixelsPartnersStatus(error.message, "err");
     }

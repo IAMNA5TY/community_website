@@ -268,6 +268,13 @@
                 <button class="btn btn-kick" type="submit">Register</button>
               </form>
               <p class="only-pixels-note" id="only-pixels-register-status"></p>
+              <div class="only-pixels-code-box" id="only-pixels-application-box" hidden>
+                <p class="eyebrow" style="margin-bottom:4px;">Partner application</p>
+                <div id="only-pixels-application-status">Pending staff review</div>
+                <p class="subtitle" id="only-pixels-application-note" style="margin:8px 0 0;">
+                  You can link as a viewer now. Streamer partnership activates after staff approval.
+                </p>
+              </div>
               <div class="only-pixels-code-box" id="only-pixels-code-box" hidden>
                 <p class="eyebrow" style="margin-bottom:4px;">In-game link code</p>
                 <div class="only-pixels-code" id="only-pixels-code-value">------</div>
@@ -288,28 +295,19 @@
             <div class="card panel only-pixels-partners hidden" id="only-pixels-partners-panel">
               <div class="only-pixels-points-head">
                 <div>
-                  <h2>Partnered streamers</h2>
+                  <h2>Partner applications</h2>
                   <p class="subtitle">
-                    Who the site monitors for Kick chat &amp; points. Add/remove here — live, no site restart.
-                    Also add them in Kick City in-game for Who&apos;s Live.
+                    Staff can approve, ban, and unban Kick accounts. Approved users become partnered
+                    automatically when they link the same Kick account in city.
                   </p>
                 </div>
                 <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-partners-refresh">
                   Refresh
                 </button>
               </div>
-              <form class="only-pixels-form" id="only-pixels-partners-form">
-                <input
-                  id="only-pixels-partner-slug"
-                  placeholder="Kick username (e.g. mikepressure74)"
-                  autocomplete="off"
-                  required
-                />
-                <button class="btn btn-kick" type="submit">Add partner</button>
-              </form>
               <p class="only-pixels-note" id="only-pixels-partners-status"></p>
               <div class="only-pixels-partners-list" id="only-pixels-partners-list">
-                <p class="subtitle">Loading partners...</p>
+                <p class="subtitle">Loading applications...</p>
               </div>
             </div>
 

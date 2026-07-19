@@ -154,7 +154,10 @@ app.use(
 app.use((req, res, next) => {
   if (!req.path.startsWith("/api/")) return next();
   if (!req.session?.user || req.session.user.provider !== "kick") return next();
-  if (dashboardAccess.isDashboardOwner(req.session.user)) return next();
+  if (
+    dashboardAccess.isDashboardOwner(req.session.user) ||
+    dashboardAccess.isPartnerStaff(req.session.user)
+  ) return next();
 
   const apiPath = req.path.replace(/^\/api/, "") || "/";
   if (dashboardAccess.isPlayerAllowedApiPath(apiPath)) return next();
