@@ -109,7 +109,7 @@
 
     .soon-brand__name {
       font-family: var(--font-display);
-      font-size: 5.8rem;
+      font-size: 4.4rem;
       font-weight: 900;
       letter-spacing: 0.08em;
       line-height: 0.9;
@@ -124,58 +124,183 @@
       color: var(--orange-bright);
     }
 
-    .soon-hero {
+    .soon-center {
       position: absolute;
-      top: 250px;
+      top: 210px;
       left: 50%;
       transform: translateX(-50%);
-      width: min(920px, 48vw);
+      width: 520px;
       z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
       animation: soon-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
     }
 
-    .soon-hero__title {
-      font-family: var(--font-display);
-      font-size: 4.4rem;
-      font-weight: 900;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #fff;
-      line-height: 1;
-      text-shadow: 0 6px 30px rgba(0, 0, 0, 0.8);
+    .soon-countdown {
+      margin-bottom: 10px;
     }
 
-    .soon-hero__title em {
-      font-style: normal;
+    .soon-countdown__label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
       color: var(--blue-bright);
-      text-shadow: 0 0 28px rgba(79, 195, 247, 0.35);
+      margin-bottom: 4px;
     }
 
-    .soon-hero__bar {
+    .soon-countdown__time {
+      font-family: var(--font-display);
+      font-size: 4.2rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.75);
+    }
+
+    .soon-countdown__time.is-low {
+      color: var(--orange-bright);
+      text-shadow: 0 0 24px rgba(255, 87, 34, 0.4);
+      animation: time-pulse 1s ease-in-out infinite;
+    }
+
+    .soon-countdown__time.is-done {
+      color: var(--blue-bright);
+      animation: none;
+    }
+
+    .soon-bottle-wrap {
+      position: relative;
       width: 180px;
-      height: 4px;
-      margin: 22px auto 18px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, var(--orange), var(--blue));
-      box-shadow: 0 0 18px rgba(255, 87, 34, 0.35);
-      animation: soon-bar 2.4s ease-in-out infinite;
+      height: 340px;
+      margin: 8px 0 14px;
+      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.55));
     }
 
-    .soon-hero__tag {
-      min-height: 1.4em;
-      color: rgba(255, 255, 255, 0.82);
-      font-size: 1.15rem;
-      font-weight: 700;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
-      transition: opacity 0.35s ease, transform 0.35s ease;
+    .soon-bottle {
+      position: relative;
+      width: 100%;
+      height: 100%;
     }
 
-    .soon-hero__tag.is-out {
+    .soon-bottle svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .soon-bottle__glass {
+      fill: rgba(255, 255, 255, 0.06);
+      stroke: rgba(255, 255, 255, 0.55);
+      stroke-width: 3;
+    }
+
+    .soon-bottle__neck {
+      fill: rgba(255, 255, 255, 0.08);
+      stroke: rgba(255, 255, 255, 0.45);
+      stroke-width: 3;
+    }
+
+    .soon-bottle__cap {
+      fill: var(--orange);
+      stroke: rgba(255, 255, 255, 0.25);
+      stroke-width: 2;
+    }
+
+    .soon-bottle__foam {
+      fill: rgba(255, 248, 220, 0.92);
       opacity: 0;
-      transform: translateY(8px);
+      transition: opacity 0.25s ease;
+    }
+
+    .soon-bottle.is-full .soon-bottle__foam {
+      opacity: 1;
+    }
+
+    .soon-bottle.is-full {
+      animation: soon-bottle-pop 0.55s ease;
+    }
+
+    .soon-bottle__liquid {
+      fill: url(#beerGrad);
+      transition: y 0.35s ease, height 0.35s ease;
+    }
+
+    .soon-bottle__shine {
+      fill: rgba(255, 255, 255, 0.18);
+    }
+
+    .soon-keyword {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 87, 34, 0.4);
+      background: rgba(10, 10, 14, 0.75);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .soon-keyword code {
+      color: var(--orange-bright);
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      letter-spacing: 0.06em;
+    }
+
+    .soon-fill-meta {
+      margin-top: 12px;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.75);
+    }
+
+    .soon-fill-meta strong {
+      color: var(--orange-bright);
+    }
+
+    .soon-fill-bar {
+      width: 260px;
+      height: 8px;
+      margin-top: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .soon-fill-bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      box-shadow: 0 0 12px rgba(255, 87, 34, 0.35);
+      transition: width 0.3s ease;
+    }
+
+    .soon-fill-status {
+      margin-top: 10px;
+      min-height: 1.3em;
+      color: var(--blue-bright);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .soon-fill-status.is-full {
+      color: var(--orange-bright);
     }
 
     .soon-chat {
@@ -193,7 +318,7 @@
       background: rgba(8, 8, 14, 0.55);
       backdrop-filter: blur(10px);
       box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
-      animation: soon-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+      animation: soon-rise-plain 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
     }
 
     .soon-chat__head {
@@ -235,7 +360,7 @@
       top: 210px;
       width: 420px;
       z-index: 6;
-      animation: soon-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+      animation: soon-rise-plain 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
     }
 
     .soon-tread .panel {
@@ -379,15 +504,16 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes soon-bar {
-      0%, 100% { width: 140px; opacity: 0.75; }
-      50% { width: 220px; opacity: 1; }
-    }
-
     @keyframes soon-ring {
       0% { transform: scale(0.55); opacity: 0.55; }
       70% { opacity: 0.12; }
       100% { transform: scale(1.15); opacity: 0; }
+    }
+
+    @keyframes soon-bottle-pop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.06); }
+      100% { transform: scale(1); }
     }
   </style>
 </head>
@@ -406,10 +532,41 @@
       <div class="soon-brand__name">NA<span>5</span>TY</div>
     </div>
 
-    <div class="soon-hero">
-      <h1 class="soon-hero__title">Starting <em>Soon</em></h1>
-      <div class="soon-hero__bar" aria-hidden="true"></div>
-      <p class="soon-hero__tag" id="soonTag">Subs load the treadmill</p>
+    <div class="soon-center">
+      <div class="soon-countdown">
+        <div class="soon-countdown__label">Going live in</div>
+        <div class="soon-countdown__time" id="soonCountdown">3:00</div>
+      </div>
+
+      <div class="soon-bottle-wrap">
+        <div class="soon-bottle" id="soonBottle">
+          <svg viewBox="0 0 120 240" aria-hidden="true">
+            <defs>
+              <linearGradient id="beerGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ffcc80"/>
+                <stop offset="40%" stop-color="#ff9800"/>
+                <stop offset="100%" stop-color="#e65100"/>
+              </linearGradient>
+              <clipPath id="bottleClip">
+                <path d="M50 48c8 12 12 24 12 42v92c0 14-10 22-22 22s-22-8-22-22V90c0-18 4-30 12-42 4-6 8-10 10-12 2 2 6 6 10 12z"/>
+              </clipPath>
+            </defs>
+            <rect class="soon-bottle__cap" x="48" y="14" width="24" height="14" rx="3"/>
+            <path class="soon-bottle__neck" d="M50 28h20v22c0 6-4 10-7 13h-6c-3-3-7-7-7-13z"/>
+            <path class="soon-bottle__glass" d="M50 48c8 12 12 24 12 42v92c0 14-10 22-22 22s-22-8-22-22V90c0-18 4-30 12-42 4-6 8-10 10-12 2 2 6 6 10 12z"/>
+            <g clip-path="url(#bottleClip)">
+              <rect class="soon-bottle__liquid" id="beerFill" x="28" y="200" width="64" height="0"/>
+              <ellipse class="soon-bottle__foam" id="beerFoam" cx="60" cy="78" rx="20" ry="7"/>
+            </g>
+            <path d="M54 74c1 26 1 58 0 100" stroke="rgba(255,255,255,0.22)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="soon-keyword">Spam <code id="soonKeyword">na5ty</code> in chat</div>
+      <div class="soon-fill-meta"><strong id="soonHits">0</strong> / <span id="soonGoal">50</span> fills</div>
+      <div class="soon-fill-bar" aria-hidden="true"><span id="soonFillBar"></span></div>
+      <div class="soon-fill-status" id="soonFillStatus">Fill the bottle before we go live</div>
     </div>
 
     <aside class="soon-chat">
@@ -451,7 +608,7 @@
     <div class="soon-side-note">
       <div class="soon-side-note__label">Tonight</div>
       <p class="soon-side-note__text" id="soonNote">
-        Drop a <strong>sub</strong>, hype the chat, and stack treadmill minutes before we go live.
+        Spam <strong>na5ty</strong> to fill the beer — countdown starts now.
       </p>
     </div>
 
@@ -461,7 +618,7 @@
         <span class="arrow">→</span>
         <span class="chip"><strong>1</strong> Min Treadmill</span>
         <span class="arrow">→</span>
-        <span class="chip">Get Fit · Stay Nasty</span>
+        <span class="chip">Spam na5ty · Fill the beer</span>
       </div>
       <div class="soon-link">kick.com/na5ty</div>
     </footer>
@@ -471,9 +628,11 @@
   <script>
     const params = new URLSearchParams(location.search);
     const brand = params.get("brand") || "NA5TY";
-    const title = params.get("title") || "Starting Soon";
     const note = params.get("note");
     const broadcasterId = params.get("broadcasterId") || "1183030";
+    const keyword = String(params.get("keyword") || "na5ty").trim().toLowerCase() || "na5ty";
+    const goal = Math.max(5, parseInt(params.get("goal"), 10) || 50);
+    const countdownSeconds = Math.max(10, parseInt(params.get("countdown"), 10) || 180);
 
     const brandEl = document.querySelector(".soon-brand__name");
     if (brandEl) {
@@ -484,19 +643,13 @@
       }
     }
 
-    const titleEl = document.querySelector(".soon-hero__title");
-    if (titleEl && title) {
-      const parts = title.trim().split(/\s+/);
-      if (parts.length > 1) {
-        const last = parts.pop();
-        titleEl.innerHTML = `${parts.join(" ")} <em>${last}</em>`;
-      } else {
-        titleEl.textContent = title;
-      }
-    }
-
+    document.getElementById("soonKeyword").textContent = keyword;
+    document.getElementById("soonGoal").textContent = String(goal);
     if (note) {
       document.getElementById("soonNote").textContent = note;
+    } else {
+      document.getElementById("soonNote").innerHTML =
+        `Spam <strong>${keyword}</strong> to fill the beer — countdown starts now.`;
     }
 
     const chatFrame = document.getElementById("soonChatFrame");
@@ -504,25 +657,124 @@
       chatFrame.src = `/widgets/chat-box.html?obs=1&embed=1&max=18&broadcasterId=${encodeURIComponent(broadcasterId)}`;
     }
 
-    const tags = [
-      "Subs load the treadmill",
-      "Chat is already cooking",
-      "1 sub = 1 minute",
-      "Stay nasty · stay ready",
-      "Drop the hype in chat",
-      "Bank those minutes",
-    ];
-    const tagEl = document.getElementById("soonTag");
-    let tagIndex = 0;
-    setInterval(() => {
-      if (!tagEl) return;
-      tagEl.classList.add("is-out");
-      setTimeout(() => {
-        tagIndex = (tagIndex + 1) % tags.length;
-        tagEl.textContent = tags[tagIndex];
-        tagEl.classList.remove("is-out");
-      }, 280);
-    }, 3200);
+    // ── 3-minute countdown (starts when scene opens) ──
+    const countdownEl = document.getElementById("soonCountdown");
+    const endsAt = Date.now() + countdownSeconds * 1000;
+
+    function formatCountdown(totalSec) {
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${m}:${String(s).padStart(2, "0")}`;
+    }
+
+    function tickCountdown() {
+      const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      countdownEl.textContent = formatCountdown(left);
+      countdownEl.classList.toggle("is-low", left > 0 && left <= 30);
+      countdownEl.classList.toggle("is-done", left <= 0);
+      if (left <= 0) {
+        countdownEl.textContent = "NOW";
+        document.querySelector(".soon-countdown__label").textContent = "Let's go";
+      }
+    }
+    tickCountdown();
+    setInterval(tickCountdown, 250);
+
+    // ── Keyword beer fill from live chat ──
+    const FILL_TOP = 70;
+    const FILL_BOTTOM = 200;
+    const FILL_MAX_H = FILL_BOTTOM - FILL_TOP;
+    const beerFill = document.getElementById("beerFill");
+    const beerFoam = document.getElementById("beerFoam");
+    const bottleEl = document.getElementById("soonBottle");
+    const hitsEl = document.getElementById("soonHits");
+    const fillBar = document.getElementById("soonFillBar");
+    const fillStatus = document.getElementById("soonFillStatus");
+
+    const openedAt = Date.now();
+    const seenIds = new Set();
+    let hits = 0;
+    let seeded = false;
+
+    function messageHasKeyword(message) {
+      const text = String(message?.content || "")
+        .replace(/\[emote:\d+:[^\]]+\]/g, " ")
+        .toLowerCase();
+      return text.includes(keyword);
+    }
+
+    function messageTimeMs(message) {
+      const raw = message?.createdAt || message?.timestamp || message?.created_at;
+      const ms = raw ? Date.parse(raw) : NaN;
+      return Number.isFinite(ms) ? ms : 0;
+    }
+
+    function setFill(count) {
+      hits = Math.max(0, count);
+      const pct = Math.min(100, (hits / goal) * 100);
+      const height = (pct / 100) * FILL_MAX_H;
+      const y = FILL_BOTTOM - height;
+      beerFill.setAttribute("y", String(y));
+      beerFill.setAttribute("height", String(height));
+      beerFoam.setAttribute("cy", String(Math.max(FILL_TOP + 8, y + 4)));
+      hitsEl.textContent = String(hits);
+      fillBar.style.width = `${pct}%`;
+
+      const full = hits >= goal;
+      bottleEl.classList.toggle("is-full", full);
+      fillStatus.classList.toggle("is-full", full);
+      fillStatus.textContent = full
+        ? "Bottle crushed — chat is nasty"
+        : `Spam ${keyword} · ${Math.max(0, goal - hits)} to go`;
+    }
+
+    function absorbMessages(messages = [], { countNew = true } = {}) {
+      for (const message of messages) {
+        if (!message?.id || seenIds.has(message.id)) continue;
+        seenIds.add(message.id);
+        if (!countNew) continue;
+        const ageOk = messageTimeMs(message) >= openedAt - 2000;
+        if (ageOk && messageHasKeyword(message)) {
+          setFill(hits + 1);
+        }
+      }
+    }
+
+    async function pollChat() {
+      try {
+        const res = await fetch(
+          `/api/chat/messages?broadcasterId=${encodeURIComponent(broadcasterId)}&limit=40`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const messages = data.messages || [];
+        if (!seeded) {
+          absorbMessages(messages, { countNew: false });
+          seeded = true;
+          return;
+        }
+        absorbMessages(messages, { countNew: true });
+      } catch {
+        /* ignore transient poll errors */
+      }
+    }
+
+    function connectChatEvents() {
+      try {
+        const source = new EventSource("/api/chat/events");
+        source.onmessage = () => {
+          pollChat();
+        };
+      } catch {
+        /* SSE optional */
+      }
+    }
+
+    setFill(0);
+    pollChat();
+    connectChatEvents();
+    setInterval(pollChat, 1500);
 
     initWorkoutPage({
       treadmill: document.getElementById("treadmillPanel"),
