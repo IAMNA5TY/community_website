@@ -95,13 +95,35 @@ const WorkoutStore = {
     state = WorkoutStoreActions.tick({ ...state });
     // Never POST a zero wipe over a known good bank (OBS stale localStorage).
     const cachedBank = this._cache?.minutesBank || 0;
-    if ((state.minutesBank || 0) === 0 && cachedBank > 0 && !state.isRunning) {
+    if (
+      (state.minutesBank || 0) === 0 &&
+      cachedBank > 0 &&
+      !state.isRunning &&
+      !state.intentionalBankClear
+    ) {
       state = {
         ...state,
         minutesBank: cachedBank,
         minutesRemaining: cachedBank,
         _secondsLeft: this._cache._secondsLeft || cachedBank * 60,
+        intentionalBankClear: false,
       };
+    }
+    // Also never POST 0 if we somehow lost cache but localStorage still has a bank.
+    if (
+      (state.minutesBank || 0) === 0 &&
+      !state.isRunning &&
+      !state.intentionalBankClear
+    ) {
+      const localBank = this.loadLocal()?.minutesBank || 0;
+      if (localBank > 0) {
+        state = {
+          ...state,
+          minutesBank: localBank,
+          minutesRemaining: localBank,
+          _secondsLeft: localBank * 60,
+        };
+      }
     }
     try {
       const res = await this.fetchApi(API_STATE, {
@@ -254,7 +276,11 @@ const WorkoutActions = {
       startWeight: state.startWeight,
       streamerName: state.streamerName,
     };
-    return { ...WorkoutStore.defaults(), ...keep };
+    return {
+      ...WorkoutStore.defaults(),
+      ...keep,
+      intentionalBankClear: true,
+    };
   },
 
   updateStats(fields, state) {
@@ -311,13 +337,24 @@ function isObsMode() {
 async function pushWorkoutUpdate(onUpdate, state) {
   const beforeBank = state.minutesBank || 0;
   const ticked = WorkoutStoreActions.tick({ ...state });
-  // Only persist a real finish — never a stale zero after restart/update.
+  // Never persist a zero wipe from a stale/restart tick.
   if (state.isRunning && !ticked.isRunning && (ticked.minutesBank || 0) === 0 && beforeBank > 0) {
     const endAt = state.treadmillEndAt || 0;
     const overdue = endAt ? Date.now() - endAt : 0;
     if (overdue > WorkoutStoreActions.STALE_EXPIRE_MS) {
       onUpdate(ticked);
       return ticked;
+    }
+    // Even inside the "fresh finish" window, refuse to save 0 if the bank was still high
+    // right before tick (deploy clock skew / multi-tab race). Keep UI paused with bank.
+    if (beforeBank > 1) {
+      const kept = WorkoutStoreActions.pauseKeepBank({
+        ...state,
+        minutesBank: beforeBank,
+        _secondsLeft: state._secondsLeft || beforeBank * 60,
+      });
+      onUpdate(kept);
+      return kept;
     }
   }
   if (state.isRunning && !ticked.isRunning) {

@@ -493,7 +493,12 @@ function renderWorkout(workout, obsUrls) {
   const name = workout?.walkName || workout?.streamerName || "Nasty";
   const minutes = workout?.minutesBank ?? 0;
   const running = workout?.isRunning ? " · timer running" : "";
-  workoutPreview.textContent = `${name} owes ${minutes} minute${minutes === 1 ? "" : "s"} on the treadmill${running}`;
+  const lastGood = Number(workout?.lastGoodMinutes) || 0;
+  let text = `${name} owes ${minutes} minute${minutes === 1 ? "" : "s"} on the treadmill${running}`;
+  if (minutes === 0 && lastGood > 0) {
+    text += ` · last saved bank: ${lastGood} (use Restore last bank in the control panel)`;
+  }
+  workoutPreview.textContent = text;
 
   const hostNote = document.getElementById("obs-host-note");
   if (hostNote && dashboardData?.obsHostNote) {

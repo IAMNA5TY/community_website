@@ -415,6 +415,11 @@
         <button class="btn btn-primary btn-sm" onclick="setTotals()">Set totals</button>
         <button class="btn btn-dark btn-sm" onclick="syncTotalsFromLive()">Sync from live</button>
       </div>
+      <div class="btn-pair" style="margin-top:8px;">
+        <button class="btn btn-dark btn-sm" id="btnRestoreBank" onclick="restoreLastBank()" title="Restore last saved minute bank if it was wiped">
+          Restore last bank
+        </button>
+      </div>
 
       <div class="divider"></div>
 
@@ -602,11 +607,32 @@
       toast("Synced from live stats");
     }
 
+    async function restoreLastBank() {
+      try {
+        const res = await WorkoutStore.fetchApi(API_STATE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "restoreLastGood" }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast(data.error || "Nothing to restore");
+          return;
+        }
+        WorkoutStore._cache = { ...WorkoutStore.defaults(), ...data };
+        loadForm(WorkoutStore._cache);
+        toast(`Restored ${data.minutesBank || 0} min bank`);
+      } catch {
+        toast("Restore failed");
+      }
+    }
+
     async function setTotals() {
       const subs = document.getElementById("inTotalSubs").value;
       const mins = document.getElementById("inTotalMins").value;
       let state = await WorkoutStore.load();
       state = WorkoutActions.setTotals(subs, mins, state);
+      if ((parseInt(mins, 10) || 0) === 0) state.intentionalBankClear = true;
       await WorkoutStore.save(state);
       toast("Totals updated");
     }
