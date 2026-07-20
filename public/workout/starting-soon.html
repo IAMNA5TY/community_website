@@ -20,15 +20,21 @@
       width: 1920px;
       height: 1080px;
       overflow: hidden;
+      background: transparent;
     }
 
-    .soon-scene.stream-bg {
+    .soon-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
       background-color: #08080c;
       background-image:
         linear-gradient(180deg, rgba(6, 6, 12, 0.55) 0%, rgba(4, 4, 8, 0.78) 100%),
         var(--stream-bg-image);
       background-size: cover;
       background-position: center;
+      -webkit-mask-image: url(#soonHoleMask);
+      mask-image: url(#soonHoleMask);
     }
 
     .soon-vignette {
@@ -39,6 +45,8 @@
         radial-gradient(ellipse 55% 50% at 50% 42%, rgba(0, 0, 0, 0.15), transparent 70%),
         linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0%, transparent 22%, transparent 78%, rgba(0, 0, 0, 0.45) 100%);
       z-index: 1;
+      -webkit-mask-image: url(#soonHoleMask);
+      mask-image: url(#soonHoleMask);
     }
 
     .soon-frame {
@@ -375,7 +383,7 @@
     .soon-tread {
       position: absolute;
       right: 56px;
-      top: 210px;
+      top: 200px;
       width: 420px;
       z-index: 6;
       animation: soon-rise-plain 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
@@ -388,42 +396,164 @@
     }
 
     .soon-tread .treadmill-time {
-      font-size: 4.6rem;
+      font-size: 3.6rem;
     }
 
-    .soon-side-note {
+    .soon-tread .panel-body.treadmill-display {
+      padding-bottom: 14px;
+    }
+
+    /* Featured streamer cutout — transparent hole for OBS source underneath */
+    .soon-feature {
       position: absolute;
       right: 56px;
-      top: 620px;
+      top: 575px;
       width: 420px;
       z-index: 6;
-      padding: 18px 20px;
-      border-radius: 14px;
-      border: 1px solid rgba(79, 195, 247, 0.28);
-      background: rgba(8, 14, 22, 0.72);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-      animation: soon-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+      animation: soon-rise-plain 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
     }
 
-    .soon-side-note__label {
+    .soon-feature__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    .soon-feature__head strong {
       font-size: 0.72rem;
       font-weight: 800;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--blue-bright);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
     }
 
-    .soon-side-note__text {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 1.05rem;
-      font-weight: 700;
-      line-height: 1.35;
+    .soon-feature__name {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.04em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .soon-side-note__text strong {
+    .soon-feature__frame {
+      position: relative;
+      width: 420px;
+      height: 236px;
+      border-radius: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.28);
+      background: transparent;
+      box-shadow:
+        0 0 0 1px rgba(255, 87, 34, 0.25),
+        0 16px 40px rgba(0, 0, 0, 0.35);
+      overflow: visible;
+    }
+
+    .soon-feature__frame::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 4px;
+      border-radius: 14px 14px 0 0;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      box-shadow: 0 0 14px rgba(255, 87, 34, 0.35);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .soon-feature__cutout {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      background: transparent;
+    }
+
+    .soon-feature__corner {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      z-index: 3;
+      pointer-events: none;
+      border: 3px solid var(--orange-bright);
+    }
+
+    .soon-feature__corner--tl {
+      top: 10px;
+      left: 10px;
+      border-right: 0;
+      border-bottom: 0;
+      border-radius: 4px 0 0 0;
+    }
+
+    .soon-feature__corner--tr {
+      top: 10px;
+      right: 10px;
+      border-left: 0;
+      border-bottom: 0;
+      border-radius: 0 4px 0 0;
+    }
+
+    .soon-feature__corner--bl {
+      bottom: 10px;
+      left: 10px;
+      border-right: 0;
+      border-top: 0;
+      border-radius: 0 0 0 4px;
+    }
+
+    .soon-feature__corner--br {
+      bottom: 10px;
+      right: 10px;
+      border-left: 0;
+      border-top: 0;
+      border-radius: 0 0 4px 0;
+    }
+
+    .soon-feature__live {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 4;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid rgba(255, 87, 34, 0.45);
       color: var(--orange-bright);
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .soon-feature__live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 10px var(--orange-glow);
+      animation: live-blink 1.2s ease-in-out infinite;
+    }
+
+    .soon-feature__hint {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.55);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
     }
 
     .soon-footer {
@@ -512,7 +642,7 @@
 
     .soon-chat,
     .soon-tread,
-    .soon-side-note,
+    .soon-feature,
     .soon-footer {
       animation-name: soon-rise-plain;
     }
@@ -536,7 +666,18 @@
   </style>
 </head>
 <body>
-  <div class="soon-scene stream-bg" id="soonScene">
+  <!-- Hole mask so featured cutout is transparent for OBS sources underneath -->
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <defs>
+      <mask id="soonHoleMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">
+        <rect x="0" y="0" width="1920" height="1080" fill="white"/>
+        <rect id="soonHoleRect" x="1444" y="575" width="420" height="236" rx="14" fill="black"/>
+      </mask>
+    </defs>
+  </svg>
+
+  <div class="soon-scene" id="soonScene">
+    <div class="soon-bg" aria-hidden="true"></div>
     <div class="soon-vignette"></div>
     <div class="soon-pulse-ring" aria-hidden="true"></div>
     <div class="soon-pulse-ring" aria-hidden="true"></div>
@@ -658,12 +799,24 @@
       </div>
     </aside>
 
-    <div class="soon-side-note">
-      <div class="soon-side-note__label">Tonight</div>
-      <p class="soon-side-note__text" id="soonNote">
-        Spam <strong>na5ty</strong> to fill the beer — countdown starts now.
-      </p>
-    </div>
+    <aside class="soon-feature" id="soonFeature">
+      <div class="soon-feature__head">
+        <strong>Featured streamer</strong>
+        <span class="soon-feature__name" id="featureName">Add source in OBS</span>
+      </div>
+      <div class="soon-feature__frame" title="Transparent cutout — place Kick/webcam source behind this hole in OBS">
+        <div class="soon-feature__cutout" id="featureCutout"></div>
+        <span class="soon-feature__corner soon-feature__corner--tl" aria-hidden="true"></span>
+        <span class="soon-feature__corner soon-feature__corner--tr" aria-hidden="true"></span>
+        <span class="soon-feature__corner soon-feature__corner--bl" aria-hidden="true"></span>
+        <span class="soon-feature__corner soon-feature__corner--br" aria-hidden="true"></span>
+        <div class="soon-feature__live">
+          <span class="soon-feature__live-dot" aria-hidden="true"></span>
+          Live
+        </div>
+      </div>
+      <p class="soon-feature__hint">OBS: put their stream/webcam under this window · 420×236 at x:1444 y:575</p>
+    </aside>
 
     <footer class="soon-footer">
       <div class="soon-rules">
@@ -681,11 +834,11 @@
   <script>
     const params = new URLSearchParams(location.search);
     const brand = params.get("brand") || "NA5TY";
-    const note = params.get("note");
     const broadcasterId = params.get("broadcasterId") || "1183030";
     const keyword = String(params.get("keyword") || "na5ty").trim().toLowerCase() || "na5ty";
     const goal = Math.max(5, parseInt(params.get("goal"), 10) || 50);
     const countdownSeconds = Math.max(10, parseInt(params.get("countdown"), 10) || 180);
+    const feature = String(params.get("feature") || params.get("featureName") || "").trim();
 
     const brandEl = document.querySelector(".soon-brand__name");
     if (brandEl) {
@@ -698,11 +851,12 @@
 
     document.getElementById("soonKeyword").textContent = keyword;
     document.getElementById("soonGoal").textContent = String(goal);
-    if (note) {
-      document.getElementById("soonNote").textContent = note;
-    } else {
-      document.getElementById("soonNote").innerHTML =
-        `Spam <strong>${keyword}</strong> to fill the beer — countdown starts now.`;
+
+    const featureNameEl = document.getElementById("featureName");
+    if (featureNameEl) {
+      featureNameEl.textContent = feature
+        ? (feature.startsWith("@") ? feature : `@${feature}`)
+        : "Add source in OBS";
     }
 
     const chatFrame = document.getElementById("soonChatFrame");
