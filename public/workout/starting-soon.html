@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920">
+  <title>NA5TY — Starting Soon</title>
+  <link rel="stylesheet" href="css/workout-theme.css">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+  <link rel="stylesheet" href="../widgets/css/widgets-theme.css?v=10">
+  <style>
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #08080c;
+    }
+
+    .soon-scene {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+    }
+
+    .soon-scene.stream-bg {
+      background-color: #08080c;
+      background-image:
+        linear-gradient(180deg, rgba(6, 6, 12, 0.55) 0%, rgba(4, 4, 8, 0.78) 100%),
+        var(--stream-bg-image);
+      background-size: cover;
+      background-position: center;
+    }
+
+    .soon-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 55% 50% at 50% 42%, rgba(0, 0, 0, 0.15), transparent 70%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0%, transparent 22%, transparent 78%, rgba(0, 0, 0, 0.45) 100%);
+      z-index: 1;
+    }
+
+    .soon-frame {
+      position: absolute;
+      inset: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 87, 34, 0.12),
+        inset 0 0 80px rgba(0, 0, 0, 0.25);
+    }
+
+    .soon-frame::before,
+    .soon-frame::after {
+      content: "";
+      position: absolute;
+      width: 120px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+    }
+
+    .soon-frame::before {
+      top: -2px;
+      left: 48px;
+    }
+
+    .soon-frame::after {
+      bottom: -2px;
+      right: 48px;
+    }
+
+    .soon-brand {
+      position: absolute;
+      top: 56px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      text-align: center;
+      animation: soon-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .soon-brand__live {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 87, 34, 0.4);
+      background: rgba(10, 10, 14, 0.7);
+      color: var(--orange-bright);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .soon-brand__live-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 12px var(--orange-glow);
+      animation: live-blink 1.2s ease-in-out infinite;
+    }
+
+    .soon-brand__name {
+      font-family: var(--font-display);
+      font-size: 5.8rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      line-height: 0.9;
+      color: #fff;
+      text-transform: uppercase;
+      text-shadow:
+        0 4px 28px rgba(0, 0, 0, 0.75),
+        0 0 40px rgba(255, 87, 34, 0.18);
+    }
+
+    .soon-brand__name span {
+      color: var(--orange-bright);
+    }
+
+    .soon-hero {
+      position: absolute;
+      top: 250px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(920px, 48vw);
+      z-index: 5;
+      text-align: center;
+      animation: soon-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+    }
+
+    .soon-hero__title {
+      font-family: var(--font-display);
+      font-size: 4.4rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1;
+      text-shadow: 0 6px 30px rgba(0, 0, 0, 0.8);
+    }
+
+    .soon-hero__title em {
+      font-style: normal;
+      color: var(--blue-bright);
+      text-shadow: 0 0 28px rgba(79, 195, 247, 0.35);
+    }
+
+    .soon-hero__bar {
+      width: 180px;
+      height: 4px;
+      margin: 22px auto 18px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      box-shadow: 0 0 18px rgba(255, 87, 34, 0.35);
+      animation: soon-bar 2.4s ease-in-out infinite;
+    }
+
+    .soon-hero__tag {
+      min-height: 1.4em;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .soon-hero__tag.is-out {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .soon-chat {
+      position: absolute;
+      left: 56px;
+      top: 210px;
+      bottom: 120px;
+      width: 520px;
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(8, 8, 14, 0.55);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+      animation: soon-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+    }
+
+    .soon-chat__head {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(8, 8, 12, 0.55);
+    }
+
+    .soon-chat__head strong {
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+    }
+
+    .soon-chat__head span {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .soon-chat iframe {
+      flex: 1;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      min-height: 0;
+    }
+
+    .soon-tread {
+      position: absolute;
+      right: 56px;
+      top: 210px;
+      width: 420px;
+      z-index: 6;
+      animation: soon-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+    }
+
+    .soon-tread .panel {
+      background: rgba(12, 12, 18, 0.72);
+      backdrop-filter: blur(10px);
+      border-color: rgba(255, 87, 34, 0.28);
+    }
+
+    .soon-tread .treadmill-time {
+      font-size: 4.6rem;
+    }
+
+    .soon-side-note {
+      position: absolute;
+      right: 56px;
+      top: 620px;
+      width: 420px;
+      z-index: 6;
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(79, 195, 247, 0.28);
+      background: rgba(8, 14, 22, 0.72);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      animation: soon-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+    }
+
+    .soon-side-note__label {
+      margin-bottom: 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+    }
+
+    .soon-side-note__text {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .soon-side-note__text strong {
+      color: var(--orange-bright);
+    }
+
+    .soon-footer {
+      position: absolute;
+      left: 56px;
+      right: 56px;
+      bottom: 48px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 16px 22px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(8, 8, 14, 0.72);
+      backdrop-filter: blur(10px);
+      animation: soon-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
+    }
+
+    .soon-rules {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .soon-rules .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .soon-rules .chip strong {
+      color: var(--orange-bright);
+    }
+
+    .soon-rules .arrow {
+      color: var(--blue-bright);
+      opacity: 0.85;
+      animation: arrow-pulse 1.4s ease-in-out infinite;
+    }
+
+    .soon-link {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--orange-bright);
+      text-shadow: 0 0 18px rgba(255, 87, 34, 0.25);
+      white-space: nowrap;
+    }
+
+    .soon-pulse-ring {
+      position: absolute;
+      left: 50%;
+      top: 430px;
+      width: 520px;
+      height: 520px;
+      margin-left: -260px;
+      margin-top: -260px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 87, 34, 0.18);
+      pointer-events: none;
+      z-index: 3;
+      animation: soon-ring 4s ease-out infinite;
+    }
+
+    .soon-pulse-ring:nth-child(2) {
+      animation-delay: 1.3s;
+      border-color: rgba(79, 195, 247, 0.16);
+    }
+
+    @keyframes soon-rise {
+      from { opacity: 0; transform: translateX(-50%) translateY(18px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .soon-chat,
+    .soon-tread,
+    .soon-side-note,
+    .soon-footer {
+      animation-name: soon-rise-plain;
+    }
+
+    @keyframes soon-rise-plain {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes soon-bar {
+      0%, 100% { width: 140px; opacity: 0.75; }
+      50% { width: 220px; opacity: 1; }
+    }
+
+    @keyframes soon-ring {
+      0% { transform: scale(0.55); opacity: 0.55; }
+      70% { opacity: 0.12; }
+      100% { transform: scale(1.15); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="soon-scene stream-bg" id="soonScene">
+    <div class="soon-vignette"></div>
+    <div class="soon-pulse-ring" aria-hidden="true"></div>
+    <div class="soon-pulse-ring" aria-hidden="true"></div>
+    <div class="soon-frame" aria-hidden="true"></div>
+
+    <div class="soon-brand">
+      <div class="soon-brand__live">
+        <span class="soon-brand__live-dot" aria-hidden="true"></span>
+        Be right back · Get hype
+      </div>
+      <div class="soon-brand__name">NA<span>5</span>TY</div>
+    </div>
+
+    <div class="soon-hero">
+      <h1 class="soon-hero__title">Starting <em>Soon</em></h1>
+      <div class="soon-hero__bar" aria-hidden="true"></div>
+      <p class="soon-hero__tag" id="soonTag">Subs load the treadmill</p>
+    </div>
+
+    <aside class="soon-chat">
+      <div class="soon-chat__head">
+        <strong>Live Chat</strong>
+        <span>kick.com/na5ty</span>
+      </div>
+      <iframe
+        id="soonChatFrame"
+        title="Kick chat"
+        src="/widgets/chat-box.html?obs=1&embed=1&max=18&broadcasterId=1183030"
+      ></iframe>
+    </aside>
+
+    <aside class="soon-tread">
+      <div class="panel orange-accent" id="treadmillPanel">
+        <div class="panel-header orange"><span class="icon">🏃</span> Treadmill — 1 Sub = 1 Min</div>
+        <div class="panel-body treadmill-display">
+          <div class="treadmill-belt paused"></div>
+          <div class="treadmill-time">0:00</div>
+          <div class="treadmill-label">Time Remaining</div>
+          <div class="treadmill-status idle">
+            <span class="status-dot"></span> Waiting For Subs
+          </div>
+          <div class="stat-grid" style="margin-top:16px;">
+            <div class="stat-box blue">
+              <div class="stat-value" data-bank>0</div>
+              <div class="stat-label">Mins Banked</div>
+            </div>
+            <div class="stat-box highlight">
+              <div class="stat-value" data-subs>0</div>
+              <div class="stat-label">Gifted Subs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="soon-side-note">
+      <div class="soon-side-note__label">Tonight</div>
+      <p class="soon-side-note__text" id="soonNote">
+        Drop a <strong>sub</strong>, hype the chat, and stack treadmill minutes before we go live.
+      </p>
+    </div>
+
+    <footer class="soon-footer">
+      <div class="soon-rules">
+        <span class="chip"><strong>1</strong> Sub</span>
+        <span class="arrow">→</span>
+        <span class="chip"><strong>1</strong> Min Treadmill</span>
+        <span class="arrow">→</span>
+        <span class="chip">Get Fit · Stay Nasty</span>
+      </div>
+      <div class="soon-link">kick.com/na5ty</div>
+    </footer>
+  </div>
+
+  <script src="js/workout.js?v=13"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const brand = params.get("brand") || "NA5TY";
+    const title = params.get("title") || "Starting Soon";
+    const note = params.get("note");
+    const broadcasterId = params.get("broadcasterId") || "1183030";
+
+    const brandEl = document.querySelector(".soon-brand__name");
+    if (brandEl) {
+      if (/5/i.test(brand)) {
+        brandEl.innerHTML = brand.replace(/5/i, "<span>5</span>");
+      } else {
+        brandEl.textContent = brand;
+      }
+    }
+
+    const titleEl = document.querySelector(".soon-hero__title");
+    if (titleEl && title) {
+      const parts = title.trim().split(/\s+/);
+      if (parts.length > 1) {
+        const last = parts.pop();
+        titleEl.innerHTML = `${parts.join(" ")} <em>${last}</em>`;
+      } else {
+        titleEl.textContent = title;
+      }
+    }
+
+    if (note) {
+      document.getElementById("soonNote").textContent = note;
+    }
+
+    const chatFrame = document.getElementById("soonChatFrame");
+    if (chatFrame) {
+      chatFrame.src = `/widgets/chat-box.html?obs=1&embed=1&max=18&broadcasterId=${encodeURIComponent(broadcasterId)}`;
+    }
+
+    const tags = [
+      "Subs load the treadmill",
+      "Chat is already cooking",
+      "1 sub = 1 minute",
+      "Stay nasty · stay ready",
+      "Drop the hype in chat",
+      "Bank those minutes",
+    ];
+    const tagEl = document.getElementById("soonTag");
+    let tagIndex = 0;
+    setInterval(() => {
+      if (!tagEl) return;
+      tagEl.classList.add("is-out");
+      setTimeout(() => {
+        tagIndex = (tagIndex + 1) % tags.length;
+        tagEl.textContent = tags[tagIndex];
+        tagEl.classList.remove("is-out");
+      }, 280);
+    }, 3200);
+
+    initWorkoutPage({
+      treadmill: document.getElementById("treadmillPanel"),
+    });
+  </script>
+</body>
+</html>
