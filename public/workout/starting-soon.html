@@ -175,10 +175,10 @@
 
     .soon-bottle-wrap {
       position: relative;
-      width: 180px;
-      height: 340px;
-      margin: 8px 0 14px;
-      filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.55));
+      width: 160px;
+      height: 360px;
+      margin: 4px 0 12px;
+      filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.55));
     }
 
     .soon-bottle {
@@ -191,33 +191,48 @@
       width: 100%;
       height: 100%;
       display: block;
+      overflow: visible;
     }
 
-    .soon-bottle__glass {
-      fill: rgba(255, 255, 255, 0.06);
-      stroke: rgba(255, 255, 255, 0.55);
-      stroke-width: 3;
-    }
-
-    .soon-bottle__neck {
-      fill: rgba(255, 255, 255, 0.08);
-      stroke: rgba(255, 255, 255, 0.45);
-      stroke-width: 3;
+    .soon-bottle__outline {
+      fill: rgba(255, 255, 255, 0.05);
+      stroke: rgba(255, 255, 255, 0.7);
+      stroke-width: 3.5;
+      stroke-linejoin: round;
     }
 
     .soon-bottle__cap {
-      fill: var(--orange);
+      fill: #c62828;
       stroke: rgba(255, 255, 255, 0.25);
-      stroke-width: 2;
+      stroke-width: 1.5;
+    }
+
+    .soon-bottle__cap-top {
+      fill: #e53935;
+    }
+
+    .soon-bottle__label {
+      fill: rgba(255, 255, 255, 0.08);
+      stroke: rgba(255, 255, 255, 0.18);
+      stroke-width: 1.5;
+    }
+
+    .soon-bottle__label-text {
+      fill: var(--orange-bright);
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
     }
 
     .soon-bottle__foam {
-      fill: rgba(255, 248, 220, 0.92);
+      fill: #fff8e1;
       opacity: 0;
       transition: opacity 0.25s ease;
     }
 
-    .soon-bottle.is-full .soon-bottle__foam {
+    .soon-bottle.is-full .soon-bottle__foam,
+    .soon-bottle.has-beer .soon-bottle__foam {
       opacity: 1;
     }
 
@@ -231,7 +246,10 @@
     }
 
     .soon-bottle__shine {
-      fill: rgba(255, 255, 255, 0.18);
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.28);
+      stroke-width: 4;
+      stroke-linecap: round;
     }
 
     .soon-keyword {
@@ -527,7 +545,7 @@
     <div class="soon-brand">
       <div class="soon-brand__live">
         <span class="soon-brand__live-dot" aria-hidden="true"></span>
-        Be right back · Get hype
+        Starting soon
       </div>
       <div class="soon-brand__name">NA<span>5</span>TY</div>
     </div>
@@ -540,25 +558,60 @@
 
       <div class="soon-bottle-wrap">
         <div class="soon-bottle" id="soonBottle">
-          <svg viewBox="0 0 120 240" aria-hidden="true">
+          <svg viewBox="0 0 140 280" aria-hidden="true">
             <defs>
               <linearGradient id="beerGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#ffcc80"/>
-                <stop offset="40%" stop-color="#ff9800"/>
-                <stop offset="100%" stop-color="#e65100"/>
+                <stop offset="0%" stop-color="#ffe082"/>
+                <stop offset="35%" stop-color="#ffb300"/>
+                <stop offset="100%" stop-color="#ef6c00"/>
               </linearGradient>
+              <!-- Classic beer bottle: narrow neck, sloping shoulders, wide body -->
               <clipPath id="bottleClip">
-                <path d="M50 48c8 12 12 24 12 42v92c0 14-10 22-22 22s-22-8-22-22V90c0-18 4-30 12-42 4-6 8-10 10-12 2 2 6 6 10 12z"/>
+                <path d="M62 42
+                  h16
+                  v34
+                  c0 10 6 18 14 28
+                  c10 12 16 26 16 44
+                  v88
+                  c0 16 -12 26 -38 26
+                  s-38 -10 -38 -26
+                  v-88
+                  c0 -18 6 -32 16 -44
+                  c8 -10 14 -18 14 -28
+                  z"/>
               </clipPath>
             </defs>
-            <rect class="soon-bottle__cap" x="48" y="14" width="24" height="14" rx="3"/>
-            <path class="soon-bottle__neck" d="M50 28h20v22c0 6-4 10-7 13h-6c-3-3-7-7-7-13z"/>
-            <path class="soon-bottle__glass" d="M50 48c8 12 12 24 12 42v92c0 14-10 22-22 22s-22-8-22-22V90c0-18 4-30 12-42 4-6 8-10 10-12 2 2 6 6 10 12z"/>
+
+            <!-- Crown cap -->
+            <rect class="soon-bottle__cap" x="58" y="14" width="24" height="16" rx="3"/>
+            <rect class="soon-bottle__cap-top" x="60" y="10" width="20" height="6" rx="2"/>
+
+            <!-- Bottle outline -->
+            <path class="soon-bottle__outline" d="M62 30
+              h16
+              v12
+              c0 10 6 18 14 28
+              c10 12 16 26 16 44
+              v88
+              c0 16 -12 26 -38 26
+              s-38 -10 -38 -26
+              v-88
+              c0 -18 6 -32 16 -44
+              c8 -10 14 -18 14 -28
+              z"/>
+
+            <!-- Beer fill -->
             <g clip-path="url(#bottleClip)">
-              <rect class="soon-bottle__liquid" id="beerFill" x="28" y="200" width="64" height="0"/>
-              <ellipse class="soon-bottle__foam" id="beerFoam" cx="60" cy="78" rx="20" ry="7"/>
+              <rect class="soon-bottle__liquid" id="beerFill" x="30" y="232" width="80" height="0"/>
+              <ellipse class="soon-bottle__foam" id="beerFoam" cx="70" cy="120" rx="28" ry="9"/>
             </g>
-            <path d="M54 74c1 26 1 58 0 100" stroke="rgba(255,255,255,0.22)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+            <!-- Label -->
+            <rect class="soon-bottle__label" x="42" y="150" width="56" height="44" rx="6"/>
+            <text class="soon-bottle__label-text" x="70" y="177" text-anchor="middle">NA5TY</text>
+
+            <!-- Glass shine -->
+            <path class="soon-bottle__shine" d="M58 78c2 30 2 70 1 120"/>
           </svg>
         </div>
       </div>
@@ -681,8 +734,8 @@
     setInterval(tickCountdown, 250);
 
     // ── Keyword beer fill from live chat ──
-    const FILL_TOP = 70;
-    const FILL_BOTTOM = 200;
+    const FILL_TOP = 88;
+    const FILL_BOTTOM = 232;
     const FILL_MAX_H = FILL_BOTTOM - FILL_TOP;
     const beerFill = document.getElementById("beerFill");
     const beerFoam = document.getElementById("beerFoam");
@@ -716,9 +769,11 @@
       const y = FILL_BOTTOM - height;
       beerFill.setAttribute("y", String(y));
       beerFill.setAttribute("height", String(height));
-      beerFoam.setAttribute("cy", String(Math.max(FILL_TOP + 8, y + 4)));
+      beerFoam.setAttribute("cy", String(Math.max(FILL_TOP + 10, y + 6)));
+      beerFoam.setAttribute("rx", String(pct > 55 ? 30 : 22));
       hitsEl.textContent = String(hits);
       fillBar.style.width = `${pct}%`;
+      bottleEl.classList.toggle("has-beer", hits > 0);
 
       const full = hits >= goal;
       bottleEl.classList.toggle("is-full", full);
