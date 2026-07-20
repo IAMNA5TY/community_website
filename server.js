@@ -642,7 +642,7 @@ app.get("/api/dashboard", async (req, res) => {
         controlPanel: `${BASE_URL}/workout/control-panel.html`,
         controlWidget: `${BASE_URL}/workout/control-panel.html?embed=1`,
         sceneWidget: `${BASE_URL}/workout/widget-scene.html`,
-        startingSoon: `${BASE_URL}/workout/starting-soon.html?obs=1&v=3`,
+        startingSoon: `${BASE_URL}/workout/starting-soon.html?obs=1&v=4`,
         startingSoonWidget: `${BASE_URL}/workout/starting-soon-widget.html`,
         treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=13`,
         stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=13`,
