@@ -509,6 +509,8 @@ function renderWorkout(workout, obsUrls) {
 
   if (obsUrlsTable && obsUrls) {
     renderObsUrlTable(obsUrlsTable, [
+      ["Starting soon (OBS)", obsUrls.startingSoon],
+      ["Starting soon preview", obsUrls.startingSoonWidget],
       ["Scene widget (embed)", obsUrls.sceneWidget],
       ["Control widget (embed)", obsUrls.controlWidget],
       ["Full scene (OBS)", obsUrls.scene],

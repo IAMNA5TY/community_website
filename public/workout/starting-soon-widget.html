@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Starting Soon Widget</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #0a0a0a;
+      overflow: hidden;
+    }
+
+    .scene-viewport {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      background: #0a0a0a;
+    }
+
+    .scene-viewport iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1920px;
+      height: 1080px;
+      border: 0;
+      transform-origin: top left;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-viewport" id="viewport">
+    <iframe src="starting-soon.html?obs=1" title="Starting soon scene preview"></iframe>
+  </div>
+  <script>
+    function resize() {
+      const viewport = document.getElementById("viewport");
+      const scale = viewport.clientWidth / 1920;
+      const iframe = viewport.querySelector("iframe");
+      iframe.style.transform = `scale(${scale})`;
+      viewport.style.height = `${1080 * scale}px`;
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+  </script>
+</body>
+</html>
