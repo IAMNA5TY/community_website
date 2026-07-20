@@ -466,8 +466,18 @@ function renderEmbedCodes() {
   const origin = window.location.origin;
   const sceneUrl = `${origin}/workout/widget-scene.html`;
   const controlUrl = `${origin}/workout/control-panel.html?embed=1`;
+  const startingSoonUrl = `${origin}/workout/starting-soon.html?obs=1`;
+  const startingSoonPreview = `${origin}/workout/starting-soon-widget.html`;
 
   embedCodes.innerHTML = `
+    <div class="embed-code-block">
+      <h3>Starting soon (OBS 1920×1080)</h3>
+      <div class="copy-row">
+        <code class="embed-code">${escapeHtml(startingSoonUrl)}</code>
+        <button class="btn btn-secondary btn-compact copy-url-btn" data-url="${attrQuote(startingSoonUrl)}" type="button">Copy</button>
+      </div>
+      <a class="embed-link" href="${escapeHtml(startingSoonPreview)}" target="_blank" rel="noopener">Open starting soon preview</a>
+    </div>
     <div class="embed-code-block">
       <h3>Scene widget (16:9 preview)</h3>
       <div class="copy-row">
