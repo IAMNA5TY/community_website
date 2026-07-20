@@ -642,11 +642,11 @@ app.get("/api/dashboard", async (req, res) => {
         controlPanel: `${BASE_URL}/workout/control-panel.html`,
         controlWidget: `${BASE_URL}/workout/control-panel.html?embed=1`,
         sceneWidget: `${BASE_URL}/workout/widget-scene.html`,
-        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=12`,
-        stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=12`,
+        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=13`,
+        stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=13`,
         rules: `${BASE_URL}/workout/rules-banner.html?obs=1&v=12`,
-        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1&v=12`,
-        scene: `${BASE_URL}/workout/just-chatting.html?obs=1&v=12`,
+        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1&v=13`,
+        scene: `${BASE_URL}/workout/just-chatting.html?obs=1&v=13`,
       },
       obsHostNote:
         BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1")
@@ -1385,6 +1385,14 @@ app.get("/api/workout/events", (req, res) => {
 
 app.post("/api/state", (req, res) => {
   try {
+    if (req.body?.action === "restoreLastGood") {
+      const result = workoutState.restoreLastGood();
+      if (result.error) {
+        return res.status(400).json({ error: result.error });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      return res.json(workoutState.loadForDisplay());
+    }
     workoutState.save(req.body);
     res.setHeader("Cache-Control", "no-store");
     res.json(workoutState.loadForDisplay());
@@ -1416,7 +1424,11 @@ app.post("/api/workout", (req, res) => {
       state = result.state;
     } else if (action === "stop") state = workoutState.stopTreadmill();
     else if (action === "reset") state = workoutState.resetSession();
-    else state = workoutState.save(fields);
+    else if (action === "restoreLastGood") {
+      const result = workoutState.restoreLastGood();
+      if (result.error) return res.status(400).json({ error: result.error });
+      state = result.state;
+    } else state = workoutState.save(fields);
 
     res.json({ ok: true, workout: state });
   } catch (error) {
