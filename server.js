@@ -876,6 +876,14 @@ app.get("/api/chat/status", (req, res) => {
   const token = broadcasterId
     ? tokenStore.getBroadcasterToken(broadcasterId)
     : null;
+  const pusherOn = String(process.env.KICK_PUSHER_MONITOR || "1") !== "0";
+  const ownerSlug = String(
+    process.env.KICK_OWNER_SLUG || process.env.DEFAULT_BROADCASTER_SLUG || "na5ty"
+  ).toLowerCase();
+  const pusherStatus = pusherOn ? kickPusherMonitor.getStatus() : null;
+  const ownerMonitor = (pusherStatus?.streamers || []).find(
+    (row) => String(row.slug || "").toLowerCase() === ownerSlug
+  );
 
   res.json({
     broadcasterId: broadcasterId ? String(broadcasterId) : null,
@@ -887,6 +895,12 @@ app.get("/api/chat/status", (req, res) => {
     webhookConfigured: Boolean(process.env.WEBHOOK_URL),
     webhookUrl: WEBHOOK_URL,
     liveChatRequiresWebhooks: false,
+    chatSource: pusherOn ? "pusher" : "webhook",
+    pusherEnabled: pusherOn,
+    pusherConnected: Boolean(ownerMonitor?.connected),
+    pusherMessagesRecorded: ownerMonitor?.messagesRecorded || 0,
+    pusherLastMessageAt: ownerMonitor?.lastMessageAt || null,
+    pusherLastError: ownerMonitor?.lastError || null,
   });
 });
 
