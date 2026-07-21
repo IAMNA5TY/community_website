@@ -328,6 +328,7 @@ function treadmillStatusHtml(state, seconds) {
 let syncPollInterval = null;
 let syncEventSource = null;
 let lastStateNonce = -1;
+let lastBankMinutes = -1;
 
 function isObsMode() {
   const params = new URLSearchParams(window.location.search);
@@ -374,6 +375,7 @@ function connectWorkoutEvents(onUpdate) {
     syncEventSource.onmessage = async () => {
       const state = await WorkoutStore.load();
       lastStateNonce = state.stateNonce ?? lastStateNonce;
+      lastBankMinutes = state.minutesBank ?? lastBankMinutes;
       await pushWorkoutUpdate(onUpdate, state);
       window.dispatchEvent(new CustomEvent("workout-update", { detail: state }));
     };
@@ -393,8 +395,10 @@ function startSyncPoll(onUpdate, ms) {
   syncPollInterval = setInterval(async () => {
     const state = await WorkoutStore.load();
     const nonce = state.stateNonce ?? 0;
-    if (nonce !== lastStateNonce || state.isRunning) {
+    const bank = state.minutesBank ?? 0;
+    if (nonce !== lastStateNonce || state.isRunning || bank !== lastBankMinutes) {
       lastStateNonce = nonce;
+      lastBankMinutes = bank;
       await pushWorkoutUpdate(onUpdate, state);
     }
   }, pollMs);
