@@ -644,11 +644,11 @@ app.get("/api/dashboard", async (req, res) => {
         sceneWidget: `${BASE_URL}/workout/widget-scene.html`,
         startingSoon: `${BASE_URL}/workout/starting-soon.html?obs=1&v=4`,
         startingSoonWidget: `${BASE_URL}/workout/starting-soon-widget.html`,
-        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=13`,
-        stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=13`,
+        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=14`,
+        stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=14`,
         rules: `${BASE_URL}/workout/rules-banner.html?obs=1&v=12`,
-        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1&v=13`,
-        scene: `${BASE_URL}/workout/just-chatting.html?obs=1&v=13`,
+        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1&v=14`,
+        scene: `${BASE_URL}/workout/just-chatting.html?obs=1&v=14`,
       },
       obsHostNote:
         BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1")
@@ -1409,7 +1409,7 @@ app.post("/api/state", (req, res) => {
       res.setHeader("Cache-Control", "no-store");
       return res.json(workoutState.loadForDisplay());
     }
-    workoutState.save(req.body);
+    workoutState.save(req.body, { clientSync: true });
     res.setHeader("Cache-Control", "no-store");
     res.json(workoutState.loadForDisplay());
   } catch (error) {
