@@ -17,6 +17,9 @@ function initStreamAlerts(options = {}) {
   if (embedMode) {
     document.body.classList.add("stream-alerts-embed");
   }
+  if (obsMode) {
+    document.body.classList.add("obs-mode");
+  }
 
   function buildDetail(alert) {
     if (alert.detail) return alert.detail;

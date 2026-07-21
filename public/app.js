@@ -374,27 +374,66 @@ function attrQuote(value) {
   return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
+function normalizeOverlayUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    const pageHost = window.location.hostname.toLowerCase();
+    const host = parsed.hostname.toLowerCase();
+    const isLocal =
+      host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0";
+    if (isLocal && pageHost && pageHost !== "localhost" && pageHost !== "127.0.0.1") {
+      parsed.protocol = "https:";
+      parsed.hostname = pageHost === "www.na5ty.com" ? "na5ty.com" : pageHost;
+      parsed.port = "";
+    }
+    if (pageHost === "na5ty.com" || pageHost === "www.na5ty.com" || pageHost.endsWith(".na5ty.com")) {
+      parsed.protocol = "https:";
+      if (pageHost === "www.na5ty.com") parsed.hostname = "na5ty.com";
+    }
+    return parsed.toString();
+  } catch (_) {
+    return raw;
+  }
+}
+
 function renderObsUrlTable(container, entries) {
   if (!container) return;
 
-  const rows = entries.filter(([, url]) => url);
+  const rows = entries
+    .map((entry) => {
+      const label = entry?.[0] || "";
+      const url = normalizeOverlayUrl(entry?.[1] || "");
+      const size = entry?.[2] || "";
+      return url ? [label, url, size] : null;
+    })
+    .filter(Boolean);
   if (!rows.length) {
     container.innerHTML = `<div class="empty-state">No URLs available.</div>`;
     return;
   }
 
+  const hasSizes = rows.some(([, , size]) => size);
+
   container.innerHTML = `
     <div class="url-table-wrap">
       <table class="data-table url-table">
         <thead>
-          <tr><th>Overlay</th><th>URL for OBS</th><th></th></tr>
+          <tr>
+            <th>Overlay</th>
+            ${hasSizes ? "<th>Size</th>" : ""}
+            <th>URL for Streamlabs / OBS</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
           ${rows
             .map(
-              ([label, url]) =>
+              ([label, url, size]) =>
                 `<tr>
                   <td>${escapeHtml(label)}</td>
+                  ${hasSizes ? `<td class="url-size-cell">${escapeHtml(size || "—")}</td>` : ""}
                   <td class="url-cell"><code class="url-text copyable-url" title="${attrQuote(url)}">${escapeHtml(url)}</code></td>
                   <td class="url-copy-cell">
                     <button class="btn btn-secondary btn-compact copy-url-btn" data-url="${attrQuote(url)}" type="button">Copy</button>
@@ -464,14 +503,14 @@ function renderEmbedCodes() {
   if (!embedCodes) return;
 
   const origin = window.location.origin;
-  const sceneUrl = `${origin}/workout/widget-scene.html`;
-  const controlUrl = `${origin}/workout/control-panel.html?embed=1`;
-  const startingSoonUrl = `${origin}/workout/starting-soon.html?obs=1`;
-  const startingSoonPreview = `${origin}/workout/starting-soon-widget.html`;
+  const sceneUrl = normalizeOverlayUrl(`${origin}/workout/widget-scene.html`);
+  const controlUrl = normalizeOverlayUrl(`${origin}/workout/control-panel.html?embed=1`);
+  const startingSoonUrl = normalizeOverlayUrl(`${origin}/workout/starting-soon.html?obs=1&v=4`);
+  const startingSoonPreview = normalizeOverlayUrl(`${origin}/workout/starting-soon-widget.html`);
 
   embedCodes.innerHTML = `
     <div class="embed-code-block">
-      <h3>Starting soon (OBS 1920×1080)</h3>
+      <h3>Starting soon (Streamlabs / OBS · 1920×1080)</h3>
       <div class="copy-row">
         <code class="embed-code">${escapeHtml(startingSoonUrl)}</code>
         <button class="btn btn-secondary btn-compact copy-url-btn" data-url="${attrQuote(startingSoonUrl)}" type="button">Copy</button>
@@ -519,16 +558,16 @@ function renderWorkout(workout, obsUrls) {
 
   if (obsUrlsTable && obsUrls) {
     renderObsUrlTable(obsUrlsTable, [
-      ["Starting soon (OBS)", obsUrls.startingSoon],
-      ["Starting soon preview", obsUrls.startingSoonWidget],
-      ["Scene widget (embed)", obsUrls.sceneWidget],
-      ["Control widget (embed)", obsUrls.controlWidget],
-      ["Full scene (OBS)", obsUrls.scene],
-      ["Control panel (full page)", obsUrls.controlPanel],
-      ["Treadmill tracker", obsUrls.treadmill],
-      ["Workout stats", obsUrls.stats],
-      ["Rules banner", obsUrls.rules],
-      ["Sub alert", obsUrls.subAlert],
+      ["Starting soon (full scene)", obsUrls.startingSoon, "1920×1080"],
+      ["Just chatting (full scene)", obsUrls.scene, "1920×1080"],
+      ["Treadmill tracker", obsUrls.treadmill, "400×160"],
+      ["Workout stats", obsUrls.stats, "320×220"],
+      ["Rules banner", obsUrls.rules, "720×120"],
+      ["Sub alert", obsUrls.subAlert, "480×200"],
+      ["Starting soon preview (dashboard)", obsUrls.startingSoonWidget, "—"],
+      ["Scene preview (dashboard)", obsUrls.sceneWidget, "—"],
+      ["Control panel", obsUrls.controlPanel, "—"],
+      ["Control widget (embed)", obsUrls.controlWidget, "—"],
     ]);
   }
 }
@@ -832,9 +871,9 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
   const urlsTable = document.getElementById("widgets-urls-table");
   if (urlsTable && widgetsUrls) {
     renderObsUrlTable(urlsTable, [
-      ["Kick chat box (OBS)", widgetsUrls.chatBox],
-      ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
-      ["Now playing — Spotify (OBS)", widgetsUrls.nowPlaying],
+      ["Kick chat box", widgetsUrls.chatBox, "420×640"],
+      ["Stream alerts (follows / subs / kicks)", widgetsUrls.streamAlerts, "800×200"],
+      ["Now playing (Spotify)", widgetsUrls.nowPlaying, "420×120"],
     ]);
   }
 
@@ -1527,10 +1566,10 @@ function renderSlots(slots, slotsUrls, slotsTimer) {
 
   if (urlsTable && slotsUrls) {
     renderObsUrlTable(urlsTable, [
-      ["Slots session timer (OBS)", slotsUrls.timer],
-      ["Slots control panel", slotsUrls.controlPanel],
-      ["Slots widget (queue + pick)", slotsUrls.widget],
-      ["Pick alert (slot machine)", slotsUrls.pickAlert],
+      ["Slots session timer", slotsUrls.timer, "360×120"],
+      ["Slots widget (queue + pick)", slotsUrls.widget, "480×640"],
+      ["Pick alert (slot machine)", slotsUrls.pickAlert, "800×450"],
+      ["Slots control panel", slotsUrls.controlPanel, "—"],
     ]);
   }
 
@@ -1575,11 +1614,11 @@ function renderDrinking(drinking, drinkingUrls) {
 
   if (urlsTable && drinkingUrls) {
     renderObsUrlTable(urlsTable, [
-      ["Shotgun cam scene (1920×1080)", drinkingUrls.shotgunCam],
-      ["Beer counter overlay", drinkingUrls.beerCounter],
-      ["Shotgun alert pop-up", drinkingUrls.shotgunAlert],
-      ["Scene preview widget", drinkingUrls.sceneWidget],
-      ["Control panel", drinkingUrls.controlPanel],
+      ["Shotgun cam scene", drinkingUrls.shotgunCam, "1920×1080"],
+      ["Beer counter overlay", drinkingUrls.beerCounter, "280×200"],
+      ["Shotgun alert pop-up", drinkingUrls.shotgunAlert, "640×360"],
+      ["Scene preview (dashboard)", drinkingUrls.sceneWidget, "—"],
+      ["Control panel", drinkingUrls.controlPanel, "—"],
     ]);
   }
 }
@@ -1691,10 +1730,10 @@ function renderStakeUrls(stakeUrls) {
   const table = document.getElementById("stake-urls-table");
   if (!table || !stakeUrls) return;
   renderObsUrlTable(table, [
-    ["Race leaderboard widget", stakeUrls.raceLeaderboard],
-    ["Code na5ty referral leaderboard (monthly)", `${stakeUrls.affiliateLeaderboard}?period=month`],
-    ["Code na5ty referral leaderboard (30 days)", `${stakeUrls.affiliateLeaderboard}?period=30days`],
-    ["Code na5ty referral leaderboard (lifetime)", `${stakeUrls.affiliateLeaderboard}?period=lifetime`],
+    ["Race leaderboard", stakeUrls.raceLeaderboard, "480×640"],
+    ["Code na5ty referral (monthly)", `${stakeUrls.affiliateLeaderboard}?period=month`, "480×640"],
+    ["Code na5ty referral (30 days)", `${stakeUrls.affiliateLeaderboard}?period=30days`, "480×640"],
+    ["Code na5ty referral (lifetime)", `${stakeUrls.affiliateLeaderboard}?period=lifetime`, "480×640"],
   ]);
 }
 

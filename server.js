@@ -73,6 +73,33 @@ function publicBaseUrl(req) {
   return `${proto}://${host}`;
 }
 
+/** Absolute https base for Streamlabs/OBS browser sources (never localhost in prod). */
+function overlayBaseUrl(req) {
+  let base = publicBaseUrl(req) || BASE_URL || "https://na5ty.com";
+  base = String(base).trim().replace(/\/$/, "");
+  try {
+    const url = new URL(base);
+    const host = url.hostname.toLowerCase();
+    if (host === "na5ty.com" || host === "www.na5ty.com") {
+      url.protocol = "https:";
+      url.hostname = "na5ty.com";
+      return url.origin;
+    }
+    // If the dashboard itself is being served from na5ty.com, prefer that over a bad env BASE_URL.
+    const reqHost = String(req?.get?.("x-forwarded-host") || req?.get?.("host") || "")
+      .split(",")[0]
+      .trim()
+      .toLowerCase()
+      .replace(/:\d+$/, "");
+    if (reqHost === "na5ty.com" || reqHost === "www.na5ty.com") {
+      return "https://na5ty.com";
+    }
+    return url.origin;
+  } catch {
+    return "https://na5ty.com";
+  }
+}
+
 function kickRedirectUri(req) {
   return `${publicBaseUrl(req)}/auth/kick/callback`;
 }
@@ -615,45 +642,43 @@ app.get("/api/dashboard", async (req, res) => {
       slotsTimer: slotsTimerState.load(),
       drinking: drinkingState.load(),
       slotsUrls: {
-        widget: `${BASE_URL}/slots/slots-widget.html?obs=1&v=7`,
-        pickAlert: `${BASE_URL}/slots/slots-pick.html?obs=1&v=10`,
-        timer: `${BASE_URL}/slots/slots-timer.html?obs=1&v=7`,
-        controlPanel: `${BASE_URL}/slots/slots-control-panel.html`,
-        controlWidget: `${BASE_URL}/slots/slots-control-panel.html?embed=1`,
+        widget: `${overlayBaseUrl(req)}/slots/slots-widget.html?obs=1&v=7`,
+        pickAlert: `${overlayBaseUrl(req)}/slots/slots-pick.html?obs=1&v=10`,
+        timer: `${overlayBaseUrl(req)}/slots/slots-timer.html?obs=1&v=7`,
+        controlPanel: `${overlayBaseUrl(req)}/slots/slots-control-panel.html`,
+        controlWidget: `${overlayBaseUrl(req)}/slots/slots-control-panel.html?embed=1`,
       },
       widgetsUrls: {
-        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
-        streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
-        nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
+        chatBox: `${overlayBaseUrl(req)}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
+        streamAlerts: `${overlayBaseUrl(req)}/widgets/stream-alerts.html?obs=1`,
+        nowPlaying: `${overlayBaseUrl(req)}/widgets/now-playing.html?obs=1`,
       },
       drinkingUrls: {
-        beerCounter: `${BASE_URL}/drinking/beer-counter.html`,
-        shotgunCam: `${BASE_URL}/drinking/shotgun-cam.html?obs=1`,
-        shotgunAlert: `${BASE_URL}/drinking/shotgun-alert.html?obs=1`,
-        sceneWidget: `${BASE_URL}/drinking/widget-scene.html`,
-        controlPanel: `${BASE_URL}/drinking/control-panel.html`,
-        controlWidget: `${BASE_URL}/drinking/control-panel.html?embed=1`,
+        beerCounter: `${overlayBaseUrl(req)}/drinking/beer-counter.html?obs=1`,
+        shotgunCam: `${overlayBaseUrl(req)}/drinking/shotgun-cam.html?obs=1`,
+        shotgunAlert: `${overlayBaseUrl(req)}/drinking/shotgun-alert.html?obs=1`,
+        sceneWidget: `${overlayBaseUrl(req)}/drinking/widget-scene.html`,
+        controlPanel: `${overlayBaseUrl(req)}/drinking/control-panel.html`,
+        controlWidget: `${overlayBaseUrl(req)}/drinking/control-panel.html?embed=1`,
       },
       stakeUrls: {
-        raceLeaderboard: `${BASE_URL}/stake/stake-race.html`,
-        affiliateLeaderboard: `${BASE_URL}/stake/stake-affiliate.html`,
+        raceLeaderboard: `${overlayBaseUrl(req)}/stake/stake-race.html?obs=1`,
+        affiliateLeaderboard: `${overlayBaseUrl(req)}/stake/stake-affiliate.html?obs=1`,
       },
       obsUrls: {
-        controlPanel: `${BASE_URL}/workout/control-panel.html`,
-        controlWidget: `${BASE_URL}/workout/control-panel.html?embed=1`,
-        sceneWidget: `${BASE_URL}/workout/widget-scene.html`,
-        startingSoon: `${BASE_URL}/workout/starting-soon.html?obs=1&v=4`,
-        startingSoonWidget: `${BASE_URL}/workout/starting-soon-widget.html`,
-        treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=13`,
-        stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=13`,
-        rules: `${BASE_URL}/workout/rules-banner.html?obs=1&v=12`,
-        subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1&v=13`,
-        scene: `${BASE_URL}/workout/just-chatting.html?obs=1&v=13`,
+        controlPanel: `${overlayBaseUrl(req)}/workout/control-panel.html`,
+        controlWidget: `${overlayBaseUrl(req)}/workout/control-panel.html?embed=1`,
+        sceneWidget: `${overlayBaseUrl(req)}/workout/widget-scene.html`,
+        startingSoon: `${overlayBaseUrl(req)}/workout/starting-soon.html?obs=1&v=4`,
+        startingSoonWidget: `${overlayBaseUrl(req)}/workout/starting-soon-widget.html`,
+        treadmill: `${overlayBaseUrl(req)}/workout/treadmill-tracker.html?obs=1&v=13`,
+        stats: `${overlayBaseUrl(req)}/workout/workout-stats.html?obs=1&v=13`,
+        rules: `${overlayBaseUrl(req)}/workout/rules-banner.html?obs=1&v=12`,
+        subAlert: `${overlayBaseUrl(req)}/workout/sub-alert.html?obs=1&v=13`,
+        scene: `${overlayBaseUrl(req)}/workout/just-chatting.html?obs=1&v=13`,
       },
       obsHostNote:
-        BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1")
-          ? "Local OBS only — for stream use https://na5ty.com workout URLs so dashboard + OBS share one bank."
-          : "Use these na5ty.com links in OBS (do not mix with localhost).",
+        "Paste these into Streamlabs Desktop → Sources → Browser Source. Use https://na5ty.com links only (not localhost). For overlays: shut down source when not visible OFF if you need timers to keep running.",
       webhookReady: Boolean(req.session.webhookReady),
       webhookError: req.session.webhookError || null,
       webhookUrl: WEBHOOK_URL,

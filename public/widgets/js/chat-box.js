@@ -122,6 +122,10 @@ function startChatBoxWidget(options = {}) {
     root.classList.add("compact");
   }
 
+  if (obsMode) {
+    document.body.classList.add("obs-mode");
+  }
+
   const width = parseInt(params.get("width"), 10);
   if (width > 0) {
     document.documentElement.style.setProperty("--chat-stack-width", `${width}px`);
