@@ -199,6 +199,10 @@ body.stream-alerts-page {
   overflow: hidden;
 }
 
+body.stream-alerts-page.obs-mode {
+  background: transparent !important;
+}
+
 body.stream-alerts-embed .stream-alerts-wrap {
   position: relative;
 }

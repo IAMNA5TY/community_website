@@ -901,12 +901,19 @@ body.is-dashboard {
 
 .url-table th:first-child,
 .url-table td:first-child {
-  width: 34%;
-  max-width: 240px;
+  width: 28%;
+  max-width: 220px;
   vertical-align: middle;
 }
 
-.url-table th:nth-child(2),
+.url-table td.url-size-cell {
+  width: 110px;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--muted, #9aa3b2);
+  font-variant-numeric: tabular-nums;
+}
+
 .url-table td.url-cell {
   width: auto;
   vertical-align: middle;

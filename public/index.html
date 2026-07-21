@@ -191,7 +191,7 @@
                 <button class="hub-card" type="button" data-goto-page="widgets" data-page="widgets" data-hub-filter="widgets alerts chat spotify overlay obs">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
                   <strong>Widgets</strong>
-                  <span>Alerts, chat box, Spotify, and OBS browser source quick links.</span>
+                  <span>Alerts, chat box, Spotify, and Streamlabs browser source quick links.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="bot" data-page="bot" data-hub-filter="chat bot commands timers">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="8" width="14" height="10" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9 16h6"/></svg></span>
@@ -201,7 +201,7 @@
                 <button class="hub-card" type="button" data-goto-page="workout" data-page="workout" data-hub-filter="workout obs treadmill walk">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9v6M18 9v6M8 12h8M4 11v2M20 11v2"/></svg></span>
                   <strong>Workout / OBS</strong>
-                  <span>Control the treadmill bank, scene preview, and OBS browser sources.</span>
+                  <span>Control the treadmill bank, scene preview, and Streamlabs browser sources.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="slots" data-page="slots" data-hub-filter="slots queue pick timer">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 10v4M12 10v4M16 10v4"/></svg></span>
@@ -321,7 +321,7 @@
           <section class="page-view" data-page="workout">
             <header class="page-header">
               <h1>Workout / OBS</h1>
-              <p class="subtitle">Control the stream, preview the scene, and share widgets — all synced to chat &amp; OBS</p>
+              <p class="subtitle">Control the stream, preview the scene, and share widgets — all synced to chat &amp; Streamlabs</p>
             </header>
 
             <div class="walk-preview" id="workout-preview"></div>
@@ -330,7 +330,7 @@
               <div class="card panel workout-studio__preview">
                 <div class="panel-header">
                   <h2>Live Scene Preview</h2>
-                  <p class="subtitle">What viewers see in OBS — updates in real time</p>
+                  <p class="subtitle">What viewers see in Streamlabs / OBS — updates in real time</p>
                 </div>
                 <iframe
                   class="workout-embed-frame workout-scene-frame"
@@ -351,7 +351,7 @@
             <div class="card panel workout-studio__preview" style="margin-bottom:16px;">
               <div class="panel-header">
                 <h2>Starting Soon Preview</h2>
-                <p class="subtitle">3-min countdown, spam na5ty beer fill, live chat, treadmill, and a featured streamer cutout for OBS</p>
+                <p class="subtitle">3-min countdown, spam na5ty beer fill, live chat, treadmill, and a featured streamer cutout for Streamlabs</p>
               </div>
               <iframe
                 class="workout-embed-frame workout-scene-frame"
@@ -377,13 +377,13 @@
             </div>
 
             <div class="card panel">
-              <h2>OBS Browser Source URLs</h2>
-              <p class="subtitle">Point OBS at these URLs — everything syncs through this site</p>
+              <h2>Streamlabs / OBS Browser Source URLs</h2>
+              <p class="subtitle">Copy into Streamlabs Desktop → Sources → Browser Source. Use the Size column for Width × Height.</p>
               <div id="obs-urls-table"></div>
             </div>
 
             <div class="card panel">
-              <h2>Chat commands (synced to OBS)</h2>
+              <h2>Chat commands (synced to overlays)</h2>
               <table class="data-table">
                 <thead>
                   <tr><th>Command</th><th>Who</th><th>Action</th></tr>
@@ -398,7 +398,7 @@
                 </tbody>
               </table>
               <p class="subtitle" style="margin-top:12px;">New subs from Kick webhooks auto-add +1 sub and +1 minute.</p>
-              <p class="subtitle" style="margin-top:8px;" id="obs-host-note">OBS browser sources must use the same host as this dashboard (<strong>https://na5ty.com</strong> when streaming). Do not mix localhost and na5ty.com — that splits the treadmill bank.</p>
+              <p class="subtitle" style="margin-top:8px;" id="obs-host-note">Paste these into Streamlabs Desktop → Sources → Browser Source. Use <strong>https://na5ty.com</strong> links only (not localhost). Leave “Shutdown source when not visible” OFF if timers need to keep running.</p>
             </div>
           </section>
 
@@ -477,7 +477,8 @@
             </div>
 
             <div class="card panel">
-              <h2>OBS Browser Source URLs</h2>
+              <h2>Streamlabs / OBS Browser Source URLs</h2>
+              <p class="subtitle">Copy into Streamlabs → Browser Source. Use the Size column for Width × Height.</p>
               <div id="slots-urls-table"></div>
             </div>
 
@@ -557,7 +558,8 @@
             </div>
 
             <div class="card panel">
-              <h2>OBS Browser Source URLs</h2>
+              <h2>Streamlabs / OBS Browser Source URLs</h2>
+              <p class="subtitle">Copy into Streamlabs → Browser Source. Shotgun cam is a full 1920×1080 transparent frame over your webcam.</p>
               <div id="drinking-urls-table"></div>
             </div>
 
@@ -576,18 +578,18 @@
                   <tr><td><code>!beer reset</code></td><td>Mods / streamer</td><td>Reset session counters (keeps all-time)</td></tr>
                 </tbody>
               </table>
-              <p class="subtitle" style="margin-top:12px;">OBS tip: size your <strong>webcam</strong> to full 1920×1080, then add <strong>shotgun-cam</strong> on top (transparent). The overlay is a full-screen lens border — only the edges and HUD panels are visible.</p>
+              <p class="subtitle" style="margin-top:12px;">Streamlabs tip: size your <strong>webcam</strong> to full 1920×1080, then add <strong>shotgun-cam</strong> on top (keep browser source background transparent). The overlay is a full-screen lens border — only the edges and HUD panels are visible.</p>
             </div>
           </section>
 
           <section class="page-view" data-page="widgets">
             <header class="page-header">
               <h1>Widgets</h1>
-              <p class="subtitle">OBS overlays that match your stream theme</p>
+              <p class="subtitle">Streamlabs / OBS overlays that match your stream theme</p>
             </header>
 
             <div class="card panel">
-              <h2>OBS quick links</h2>
+              <h2>Streamlabs / OBS quick links</h2>
               <p class="subtitle">Most-used browser sources — full lists live on each tool page too</p>
               <div id="overview-obs-links"></div>
             </div>
@@ -650,10 +652,10 @@
             </div>
 
             <div class="card panel">
-              <h2>OBS Browser Source URLs</h2>
+              <h2>Streamlabs / OBS Browser Source URLs</h2>
               <div id="widgets-urls-table"></div>
               <p class="subtitle" style="margin-top:12px;">
-                Add as a browser source with a transparent background. Use <code>?obs=1</code> for faster updates.
+                In Streamlabs Browser Source, leave background transparent. Use <code>?obs=1</code> for faster updates.
                 Stream alerts sit at the top of the scene — same look as your rules banner.
                 Chat box: optional <code>?max=30</code> message limit, <code>?compact=1</code> for a smaller box.
               </p>
@@ -915,7 +917,8 @@
             </div>
 
             <div class="card panel">
-              <h2>OBS Browser Source URLs</h2>
+              <h2>Streamlabs / OBS Browser Source URLs</h2>
+              <p class="subtitle">Copy into Streamlabs → Browser Source. Transparent background recommended.</p>
               <div id="stake-urls-table"></div>
             </div>
           </section>
@@ -1046,6 +1049,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=52"></script>
+    <script src="/app.js?v=54"></script>
   </body>
 </html>
