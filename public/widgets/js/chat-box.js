@@ -263,6 +263,13 @@ function startChatBoxWidget(options = {}) {
       try {
         const payload = JSON.parse(event.data);
         if (payload.event === "message" && payload.message) {
+          if (
+            broadcasterId &&
+            payload.message.broadcasterUserId &&
+            String(payload.message.broadcasterUserId) !== String(broadcasterId)
+          ) {
+            return;
+          }
           appendMessage(payload.message, { animate: true });
           setStatus("Live", "live");
         }
