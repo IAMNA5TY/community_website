@@ -1731,9 +1731,9 @@ function renderStakeUrls(stakeUrls) {
   if (!table || !stakeUrls) return;
   renderObsUrlTable(table, [
     ["Race leaderboard", stakeUrls.raceLeaderboard, "480×640"],
-    ["Code na5ty referral (monthly)", `${stakeUrls.affiliateLeaderboard}?period=month`, "480×640"],
-    ["Code na5ty referral (30 days)", `${stakeUrls.affiliateLeaderboard}?period=30days`, "480×640"],
-    ["Code na5ty referral (lifetime)", `${stakeUrls.affiliateLeaderboard}?period=lifetime`, "480×640"],
+    ["Code na5ty referral (monthly)", `${stakeUrls.affiliateLeaderboard}&period=month`, "480×640"],
+    ["Code na5ty referral (30 days)", `${stakeUrls.affiliateLeaderboard}&period=30days`, "480×640"],
+    ["Code na5ty referral (lifetime)", `${stakeUrls.affiliateLeaderboard}&period=lifetime`, "480×640"],
   ]);
 }
 
