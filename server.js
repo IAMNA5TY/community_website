@@ -557,8 +557,9 @@ app.post("/api/discord/claim", async (req, res) => {
         success: false,
         error:
           `No active Kick sub on record for @${kickSubscriberStore.normalizeUsername(kickUsername)} yet. ` +
-          `Kick does not give us a live sub list — type once in na5ty Kick chat while subbed (so we see the sub badge), ` +
-          `or subscribe at https://kick.com/na5ty/subscribe / wait for a gifted sub, then try again.`,
+          `Kick does not give us a live sub list — type once in na5ty Kick chat while subbed with your sub badge visible, ` +
+          `or ask the owner to Mark as sub if your badge is hidden, then try again. ` +
+          `Or subscribe at https://kick.com/na5ty/subscribe.`,
       });
     }
 

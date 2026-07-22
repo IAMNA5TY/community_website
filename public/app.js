@@ -3741,8 +3741,8 @@ async function refreshDiscordOwnerSubs() {
   const renderBadgeList = (badges) => {
     if (!list) return;
     if (!badges.length) {
-      list.innerHTML =
-        '<p class="subtitle">No Kick chat badge sightings yet — have people type in na5ty chat, then refresh.</p>';
+        list.innerHTML =
+          '<p class="subtitle">No Kick chat badge sightings yet — have people type in na5ty chat, then refresh. Hidden sub badges will not show as yes; use Mark as sub for those.</p>';
       return;
     }
     list.innerHTML = `
