@@ -3856,6 +3856,47 @@ document.getElementById("discord-post-panel-btn")?.addEventListener("click", asy
   }
 });
 
+async function postDiscordAnnounceTest(action) {
+  const response = await fetch("/api/discord/announce-test", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false) {
+    throw new Error(data.error || data.message || "Announce test failed");
+  }
+  return data;
+}
+
+document.getElementById("discord-test-thankyou-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-test-thankyou-btn");
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Posting public thank-you test...");
+  try {
+    const data = await postDiscordAnnounceTest("granted");
+    setDiscordStatus(data.message || "Posted.", data.posted ? "ok" : "err");
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+document.getElementById("discord-test-revoke-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-test-revoke-btn");
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Posting public role-removed test...");
+  try {
+    const data = await postDiscordAnnounceTest("revoked");
+    setDiscordStatus(data.message || "Posted.", data.posted ? "ok" : "err");
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
 document.getElementById("discord-recheck-btn")?.addEventListener("click", async () => {
   const btn = document.getElementById("discord-recheck-btn");
   if (btn) btn.disabled = true;
