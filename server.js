@@ -618,12 +618,48 @@ app.get("/api/discord/subscribers", (req, res) => {
 app.post("/api/discord/interactions", async (req, res) => {
   const verified = discord.verifyInteractionSignature(req);
   if (!verified.ok) {
+    console.warn("[discord-interactions] verify failed:", verified.error);
     return res.status(401).send(verified.error || "invalid request signature");
+  }
+
+  const interaction = req.body;
+
+  // Discord endpoint validation + keep-alive
+  if (interaction?.type === discord.InteractionType.PING) {
+    return res.json({ type: discord.InteractionResponseType.PONG });
+  }
+
+  // ACK within 3s, then grant role / reply via follow-up edit.
+  if (
+    interaction?.type === discord.InteractionType.MESSAGE_COMPONENT &&
+    interaction?.data?.custom_id === discord.SUB_ROLE_BUTTON_ID
+  ) {
+    res.json(discord.deferredEphemeralAck());
+    try {
+      const result = await discord.resolveComponentInteraction(
+        interaction,
+        kickSubscriberStore
+      );
+      await discord.editInteractionReply(interaction, result);
+    } catch (error) {
+      console.warn("[discord-interactions] follow-up failed:", error.message);
+      try {
+        await discord.editInteractionReply(interaction, {
+          content: `Something went wrong: ${error.message}`,
+        });
+      } catch (followErr) {
+        console.warn(
+          "[discord-interactions] follow-up retry failed:",
+          followErr.message
+        );
+      }
+    }
+    return;
   }
 
   try {
     const response = await discord.handleInteraction(
-      req.body,
+      interaction,
       kickSubscriberStore
     );
     return res.json(response);
@@ -679,6 +715,7 @@ app.get("/api/discord/panel", (req, res) => {
     panel: kickSubscriberStore.getDiscordPanelMeta(),
     interactionsUrl: `${publicBaseUrl(req)}/api/discord/interactions`,
     publicKeyConfigured: Boolean(discord.getConfig().publicKey),
+    publicKeyStatus: discord.publicKeyStatus(),
     botInviteUrl: discord.botInviteUrl(),
   });
 });

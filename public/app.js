@@ -3738,11 +3738,14 @@ async function refreshDiscordPanelMeta() {
     } else {
       parts.push("No panel posted from na5ty.com yet.");
     }
-    if (!data.publicKeyConfigured) {
+    if (!data.publicKeyConfigured || data.publicKeyStatus?.valid === false) {
+      const keyErr = data.publicKeyStatus?.error
+        ? escapeHtml(data.publicKeyStatus.error)
+        : "Add DISCORD_PUBLIC_KEY";
       parts.push(
-        "<strong>Add DISCORD_PUBLIC_KEY</strong> and set Interactions URL to " +
+        `<strong>${keyErr}</strong>. Then set Interactions URL to ` +
           `<code>${escapeHtml(data.interactionsUrl || "/api/discord/interactions")}</code> ` +
-          "in the Discord Developer Portal so the button works."
+          "in the Discord Developer Portal (General Information → Public Key + Interactions Endpoint URL)."
       );
     }
     if (data.botInviteUrl) {
