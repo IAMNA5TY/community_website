@@ -3810,8 +3810,13 @@ function renderDiscordRecheckMeta(data = {}) {
   if (!el) return;
   const run = data.recheck;
   const parts = [
-    "Kick chat badges still mark people eligible to claim. Auto role removal is off so claimed roles stay. Owner is never revoked.",
+    "Keeps Discord in sync with grants: if someone is marked granted here but missing the role in Discord, the bot puts it back. Auto-remove stays off.",
   ];
+  if (run?.lastReconcile?.at) {
+    parts.push(
+      `Last sync ${escapeHtml(new Date(run.lastReconcile.at).toLocaleString())}: checked ${run.lastReconcile.checked || 0}, restored ${run.lastReconcile.restored || 0}.`
+    );
+  }
   if (run?.lastChatRevoke?.at) {
     parts.push(
       `Last chat revoke: ${escapeHtml(run.lastChatRevoke.kickUsername || run.lastChatRevoke.discordId)} at ${escapeHtml(new Date(run.lastChatRevoke.at).toLocaleString())}.`
