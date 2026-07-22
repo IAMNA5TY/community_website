@@ -553,16 +553,6 @@ app.post("/api/discord/claim", async (req, res) => {
     );
     const active = eligibility.eligible;
     if (!active) {
-      try {
-        await discord.removeSubRole(link.discordId);
-        kickSubscriberStore.recordGrant(link.discordId, {
-          kickUsername,
-          kickUserId: user.profile.id,
-          active: false,
-        });
-      } catch {
-        /* ignore cleanup errors */
-      }
       return res.status(403).json({
         success: false,
         error:
