@@ -3804,6 +3804,10 @@ async function refreshDiscordPanelMeta() {
           `<a href="${escapeHtml(data.botInviteUrl)}" target="_blank" rel="noopener">re-invite the bot</a>.`
       );
     }
+    parts.push(
+      "Manual Discord role add/remove is watched when <strong>Server Members Intent</strong> is enabled " +
+        "(Developer Portal → Bot → Privileged Gateway Intents)."
+    );
     meta.innerHTML = parts.join(" ");
   } catch (error) {
     meta.textContent = error.message;
