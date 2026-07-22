@@ -57,6 +57,7 @@ const kickPusherMonitor = require("./lib/kick-pusher-monitor");
 const dashboardAccess = require("./lib/dashboard-access");
 const discord = require("./lib/discord");
 const kickSubscriberStore = require("./lib/kick-subscriber-store");
+const discordSubRoleRecheck = require("./lib/discord-sub-role-recheck");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -614,7 +615,31 @@ app.get("/api/discord/subscribers", (req, res) => {
   res.json({
     ok: true,
     subscribers: kickSubscriberStore.listActiveSubscribers(200),
+    grants: kickSubscriberStore.listGrants(100),
+    recheck: discordSubRoleRecheck.getLastRun(),
+    recheckIntervalMs: discordSubRoleRecheck.getRecheckIntervalMs(),
+    recheckBatchSize: discordSubRoleRecheck.getBatchSize(),
   });
+});
+
+app.post("/api/discord/recheck", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    const forceAll = Boolean(req.body?.forceAll);
+    const result = await discordSubRoleRecheck.runRecheck(kickSubscriberStore, {
+      forceAll,
+    });
+    res.json({
+      success: Boolean(result.ok),
+      ...result,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 /** Public diagnostic — does not expose the key, only whether Discord buttons can work. */
@@ -2652,6 +2677,12 @@ webhook.loadPublicKey().then(async () => {
   }
 
   await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
+
+  if (discord.configured()) {
+    discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
+  } else {
+    console.log("[discord-recheck] skipped — Discord not fully configured");
+  }
 
   // Slow background retry for missing sub/gift webhooks — not tied to dashboard polling.
   const WEBHOOK_RETRY_MS = Math.max(
