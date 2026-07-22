@@ -570,14 +570,25 @@ app.post("/api/discord/claim", async (req, res) => {
       kickUserId: user.profile.id,
       active: true,
       expiresAt: sub?.expiresAt || null,
+      lastCheckedAt: new Date().toISOString(),
     });
+
+    try {
+      await discord.announceSubRoleChange({
+        kickName: kickUsername || user.profile?.username,
+        action: "granted",
+        reason: eligibility.reason,
+      });
+    } catch (error) {
+      console.warn("[discord] claim announcement failed:", error.message);
+    }
 
     res.json({
       success: true,
       message:
         eligibility.reason === "owner"
-          ? "Channel owner — Discord linked and subscriber role granted (owners can't sub to themselves on Kick)."
-          : "Subscriber role granted on Discord",
+          ? "Channel owner — Discord linked, subscriber role granted, and a public thank-you was posted."
+          : "Subscriber role granted on Discord — public thank-you posted.",
       discord: kickSubscriberStore.getPublicStatusForKickUser(
         user.profile.id,
         kickUsername
