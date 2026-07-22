@@ -3753,7 +3753,7 @@ async function refreshDiscordOwnerSubs() {
             .map(
               (row) => `<tr>
                 <td>${escapeHtml(row.username)}${row.isOwner ? " <span class=\"pill\">owner</span>" : ""}</td>
-                <td>${row.hasSubscriberBadge ? '<span class="pill">yes</span>' : '<span class="pill">no</span>'}</td>
+                <td>${row.hasSubscriberBadge ? '<span class="pill">yes</span>' : `<span class="pill">${escapeHtml(row.lastBadgeStatus || "no")}</span>`}</td>
                 <td><code>${escapeHtml((row.lastBadges || []).join(", ") || "—")}</code></td>
                 <td>${escapeHtml(row.lastSeenAt ? new Date(row.lastSeenAt).toLocaleString() : "—")}</td>
                 <td>${row.roleGranted ? "granted" : row.discordLinked ? "linked" : "—"}</td>
