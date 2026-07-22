@@ -375,8 +375,14 @@
                   <h2>Kick chat badges (owner)</h2>
                   <p class="subtitle">Live Kick chat badges we can see. If someone <strong>hides</strong> their sub badge on Kick, they won’t show as yes here — use <strong>Mark as sub</strong> below (or a sub/gift webhook) so they can still claim.</p>
                 </div>
-                <button class="btn btn-secondary btn-compact" type="button" id="discord-owner-refresh">Refresh list</button>
+                <div class="btn-row slots-actions" style="flex-wrap:wrap;gap:8px;justify-content:flex-end;">
+                  <button class="btn btn-kick btn-compact" type="button" id="discord-recheck-btn">Sync Discord roles now</button>
+                  <button class="btn btn-secondary btn-compact" type="button" id="discord-owner-refresh">Refresh list</button>
+                </div>
               </div>
+              <p class="subtitle" id="discord-recheck-meta" style="margin:8px 0 12px;">
+                If Discord is missing the role but this page says <strong>granted</strong>, hit <strong>Sync Discord roles now</strong> (or wait ~2 min for auto sync).
+              </p>
               <div id="discord-owner-subs-list"><p class="subtitle">Open Discord Sub as owner to load badge sightings.</p></div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
                 <h3 style="margin:0 0 6px;font-size:1rem;">Webhook / marked sub roster</h3>
@@ -393,15 +399,6 @@
                   <button class="btn btn-kick btn-compact" type="button" id="discord-post-panel-btn">Post panel in Discord</button>
                   <button class="btn btn-secondary btn-compact" type="button" id="discord-test-thankyou-btn">Test public thank-you</button>
                   <button class="btn btn-secondary btn-compact" type="button" id="discord-test-revoke-btn">Test public role-removed</button>
-                </div>
-              </div>
-              <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
-                <h3 style="margin:0 0 6px;font-size:1rem;">Kick chat sub check</h3>
-                <p class="subtitle" id="discord-recheck-meta">
-                  If Discord is missing the role but this page says <strong>granted</strong>, the bot re-applies it. Auto-remove stays off.
-                </p>
-                <div class="btn-row slots-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
-                  <button class="btn btn-secondary btn-compact" type="button" id="discord-recheck-btn">Sync Discord roles now</button>
                 </div>
               </div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
@@ -1156,6 +1153,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=68"></script>
+    <script src="/app.js?v=69"></script>
   </body>
 </html>
