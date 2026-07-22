@@ -372,12 +372,17 @@
             <div class="card panel hidden" id="discord-owner-subs-panel">
               <div class="only-pixels-points-head">
                 <div>
-                  <h2>Active sub roster (owner)</h2>
-                  <p class="subtitle">People currently marked active from Kick webhooks / chat badges</p>
+                  <h2>Kick chat badges (owner)</h2>
+                  <p class="subtitle">Who we last saw in na5ty Kick chat, and whether they had a subscriber badge</p>
                 </div>
                 <button class="btn btn-secondary btn-compact" type="button" id="discord-owner-refresh">Refresh list</button>
               </div>
               <div id="discord-owner-subs-list"><p class="subtitle">Loading...</p></div>
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
+                <h3 style="margin:0 0 6px;font-size:1rem;">Webhook / marked sub roster</h3>
+                <p class="subtitle">Active entries from sub webhooks or Mark as sub (not live Kick chat)</p>
+                <div id="discord-owner-roster-list"><p class="subtitle">Loading...</p></div>
+              </div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
                 <h3 style="margin:0 0 6px;font-size:1rem;">Discord channel panel</h3>
                 <p class="subtitle" id="discord-panel-meta">
@@ -393,7 +398,7 @@
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
                 <h3 style="margin:0 0 6px;font-size:1rem;">Kick chat sub check</h3>
                 <p class="subtitle" id="discord-recheck-meta">
-                  Discord role stays until they chat in na5ty Kick <strong>without</strong> a subscriber badge — then the bot removes it. Channel owner is never revoked.
+                  Role is removed only after we see them in Kick chat <strong>with</strong> a sub badge, then later <strong>without</strong> one. Owner is never revoked.
                 </p>
                 <div class="btn-row slots-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
                   <button class="btn btn-secondary btn-compact" type="button" id="discord-recheck-btn">Refresh role status</button>

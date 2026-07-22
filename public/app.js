@@ -3735,17 +3735,43 @@ async function refreshDiscordPanel(dashboard) {
 
 async function refreshDiscordOwnerSubs() {
   const list = document.getElementById("discord-owner-subs-list");
+  const rosterList = document.getElementById("discord-owner-roster-list");
   if (!list) return;
   try {
     const response = await fetch("/api/discord/subscribers");
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Could not load roster");
-    const rows = data.subscribers || [];
-    if (!rows.length) {
+    const badges = data.chatBadges || [];
+    if (!badges.length) {
       list.innerHTML =
-        '<p class="subtitle">No active subs tracked yet — new/renew/gift webhooks will fill this.</p>';
+        '<p class="subtitle">No Kick chat badge sightings yet — have people type in na5ty chat, then refresh.</p>';
     } else {
       list.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Kick user</th><th>Sub badge</th><th>Last badges</th><th>Last seen</th><th>Discord role</th></tr></thead>
+        <tbody>
+          ${badges
+            .map(
+              (row) => `<tr>
+                <td>${escapeHtml(row.username)}${row.isOwner ? " <span class=\"pill\">owner</span>" : ""}</td>
+                <td>${row.hasSubscriberBadge ? '<span class="pill">yes</span>' : '<span class="pill">no</span>'}</td>
+                <td><code>${escapeHtml((row.lastBadges || []).join(", ") || "—")}</code></td>
+                <td>${escapeHtml(row.lastSeenAt ? new Date(row.lastSeenAt).toLocaleString() : "—")}</td>
+                <td>${row.roleGranted ? "granted" : row.discordLinked ? "linked" : "—"}</td>
+              </tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>`;
+    }
+
+    if (rosterList) {
+      const rows = data.subscribers || [];
+      if (!rows.length) {
+        rosterList.innerHTML =
+          '<p class="subtitle">No active webhook/manual sub entries.</p>';
+      } else {
+        rosterList.innerHTML = `
       <table class="data-table">
         <thead><tr><th>Kick user</th><th>Expires</th><th>Source</th></tr></thead>
         <tbody>
@@ -3760,6 +3786,7 @@ async function refreshDiscordOwnerSubs() {
             .join("")}
         </tbody>
       </table>`;
+      }
     }
     renderDiscordRecheckMeta(data);
   } catch (error) {
@@ -3773,7 +3800,7 @@ function renderDiscordRecheckMeta(data = {}) {
   if (!el) return;
   const run = data.recheck;
   const parts = [
-    "Discord role stays until they chat in na5ty Kick without a subscriber badge — then the bot removes it. Channel owner is never revoked.",
+    "Discord role is removed only after we see them in Kick chat with a sub badge, then later without one. Channel owner is never revoked. Deploys no longer re-post old role-removed messages.",
   ];
   if (run?.lastChatRevoke?.at) {
     parts.push(

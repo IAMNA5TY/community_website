@@ -663,6 +663,7 @@ app.get("/api/discord/subscribers", (req, res) => {
   res.json({
     ok: true,
     subscribers: kickSubscriberStore.listActiveSubscribers(200),
+    chatBadges: kickSubscriberStore.listChatBadgeRoster(200),
     grants: kickSubscriberStore.listGrants(100),
     recheck: discordSubRoleRecheck.getLastRun(),
     recheckIntervalMs: discordSubRoleRecheck.getRecheckIntervalMs(),
