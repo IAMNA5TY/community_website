@@ -546,7 +546,7 @@ app.post("/api/discord/claim", async (req, res) => {
       }
       return res.status(403).json({
         success: false,
-        error: `No active Kick sub found for @${kickSubscriberStore.normalizeUsername(kickUsername)}. Sub to na5ty (or chat while subbed), then try again.`,
+        error: `No active Kick sub found for @${kickSubscriberStore.normalizeUsername(kickUsername)}. Subscribe at https://kick.com/na5ty/subscribe (or wait for a gifted sub), then try again.`,
       });
     }
 
