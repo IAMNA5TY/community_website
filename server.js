@@ -139,6 +139,15 @@ app.use((req, res, next) => {
   if (req.path.startsWith("/drinking/") || req.path.startsWith("/api/drinking")) {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   }
+  // Dashboard shell + app.js change often; don't let CDN keep a stale bundle.
+  if (
+    req.path === "/" ||
+    req.path === "/index.html" ||
+    req.path === "/app.js" ||
+    req.path === "/styles.css"
+  ) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  }
   next();
 });
 app.use(

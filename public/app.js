@@ -3736,17 +3736,16 @@ async function refreshDiscordPanel(dashboard) {
 async function refreshDiscordOwnerSubs() {
   const list = document.getElementById("discord-owner-subs-list");
   const rosterList = document.getElementById("discord-owner-roster-list");
-  if (!list) return;
-  try {
-    const response = await fetch("/api/discord/subscribers");
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Could not load roster");
-    const badges = data.chatBadges || [];
+  if (!list && !rosterList) return;
+
+  const renderBadgeList = (badges) => {
+    if (!list) return;
     if (!badges.length) {
       list.innerHTML =
         '<p class="subtitle">No Kick chat badge sightings yet — have people type in na5ty chat, then refresh.</p>';
-    } else {
-      list.innerHTML = `
+      return;
+    }
+    list.innerHTML = `
       <table class="data-table">
         <thead><tr><th>Kick user</th><th>Sub badge</th><th>Last badges</th><th>Last seen</th><th>Discord role</th></tr></thead>
         <tbody>
@@ -3763,15 +3762,16 @@ async function refreshDiscordOwnerSubs() {
             .join("")}
         </tbody>
       </table>`;
-    }
+  };
 
-    if (rosterList) {
-      const rows = data.subscribers || [];
-      if (!rows.length) {
-        rosterList.innerHTML =
-          '<p class="subtitle">No active webhook/manual sub entries.</p>';
-      } else {
-        rosterList.innerHTML = `
+  const renderRosterList = (rows) => {
+    if (!rosterList) return;
+    if (!rows.length) {
+      rosterList.innerHTML =
+        '<p class="subtitle">No active webhook/manual sub entries.</p>';
+      return;
+    }
+    rosterList.innerHTML = `
       <table class="data-table">
         <thead><tr><th>Kick user</th><th>Expires</th><th>Source</th></tr></thead>
         <tbody>
@@ -3786,11 +3786,21 @@ async function refreshDiscordOwnerSubs() {
             .join("")}
         </tbody>
       </table>`;
-      }
-    }
+  };
+
+  try {
+    const response = await fetch("/api/discord/subscribers", {
+      credentials: "same-origin",
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not load roster");
+    renderBadgeList(data.chatBadges || []);
+    renderRosterList(data.subscribers || []);
     renderDiscordRecheckMeta(data);
   } catch (error) {
-    list.innerHTML = `<p class="subtitle err">${escapeHtml(error.message)}</p>`;
+    const msg = `<p class="subtitle err">${escapeHtml(error.message)}</p>`;
+    if (list) list.innerHTML = msg;
+    if (rosterList) rosterList.innerHTML = msg;
   }
   refreshDiscordPanelMeta();
 }
