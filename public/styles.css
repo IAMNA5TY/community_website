@@ -1522,6 +1522,54 @@ body.is-dashboard {
 .only-pixels-note.ok { color: #7dffb3; }
 .only-pixels-note.err { color: #ff8e8e; }
 
+.discord-status-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 4px;
+}
+
+@media (min-width: 720px) {
+  .discord-status-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.discord-status-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.discord-status-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.discord-status-card strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.discord-status-value.is-owner,
+.discord-status-value.is-yes {
+  color: #7dffb3;
+}
+
+.discord-status-value.is-no {
+  color: #ffb080;
+}
+
+.discord-status-value.is-warn {
+  color: #ffd27a;
+}
+
 .only-pixels-code-box {
   margin-top: 20px;
   padding: 20px;

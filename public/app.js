@@ -3624,38 +3624,66 @@ function setDiscordStatus(message, type = "") {
   el.className = `only-pixels-note${type ? ` ${type}` : ""}`;
 }
 
+function setDiscordStatusValue(id, text, stateClass = "") {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = `discord-status-value${stateClass ? ` ${stateClass}` : ""}`;
+}
+
 function renderDiscordPanel(status = {}) {
   const linked = Boolean(status.linked);
   const active = Boolean(status.activeSubscriber);
   const granted = Boolean(status.roleGranted);
   const configured = Boolean(status.discordConfigured);
   const kickName = status.kickUsername || "unknown";
+  const isOwner = status.eligibilityReason === "owner";
 
-  const lines = [];
-  lines.push(`Kick login @${kickName}`);
+  const kickEl = document.getElementById("discord-status-kick");
+  if (kickEl) kickEl.textContent = `@${kickName}`;
 
-  if (!configured) {
-    lines.push("Discord bot env vars are missing on the server.");
-  } else if (!linked) {
-    lines.push("Discord not linked yet — click Link Discord.");
+  if (isOwner) {
+    setDiscordStatusValue("discord-status-kick-state", "Owner", "is-owner");
+  } else if (active) {
+    setDiscordStatusValue("discord-status-kick-state", "Subscribed", "is-yes");
   } else {
-    lines.push(`Discord linked as ${status.discordUsername || status.discordId}`);
+    setDiscordStatusValue("discord-status-kick-state", "Not subscribed", "is-no");
   }
 
-  if (status.eligibilityReason === "owner") {
-    lines.push("Channel owner — subscriber role allowed");
+  if (linked) {
+    setDiscordStatusValue(
+      "discord-status-discord-state",
+      `Linked${status.discordUsername ? ` · ${status.discordUsername}` : ""}`,
+      "is-yes"
+    );
+  } else {
+    setDiscordStatusValue("discord-status-discord-state", "Not linked", "is-no");
+  }
+
+  if (granted) {
+    setDiscordStatusValue("discord-status-role-state", "Granted", "is-yes");
+  } else if (!configured) {
+    setDiscordStatusValue("discord-status-role-state", "Bot not configured", "is-warn");
+  } else {
+    setDiscordStatusValue("discord-status-role-state", "Not granted", "is-warn");
+  }
+
+  const lines = [];
+  if (!configured) {
+    lines.push("Discord bot env vars are missing on the server.");
+  } else if (isOwner) {
+    lines.push("You’re the channel owner — subscriber role is allowed.");
   } else if (active) {
     lines.push(
       status.expiresAt
-        ? `Active Kick sub until ${new Date(status.expiresAt).toLocaleString()}`
-        : "Active Kick sub on record"
+        ? `Kick sub on record until ${new Date(status.expiresAt).toLocaleString()}`
+        : "Kick sub on record"
     );
   } else {
-    lines.push(status.note || `No active sub found for @${kickName} yet.`);
+    lines.push(status.note || `No Kick sub on record for @${kickName} yet.`);
   }
-
-  if (granted) lines.push("Discord subscriber role is currently granted.");
-  setDiscordStatus(lines.join(" · "), active && linked ? "ok" : "");
+  if (!linked) lines.push("Link Discord to claim the role.");
+  setDiscordStatus(lines.join(" "), active && linked ? "ok" : "");
 
   const claimBtn = document.getElementById("discord-claim-btn");
   const unlinkBtn = document.getElementById("discord-unlink-btn");
