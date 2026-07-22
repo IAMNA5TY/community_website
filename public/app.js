@@ -3810,7 +3810,7 @@ function renderDiscordRecheckMeta(data = {}) {
   if (!el) return;
   const run = data.recheck;
   const parts = [
-    "Discord role is removed only after we see them in Kick chat with a sub badge, then later without one. Channel owner is never revoked. Deploys no longer re-post old role-removed messages.",
+    "Kick chat badges still mark people eligible to claim. Auto role removal is off so claimed roles stay. Owner is never revoked.",
   ];
   if (run?.lastChatRevoke?.at) {
     parts.push(
