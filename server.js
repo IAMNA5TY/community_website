@@ -718,6 +718,36 @@ app.post("/api/discord/mark-subscriber", (req, res) => {
   }
 });
 
+/** Owner: force a public thank-you / revoke test message into the Discord panel channel. */
+app.post("/api/discord/announce-test", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    if (!discord.configured()) {
+      return res.status(503).json({ success: false, error: "Discord not configured" });
+    }
+    const action =
+      String(req.body?.action || "granted").trim() === "revoked" ? "revoked" : "granted";
+    const result = await discord.announceSubRoleChange({
+      kickName: user.profile?.username || "na5ty",
+      action,
+      reason: action === "granted" ? "owner" : "unlink",
+    });
+    res.json({
+      success: Boolean(result.posted),
+      ...result,
+      message: result.posted
+        ? `Posted public message in Discord: ${result.text}`
+        : `Failed to post public message: ${result.error}`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 /** Public diagnostic — does not expose the key, only whether Discord buttons can work. */
 app.get("/api/discord/interactions-health", (_req, res) => {
   const keyStatus = discord.publicKeyStatus();
