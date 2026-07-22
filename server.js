@@ -59,6 +59,7 @@ const discord = require("./lib/discord");
 const kickSubscriberStore = require("./lib/kick-subscriber-store");
 const discordSubRoleRecheck = require("./lib/discord-sub-role-recheck");
 const discordGateway = require("./lib/discord-gateway");
+const discordRoleWatch = require("./lib/discord-role-watch");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -666,6 +667,8 @@ app.get("/api/discord/subscribers", (req, res) => {
     recheck: discordSubRoleRecheck.getLastRun(),
     recheckIntervalMs: discordSubRoleRecheck.getRecheckIntervalMs(),
     recheckBatchSize: discordSubRoleRecheck.getBatchSize(),
+    roleWatch: discordRoleWatch.getStatus(),
+    botInviteUrl: discord.botInviteUrl(),
   });
 });
 
@@ -2787,6 +2790,7 @@ webhook.loadPublicKey().then(async () => {
 
   if (discord.configured()) {
     discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
+    discordRoleWatch.start(kickSubscriberStore);
     discordGateway.start(kickSubscriberStore);
   } else {
     console.log("[discord-recheck] skipped — Discord not fully configured");
