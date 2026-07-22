@@ -3747,12 +3747,11 @@ async function refreshDiscordOwnerSubs() {
     }
     list.innerHTML = `
       <table class="data-table">
-        <thead><tr><th>Kick user</th><th>Sub badge</th><th>Last badges</th><th>Last seen</th><th>Discord role</th><th>Action</th></tr></thead>
+        <thead><tr><th>Kick user</th><th>Sub badge</th><th>Last badges</th><th>Last seen / try</th><th>Claim try</th><th>Discord role</th><th>Action</th></tr></thead>
         <tbody>
           ${badges
             .map((row) => {
               const name = escapeHtml(row.username || "");
-              const discordId = escapeHtml(row.discordId || "");
               let actionCell = "—";
               if (row.roleGranted) {
                 actionCell = `<span class="pill">Has role</span>
@@ -3762,11 +3761,16 @@ async function refreshDiscordOwnerSubs() {
               } else {
                 actionCell = `<span class="subtitle">Not linked</span>`;
               }
+              const seenAt = row.lastClaimAt || row.lastSeenAt;
+              const claimLabel = row.lastClaimResult
+                ? escapeHtml(row.lastClaimResult)
+                : "—";
               return `<tr data-kick-user="${attrQuote(row.username || "")}">
                 <td>${name}${row.isOwner ? ' <span class="pill">owner</span>' : ""}</td>
                 <td>${row.hasSubscriberBadge ? '<span class="pill">yes</span>' : `<span class="pill">${escapeHtml(row.lastBadgeStatus || "no")}</span>`}</td>
                 <td><code>${escapeHtml((row.lastBadges || []).join(", ") || "—")}</code></td>
-                <td>${escapeHtml(row.lastSeenAt ? new Date(row.lastSeenAt).toLocaleString() : "—")}</td>
+                <td>${escapeHtml(seenAt ? new Date(seenAt).toLocaleString() : "—")}</td>
+                <td title="${attrQuote(row.lastClaimReason || "")}">${claimLabel}</td>
                 <td class="discord-role-status">${row.roleGranted ? "granted" : row.discordLinked ? "linked" : "—"}</td>
                 <td class="discord-role-action">${actionCell}</td>
               </tr>`;
@@ -3946,8 +3950,25 @@ document.getElementById("discord-refresh-btn")?.addEventListener("click", () => 
   refreshDiscordPanel(dashboardData);
 });
 
-document.getElementById("discord-owner-refresh")?.addEventListener("click", () => {
-  refreshDiscordOwnerSubs();
+document.getElementById("discord-owner-refresh")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-owner-refresh");
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Refreshing Kick / claim list…");
+  try {
+    await refreshDiscordOwnerSubs();
+    const list = document.getElementById("discord-owner-subs-list");
+    const rows = list?.querySelectorAll("tbody tr")?.length || 0;
+    setDiscordStatus(
+      rows
+        ? `List refreshed — ${rows} people (chat, linked Discord, or claim tries).`
+        : "List refreshed — no chat/links/claim tries stored yet.",
+      "ok"
+    );
+  } catch (error) {
+    setDiscordStatus(error.message || "Refresh failed", "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 });
 
 document.getElementById("discord-post-panel-btn")?.addEventListener("click", async () => {

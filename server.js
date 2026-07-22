@@ -539,6 +539,12 @@ app.post("/api/discord/claim", async (req, res) => {
     const kickUsername = user.profile?.username || "";
     const link = kickSubscriberStore.getLinkForKickUser(user.profile.id);
     if (!link?.discordId) {
+      kickSubscriberStore.recordClaimAttempt({
+        kickUsername,
+        kickUserId: user.profile.id,
+        result: "not-linked",
+        reason: "Link Discord first",
+      });
       return res.status(400).json({
         success: false,
         error: "Link Discord first",
@@ -553,6 +559,13 @@ app.post("/api/discord/claim", async (req, res) => {
     );
     const active = eligibility.eligible;
     if (!active) {
+      kickSubscriberStore.recordClaimAttempt({
+        discordId: link.discordId,
+        kickUsername,
+        kickUserId: user.profile.id,
+        result: "not-eligible",
+        reason: "No Kick sub badge/webhook on record yet",
+      });
       return res.status(403).json({
         success: false,
         error:
@@ -573,6 +586,13 @@ app.post("/api/discord/claim", async (req, res) => {
       active: true,
       expiresAt: sub?.expiresAt || null,
       lastCheckedAt: new Date().toISOString(),
+    });
+    kickSubscriberStore.recordClaimAttempt({
+      discordId: link.discordId,
+      kickUsername,
+      kickUserId: user.profile.id,
+      result: "granted",
+      reason: eligibility.reason || "subscriber",
     });
 
     try {
