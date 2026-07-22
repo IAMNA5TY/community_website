@@ -673,6 +673,7 @@ app.get("/api/discord/panel", (req, res) => {
     panel: kickSubscriberStore.getDiscordPanelMeta(),
     interactionsUrl: `${publicBaseUrl(req)}/api/discord/interactions`,
     publicKeyConfigured: Boolean(discord.getConfig().publicKey),
+    botInviteUrl: discord.botInviteUrl(),
   });
 });
 
