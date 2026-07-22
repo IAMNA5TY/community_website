@@ -4007,19 +4007,20 @@ document.getElementById("discord-test-revoke-btn")?.addEventListener("click", as
 document.getElementById("discord-recheck-btn")?.addEventListener("click", async () => {
   const btn = document.getElementById("discord-recheck-btn");
   if (btn) btn.disabled = true;
-  setDiscordStatus("Rechecking Discord subscriber roles...");
+  setDiscordStatus("Syncing Discord subscriber roles...");
   try {
     const response = await fetch("/api/discord/recheck", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ forceAll: true }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success === false) {
-      throw new Error(data.error || data.reason || "Recheck failed");
+      throw new Error(data.error || data.reason || "Sync failed");
     }
     setDiscordStatus(
-      `Recheck done — checked ${data.checked || 0}, kept ${data.kept || 0}, revoked ${data.revoked || 0}.`,
+      `Sync done — checked ${data.checked || 0}, already ok ${data.kept || 0}, restored ${data.restored || 0}.`,
       "ok"
     );
     refreshDiscordOwnerSubs();
