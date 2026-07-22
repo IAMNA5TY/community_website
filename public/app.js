@@ -3714,6 +3714,41 @@ async function refreshDiscordOwnerSubs() {
   } catch (error) {
     list.innerHTML = `<p class="subtitle err">${escapeHtml(error.message)}</p>`;
   }
+  refreshDiscordPanelMeta();
+}
+
+async function refreshDiscordPanelMeta() {
+  const meta = document.getElementById("discord-panel-meta");
+  if (!meta) return;
+  try {
+    const response = await fetch("/api/discord/panel");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not load panel info");
+    const parts = [
+      `Channel <code>${escapeHtml(data.channelId || "—")}</code>.`,
+    ];
+    if (data.panel?.messageId) {
+      parts.push(
+        `Last posted message <code>${escapeHtml(data.panel.messageId)}</code>` +
+          (data.panel.postedAt
+            ? ` at ${escapeHtml(new Date(data.panel.postedAt).toLocaleString())}`
+            : "") +
+          "."
+      );
+    } else {
+      parts.push("No panel posted from na5ty.com yet.");
+    }
+    if (!data.publicKeyConfigured) {
+      parts.push(
+        "<strong>Add DISCORD_PUBLIC_KEY</strong> and set Interactions URL to " +
+          `<code>${escapeHtml(data.interactionsUrl || "/api/discord/interactions")}</code> ` +
+          "in the Discord Developer Portal so the button works."
+      );
+    }
+    meta.innerHTML = parts.join(" ");
+  } catch (error) {
+    meta.textContent = error.message;
+  }
 }
 
 document.getElementById("discord-claim-btn")?.addEventListener("click", async () => {
@@ -3735,6 +3770,27 @@ document.getElementById("discord-refresh-btn")?.addEventListener("click", () => 
 
 document.getElementById("discord-owner-refresh")?.addEventListener("click", () => {
   refreshDiscordOwnerSubs();
+});
+
+document.getElementById("discord-post-panel-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-post-panel-btn");
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Posting Discord channel panel...");
+  try {
+    const response = await fetch("/api/discord/panel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not post panel");
+    setDiscordStatus(data.message || "Panel posted.", "ok");
+    refreshDiscordPanelMeta();
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 });
 
 document.getElementById("discord-unlink-btn")?.addEventListener("click", async () => {
