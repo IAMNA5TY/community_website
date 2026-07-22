@@ -370,6 +370,15 @@
                   <button class="btn btn-kick btn-compact" type="button" id="discord-post-panel-btn">Post panel in Discord</button>
                 </div>
               </div>
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
+                <h3 style="margin:0 0 6px;font-size:1rem;">Sub role recheck</h3>
+                <p class="subtitle" id="discord-recheck-meta">
+                  Randomly checks people who claimed the Discord role. If they are no longer an active Kick sub, the role is removed. Channel owner is never revoked.
+                </p>
+                <div class="btn-row slots-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
+                  <button class="btn btn-secondary btn-compact" type="button" id="discord-recheck-btn">Recheck roles now</button>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -1101,6 +1110,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=60"></script>
+    <script src="/app.js?v=61"></script>
   </body>
 </html>

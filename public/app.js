@@ -3694,9 +3694,8 @@ async function refreshDiscordOwnerSubs() {
     if (!rows.length) {
       list.innerHTML =
         '<p class="subtitle">No active subs tracked yet — new/renew/gift webhooks will fill this.</p>';
-      return;
-    }
-    list.innerHTML = `
+    } else {
+      list.innerHTML = `
       <table class="data-table">
         <thead><tr><th>Kick user</th><th>Expires</th><th>Source</th></tr></thead>
         <tbody>
@@ -3711,10 +3710,33 @@ async function refreshDiscordOwnerSubs() {
             .join("")}
         </tbody>
       </table>`;
+    }
+    renderDiscordRecheckMeta(data);
   } catch (error) {
     list.innerHTML = `<p class="subtitle err">${escapeHtml(error.message)}</p>`;
   }
   refreshDiscordPanelMeta();
+}
+
+function renderDiscordRecheckMeta(data = {}) {
+  const el = document.getElementById("discord-recheck-meta");
+  if (!el) return;
+  const run = data.recheck;
+  const intervalMin = Math.round((data.recheckIntervalMs || 900000) / 60000);
+  const batch = data.recheckBatchSize || 8;
+  const parts = [
+    `Every ~${intervalMin}m, randomly checks up to ${batch} people with the Discord role. Expired Kick subs lose the role; channel owner is kept.`,
+  ];
+  if (run?.finishedAt) {
+    parts.push(
+      `Last run ${escapeHtml(new Date(run.finishedAt).toLocaleString())}: checked ${run.checked || 0}, kept ${run.kept || 0}, revoked ${run.revoked || 0}.`
+    );
+  } else {
+    parts.push("No recheck has run yet since the last deploy.");
+  }
+  const activeGrants = (data.grants || []).filter((g) => g.active);
+  parts.push(`Active Discord role grants on record: ${activeGrants.length}.`);
+  el.innerHTML = parts.join(" ");
 }
 
 async function refreshDiscordPanelMeta() {
@@ -3799,6 +3821,32 @@ document.getElementById("discord-post-panel-btn")?.addEventListener("click", asy
       setDiscordStatus(data.message || "Panel posted.", "ok");
     }
     refreshDiscordPanelMeta();
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+document.getElementById("discord-recheck-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-recheck-btn");
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Rechecking Discord subscriber roles...");
+  try {
+    const response = await fetch("/api/discord/recheck", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ forceAll: true }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || data.reason || "Recheck failed");
+    }
+    setDiscordStatus(
+      `Recheck done — checked ${data.checked || 0}, kept ${data.kept || 0}, revoked ${data.revoked || 0}.`,
+      "ok"
+    );
+    refreshDiscordOwnerSubs();
   } catch (error) {
     setDiscordStatus(error.message, "err");
   } finally {
