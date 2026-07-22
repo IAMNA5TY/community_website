@@ -347,7 +347,7 @@
                 <button class="btn btn-secondary btn-compact" id="discord-unlink-btn" type="button">Unlink Discord</button>
               </div>
               <p class="subtitle" style="margin-top:14px;">
-                If claim says you’re not a sub yet: stay subscribed on Kick and send a chat message, or wait for a renew/new-sub webhook.
+                If claim says you’re not a sub yet: type once in na5ty Kick chat while subbed (we read the sub badge), or wait for a renew/new-sub webhook. Kick has no live sub list API.
               </p>
             </div>
 
@@ -377,6 +377,21 @@
                 </p>
                 <div class="btn-row slots-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
                   <button class="btn btn-secondary btn-compact" type="button" id="discord-recheck-btn">Recheck roles now</button>
+                </div>
+              </div>
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
+                <h3 style="margin:0 0 6px;font-size:1rem;">Mark Kick sub (owner)</h3>
+                <p class="subtitle">
+                  Kick has no live sub list API. If someone is already subbed but never showed up in a webhook/chat badge, mark them here so they can claim.
+                </p>
+                <div class="btn-row slots-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;align-items:center;">
+                  <input
+                    id="discord-mark-sub-username"
+                    type="text"
+                    placeholder="Kick username (e.g. ohmybabz)"
+                    style="min-width:180px;flex:1;max-width:260px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#111;color:#fff;"
+                  />
+                  <button class="btn btn-kick btn-compact" type="button" id="discord-mark-sub-btn">Mark as sub</button>
                 </div>
               </div>
             </div>
@@ -1110,6 +1125,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=61"></script>
+    <script src="/app.js?v=62"></script>
   </body>
 </html>
