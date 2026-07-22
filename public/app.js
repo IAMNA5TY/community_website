@@ -3629,24 +3629,29 @@ function renderDiscordPanel(status = {}) {
   const active = Boolean(status.activeSubscriber);
   const granted = Boolean(status.roleGranted);
   const configured = Boolean(status.discordConfigured);
+  const kickName = status.kickUsername || "unknown";
 
   const lines = [];
+  lines.push(`Kick login @${kickName}`);
+
   if (!configured) {
     lines.push("Discord bot env vars are missing on the server.");
   } else if (!linked) {
     lines.push("Discord not linked yet — click Link Discord.");
   } else {
-    lines.push(`Linked as ${status.discordUsername || status.discordId}`);
+    lines.push(`Discord linked as ${status.discordUsername || status.discordId}`);
   }
 
-  if (active) {
+  if (status.eligibilityReason === "owner") {
+    lines.push("Channel owner — subscriber role allowed");
+  } else if (active) {
     lines.push(
       status.expiresAt
-        ? `Active Kick sub on record until ${new Date(status.expiresAt).toLocaleString()}`
+        ? `Active Kick sub until ${new Date(status.expiresAt).toLocaleString()}`
         : "Active Kick sub on record"
     );
   } else {
-    lines.push(status.note || "No active Kick sub found yet.");
+    lines.push(status.note || `No active sub found for @${kickName} yet.`);
   }
 
   if (granted) lines.push("Discord subscriber role is currently granted.");
