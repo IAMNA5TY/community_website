@@ -3765,6 +3765,46 @@ function renderDiscordRecheckMeta(data = {}) {
   const activeGrants = (data.grants || []).filter((g) => g.active);
   parts.push(`Active Discord role grants on record: ${activeGrants.length}.`);
   el.innerHTML = parts.join(" ");
+  renderDiscordRoleWatchMeta(data);
+}
+
+function renderDiscordRoleWatchMeta(data = {}) {
+  const el = document.getElementById("discord-role-watch-meta");
+  if (!el) return;
+  const watch = data.roleWatch || {};
+  const parts = [
+    "Watches Discord audit logs so manually adding/removing the subscriber role posts in #kick.",
+  ];
+  if (!watch.enabled) {
+    parts.push("Currently disabled (DISCORD_ROLE_WATCH=0).");
+  } else if (!watch.started) {
+    parts.push("Not started yet — waiting for Discord config / deploy.");
+  } else {
+    const secs = Math.round((watch.pollMs || 12000) / 1000);
+    parts.push(`Polling every ~${secs}s.`);
+    if (watch.lastPollAt) {
+      parts.push(`Last poll ${escapeHtml(new Date(watch.lastPollAt).toLocaleString())}.`);
+    }
+    if (watch.lastEventAt) {
+      parts.push(
+        `Last manual role event ${escapeHtml(new Date(watch.lastEventAt).toLocaleString())} (${watch.eventsSeen || 0} total).`
+      );
+    } else {
+      parts.push("No manual role events seen yet since deploy.");
+    }
+  }
+  if (watch.lastError) {
+    parts.push(
+      `<span class="err">Error: ${escapeHtml(watch.lastError)}. Grant the bot View Audit Log` +
+        (data.botInviteUrl
+          ? ` — <a href="${escapeHtml(data.botInviteUrl)}" target="_blank" rel="noopener">re-invite bot</a>`
+          : "") +
+        ".</span>"
+    );
+  } else if (watch.started) {
+    parts.push("Bot needs View Audit Log permission.");
+  }
+  el.innerHTML = parts.join(" ");
 }
 
 async function refreshDiscordPanelMeta() {
