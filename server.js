@@ -608,6 +608,74 @@ app.get("/api/discord/subscribers", (req, res) => {
   });
 });
 
+/** Discord Interactions Endpoint — set in Developer Portal to https://na5ty.com/api/discord/interactions */
+app.post("/api/discord/interactions", async (req, res) => {
+  const verified = discord.verifyInteractionSignature(req);
+  if (!verified.ok) {
+    return res.status(401).send(verified.error || "invalid request signature");
+  }
+
+  try {
+    const response = await discord.handleInteraction(
+      req.body,
+      kickSubscriberStore
+    );
+    return res.json(response);
+  } catch (error) {
+    console.warn("[discord-interactions]", error.message);
+    return res.json({
+      type: discord.InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: `Something went wrong: ${error.message}`,
+        flags: 64,
+      },
+    });
+  }
+});
+
+app.post("/api/discord/panel", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    if (!discord.configured()) {
+      return res.status(503).json({
+        success: false,
+        error: "Discord is not fully configured on the server",
+      });
+    }
+    const channelId =
+      String(req.body?.channelId || "").trim() ||
+      discord.getConfig().panelChannelId;
+    const posted = await discord.postSubRolePanel(channelId);
+    kickSubscriberStore.setDiscordPanelMeta(posted);
+    res.json({
+      success: true,
+      panel: posted,
+      message: `Posted subscriber role panel in channel ${posted.channelId}`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get("/api/discord/panel", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  res.json({
+    ok: true,
+    channelId: discord.getConfig().panelChannelId,
+    panel: kickSubscriberStore.getDiscordPanelMeta(),
+    interactionsUrl: `${publicBaseUrl(req)}/api/discord/interactions`,
+    publicKeyConfigured: Boolean(discord.getConfig().publicKey),
+  });
+});
+
 app.get("/auth/discord", (req, res) => {
   if (!req.session.user || req.session.user.provider !== "kick") {
     return res.redirect("/auth/kick");
