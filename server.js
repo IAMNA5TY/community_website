@@ -521,9 +521,11 @@ app.post("/api/discord/claim", async (req, res) => {
       });
     }
 
-    const active =
-      kickSubscriberStore.isActiveSubscriber(kickUsername) ||
-      kickSubscriberStore.isActiveSubscriber(user.profile.id);
+    const eligibility = kickSubscriberStore.isEligibleForSubRole(
+      user.profile.id,
+      kickUsername
+    );
+    const active = eligibility.eligible;
     if (!active) {
       try {
         await discord.removeSubRole(link.discordId);
@@ -537,8 +539,7 @@ app.post("/api/discord/claim", async (req, res) => {
       }
       return res.status(403).json({
         success: false,
-        error:
-          "No active Kick sub found for your account yet. Sub to na5ty (or chat while subbed), then try again.",
+        error: `No active Kick sub found for @${kickSubscriberStore.normalizeUsername(kickUsername)}. Sub to na5ty (or chat while subbed), then try again.`,
       });
     }
 
