@@ -58,6 +58,7 @@ const dashboardAccess = require("./lib/dashboard-access");
 const discord = require("./lib/discord");
 const kickSubscriberStore = require("./lib/kick-subscriber-store");
 const discordSubRoleRecheck = require("./lib/discord-sub-role-recheck");
+const discordGateway = require("./lib/discord-gateway");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -2786,6 +2787,7 @@ webhook.loadPublicKey().then(async () => {
 
   if (discord.configured()) {
     discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
+    discordGateway.start(kickSubscriberStore);
   } else {
     console.log("[discord-recheck] skipped — Discord not fully configured");
   }
