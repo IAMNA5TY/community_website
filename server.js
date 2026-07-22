@@ -239,7 +239,7 @@ function buildWebhookNote(req) {
   const broadcasterId = req.session.user?.profile?.id;
   if (broadcasterId && webhookSubscription.isRateLimited(broadcasterId)) {
     const retryAt = webhookSubscription.rateLimitRetryAt(broadcasterId);
-    return `Kick API rate limit — subscription setup paused until ${retryAt ? new Date(retryAt).toLocaleTimeString() : "later"}. Chat still works via Pusher (no webhook needed). Sub/gift webhooks will retry after the pause.`;
+    return `Kick API rate limit — sub/gift webhook setup paused until ${retryAt ? new Date(retryAt).toLocaleTimeString() : "later"}. Chat still works via Pusher. Auto-retry is slowed so we stop burning Kick quota.`;
   }
 
   if (!req.session.webhookReady) {
@@ -310,7 +310,10 @@ async function setupKickSubscriptions(req, options = {}) {
       `[webhooks] ${broadcasterId}: ready (chat=Pusher, events=${events.join(", ") || "none"})`
     );
   } catch (error) {
-    webhookSubscription.noteResult(broadcasterId, { error: error.message });
+    webhookSubscription.noteResult(broadcasterId, {
+      error: error.message,
+      retryAfter: error.retryAfter,
+    });
     if (/rate limit/i.test(error.message)) {
       // Chat doesn't need webhooks — still mark ready so the banner isn't scary.
       if (String(process.env.KICK_PUSHER_MONITOR || "1") !== "0") {
@@ -382,7 +385,10 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
         `[webhooks] boot ${broadcasterId}: non-chat events (${events.join(", ") || "none"}) — partner chat via Pusher`
       );
     } catch (error) {
-      webhookSubscription.noteResult(broadcasterId, { error: error.message });
+      webhookSubscription.noteResult(broadcasterId, {
+        error: error.message,
+        retryAfter: error.retryAfter,
+      });
       console.warn(`[webhooks] boot subscribe failed for ${broadcasterId}:`, error.message);
       if (/rate limit/i.test(error.message)) {
         break;
@@ -810,7 +816,8 @@ app.get("/api/dashboard", async (req, res) => {
       });
     }
 
-    await setupKickSubscriptions(req);
+    // Do NOT re-register Kick webhooks on every dashboard poll (15s) — that burns API quota.
+    // Registration happens on login, boot, explicit reregister, and a slow background tick.
 
     const dashboard = await kickApi.getDashboard(req, config.kick);
     const stored = eventStore.getChannelData(req.session.user.profile.id);
@@ -1270,22 +1277,39 @@ app.get("/api/webhooks/health", async (req, res) => {
   const messageCount =
     eventStore.getChannelData(broadcasterId).stats?.totalMessages ?? 0;
 
-  let subscribedEvents = [];
-  let chatWebhookActive = false;
+  let subscribedEvents = webhookSubscription.getCachedEvents(broadcasterId);
+  let chatWebhookActive = subscribedEvents.includes("chat.message.sent");
   let subscriptionError = null;
 
-  if (token?.accessToken) {
-    try {
-      const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
-        broadcasterId,
-        config.kick
-      );
-      const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
-      subscribedEvents = subs.map((sub) => sub.event || sub.name).filter(Boolean);
-      chatWebhookActive = subscribedEvents.includes("chat.message.sent");
-    } catch (error) {
-      subscriptionError = error.message;
+  if (token?.accessToken && !webhookSubscription.isRateLimited(broadcasterId)) {
+    const shouldRefresh = webhookSubscription.shouldAttempt(broadcasterId, {
+      chatActive: subscribedEvents.length > 0,
+    });
+    if (shouldRefresh || !subscribedEvents.length) {
+      try {
+        const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
+          broadcasterId,
+          config.kick
+        );
+        const subs = await kickApi.getEventSubscriptions(accessToken, broadcasterId);
+        subscribedEvents = subs.map((sub) => sub.event || sub.name).filter(Boolean);
+        chatWebhookActive = subscribedEvents.includes("chat.message.sent");
+        webhookSubscription.noteResult(broadcasterId, {
+          events: subscribedEvents,
+          chatActive: chatWebhookActive,
+        });
+      } catch (error) {
+        subscriptionError = error.message;
+        if (/rate limit/i.test(error.message)) {
+          webhookSubscription.noteResult(broadcasterId, {
+            error: error.message,
+            retryAfter: error.retryAfter,
+          });
+        }
+      }
     }
+  } else if (webhookSubscription.isRateLimited(broadcasterId)) {
+    subscriptionError = "Rate limit exceeded";
   }
 
   res.json({
@@ -1340,7 +1364,10 @@ app.post("/api/webhooks/reregister", async (req, res) => {
     });
   } catch (error) {
     if (/rate limit/i.test(error.message)) {
-      webhookSubscription.noteResult(broadcasterId, { error: error.message });
+      webhookSubscription.noteResult(broadcasterId, {
+        error: error.message,
+        retryAfter: error.retryAfter,
+      });
     }
     res.status(500).json({
       ok: false,
@@ -1355,9 +1382,9 @@ app.get("/api/webhooks/status", async (req, res) => {
   if (!user) return;
 
   const broadcasterId = user.profile.id;
+  const cached = webhookSubscription.getCachedEvents(broadcasterId);
 
   if (webhookSubscription.isRateLimited(broadcasterId)) {
-    const cached = webhookSubscription.getCachedEvents(broadcasterId);
     return res.json({
       webhookUrl: WEBHOOK_URL,
       webhookReady: Boolean(req.session.webhookReady),
@@ -1367,6 +1394,22 @@ app.get("/api/webhooks/status", async (req, res) => {
       kickDeveloperMustMatch: WEBHOOK_URL,
       rateLimited: true,
       retryAfter: webhookSubscription.rateLimitRetryAt(broadcasterId),
+    });
+  }
+
+  // Prefer cache so status polling does not burn Kick quota.
+  if (
+    cached.length &&
+    !webhookSubscription.shouldAttempt(broadcasterId, { chatActive: true })
+  ) {
+    return res.json({
+      webhookUrl: WEBHOOK_URL,
+      webhookReady: Boolean(req.session.webhookReady),
+      webhookError: req.session.webhookError || null,
+      subscribedEvents: cached,
+      chatWebhookActive: cached.includes("chat.message.sent"),
+      kickDeveloperMustMatch: WEBHOOK_URL,
+      cached: true,
     });
   }
 
@@ -1389,7 +1432,10 @@ app.get("/api/webhooks/status", async (req, res) => {
     });
   } catch (error) {
     if (/rate limit/i.test(error.message)) {
-      webhookSubscription.noteResult(broadcasterId, { error: error.message });
+      webhookSubscription.noteResult(broadcasterId, {
+        error: error.message,
+        retryAfter: error.retryAfter,
+      });
     }
     res.status(500).json({ error: error.message });
   }
@@ -2518,26 +2564,44 @@ webhook.loadPublicKey().then(async () => {
   }
 
   // One-time cleanup: delete leftover chat.message.sent webhooks (Pusher owns chat now).
+  // Skip on every restart — repeated purge list/delete storms Kick rate limits.
   try {
     const token = tokenStore.getBroadcasterToken(DEFAULT_BROADCASTER_ID);
-    if (token?.accessToken && typeof kickApi.purgeChatMessageSubscriptions === "function") {
+    const shouldPurge =
+      Boolean(token?.accessToken) &&
+      typeof kickApi.purgeChatMessageSubscriptions === "function" &&
+      (changed || webhookState.shouldPurgeChatMessageSubscriptions());
+    if (shouldPurge) {
       const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
         DEFAULT_BROADCASTER_ID,
         config.kick
       );
       const purged = await kickApi.purgeChatMessageSubscriptions(accessToken);
+      webhookState.noteChatMessagePurged();
       if (purged.deleted > 0) {
         console.log(`[webhooks] purged ${purged.deleted} leftover chat.message.sent subscription(s)`);
       } else {
         console.log("[webhooks] no leftover chat.message.sent subscriptions");
       }
+    } else {
+      console.log("[webhooks] chat.message.sent purge skipped (already done)");
     }
   } catch (error) {
     console.warn("[webhooks] chat purge skipped:", error.message);
   }
 
   await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
-  await bootstrapKickRewardPartners();
+
+  // Slow background retry for missing sub/gift webhooks — not tied to dashboard polling.
+  const WEBHOOK_RETRY_MS = Math.max(
+    5 * 60 * 1000,
+    Number(process.env.KICK_WEBHOOK_RETRY_MS || 15 * 60 * 1000) || 15 * 60 * 1000
+  );
+  setInterval(() => {
+    ensureStoredWebhookSubscriptions({ webhookUrlChanged: false }).catch((error) => {
+      console.warn("[webhooks] background ensure failed:", error.message);
+    });
+  }, WEBHOOK_RETRY_MS);  await bootstrapKickRewardPartners();
   if (typeof kickRewardsStore.dedupePartnerSlugVariants === "function") {
     kickRewardsStore.dedupePartnerSlugVariants();
   }
