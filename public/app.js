@@ -3854,6 +3854,36 @@ document.getElementById("discord-recheck-btn")?.addEventListener("click", async 
   }
 });
 
+document.getElementById("discord-mark-sub-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-mark-sub-btn");
+  const input = document.getElementById("discord-mark-sub-username");
+  const username = input?.value?.trim();
+  if (!username) {
+    setDiscordStatus("Enter a Kick username to mark as sub.", "err");
+    return;
+  }
+  if (btn) btn.disabled = true;
+  setDiscordStatus(`Marking @${username} as an active Kick sub...`);
+  try {
+    const response = await fetch("/api/discord/mark-subscriber", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || "Could not mark subscriber");
+    }
+    setDiscordStatus(data.message || `Marked @${username}.`, "ok");
+    if (input) input.value = "";
+    refreshDiscordOwnerSubs();
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
 document.getElementById("discord-unlink-btn")?.addEventListener("click", async () => {
   if (!confirm("Unlink Discord and remove the subscriber role if present?")) return;
   try {

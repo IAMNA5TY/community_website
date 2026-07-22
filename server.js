@@ -500,6 +500,12 @@ app.get("/api/discord/status", (req, res) => {
   const user = requireKickUser(req, res);
   if (!user) return;
   const kickUsername = user.profile?.username || "";
+  kickSubscriberStore.refreshEligibilityFromHistory(
+    user.profile?.id,
+    kickUsername,
+    eventStore,
+    DEFAULT_BROADCASTER_ID
+  );
   res.json({
     ok: true,
     ...kickSubscriberStore.getPublicStatusForKickUser(user.profile?.id, kickUsername),
@@ -528,9 +534,11 @@ app.post("/api/discord/claim", async (req, res) => {
       });
     }
 
-    const eligibility = kickSubscriberStore.isEligibleForSubRole(
+    const eligibility = kickSubscriberStore.refreshEligibilityFromHistory(
       user.profile.id,
-      kickUsername
+      kickUsername,
+      eventStore,
+      DEFAULT_BROADCASTER_ID
     );
     const active = eligibility.eligible;
     if (!active) {
@@ -546,7 +554,10 @@ app.post("/api/discord/claim", async (req, res) => {
       }
       return res.status(403).json({
         success: false,
-        error: `No active Kick sub found for @${kickSubscriberStore.normalizeUsername(kickUsername)}. Subscribe at https://kick.com/na5ty/subscribe (or wait for a gifted sub), then try again.`,
+        error:
+          `No active Kick sub on record for @${kickSubscriberStore.normalizeUsername(kickUsername)} yet. ` +
+          `Kick does not give us a live sub list — type once in na5ty Kick chat while subbed (so we see the sub badge), ` +
+          `or subscribe at https://kick.com/na5ty/subscribe / wait for a gifted sub, then try again.`,
       });
     }
 
@@ -636,6 +647,36 @@ app.post("/api/discord/recheck", async (req, res) => {
     res.json({
       success: Boolean(result.ok),
       ...result,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/** Owner: manually mark a Kick username as an active sub (Kick has no live sub roster API). */
+app.post("/api/discord/mark-subscriber", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    const username = String(req.body?.username || "").trim();
+    if (!username) {
+      return res.status(400).json({ success: false, error: "username required" });
+    }
+    const row = kickSubscriberStore.markSubscriberManual({
+      username,
+      userId: req.body?.userId || null,
+      days: req.body?.days || null,
+    });
+    if (!row) {
+      return res.status(400).json({ success: false, error: "Invalid username" });
+    }
+    res.json({
+      success: true,
+      subscriber: row,
+      message: `Marked @${row.username} as an active Kick sub until ${new Date(row.expiresAt).toLocaleString()}. They can claim the Discord role now.`,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
