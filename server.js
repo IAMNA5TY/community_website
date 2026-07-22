@@ -614,7 +614,17 @@ app.post("/api/discord/unlink", async (req, res) => {
         kickUsername: user.profile?.username,
         kickUserId: user.profile.id,
         active: false,
+        revokeReason: "unlink",
       });
+      try {
+        await discord.announceSubRoleChange({
+          kickName: user.profile?.username || existing.kickUsername,
+          action: "revoked",
+          reason: "unlink",
+        });
+      } catch (error) {
+        console.warn("[discord] unlink announcement failed:", error.message);
+      }
     }
     res.json({
       success: true,
