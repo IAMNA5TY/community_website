@@ -391,12 +391,12 @@
                 </div>
               </div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
-                <h3 style="margin:0 0 6px;font-size:1rem;">Sub role recheck</h3>
+                <h3 style="margin:0 0 6px;font-size:1rem;">Kick chat sub check</h3>
                 <p class="subtitle" id="discord-recheck-meta">
-                  Randomly checks people who claimed the Discord role. If they are no longer an active Kick sub, the role is removed. Channel owner is never revoked.
+                  Discord role stays until they chat in na5ty Kick <strong>without</strong> a subscriber badge — then the bot removes it. Channel owner is never revoked.
                 </p>
                 <div class="btn-row slots-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;">
-                  <button class="btn btn-secondary btn-compact" type="button" id="discord-recheck-btn">Recheck roles now</button>
+                  <button class="btn btn-secondary btn-compact" type="button" id="discord-recheck-btn">Refresh role status</button>
                 </div>
               </div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
@@ -408,7 +408,7 @@
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
                 <h3 style="margin:0 0 6px;font-size:1rem;">Mark Kick sub (owner)</h3>
                 <p class="subtitle">
-                  Kick has no live sub list API. If someone is already subbed but never showed up in a webhook/chat badge, mark them here so they can claim.
+                  If someone is already subbed but never showed a Kick chat sub badge, mark them here so they can claim. Role is later removed when they chat without a sub badge.
                 </p>
                 <div class="btn-row slots-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px;align-items:center;">
                   <input

@@ -3750,17 +3750,16 @@ function renderDiscordRecheckMeta(data = {}) {
   const el = document.getElementById("discord-recheck-meta");
   if (!el) return;
   const run = data.recheck;
-  const intervalMin = Math.round((data.recheckIntervalMs || 900000) / 60000);
-  const batch = data.recheckBatchSize || 8;
   const parts = [
-    `Every ~${intervalMin}m, randomly checks up to ${batch} people with the Discord role. Expired Kick subs lose the role; channel owner is kept.`,
+    "Discord role stays until they chat in na5ty Kick without a subscriber badge — then the bot removes it. Channel owner is never revoked.",
   ];
-  if (run?.finishedAt) {
+  if (run?.lastChatRevoke?.at) {
     parts.push(
-      `Last run ${escapeHtml(new Date(run.finishedAt).toLocaleString())}: checked ${run.checked || 0}, kept ${run.kept || 0}, revoked ${run.revoked || 0}.`
+      `Last chat revoke: ${escapeHtml(run.lastChatRevoke.kickUsername || run.lastChatRevoke.discordId)} at ${escapeHtml(new Date(run.lastChatRevoke.at).toLocaleString())}.`
     );
-  } else {
-    parts.push("No recheck has run yet since the last deploy.");
+  }
+  if (run?.finishedAt && run?.mode) {
+    parts.push(`Status mode: ${escapeHtml(run.mode)}.`);
   }
   const activeGrants = (data.grants || []).filter((g) => g.active);
   parts.push(`Active Discord role grants on record: ${activeGrants.length}.`);
