@@ -614,6 +614,19 @@ app.get("/api/discord/subscribers", (req, res) => {
   });
 });
 
+/** Public diagnostic — does not expose the key, only whether Discord buttons can work. */
+app.get("/api/discord/interactions-health", (_req, res) => {
+  const keyStatus = discord.publicKeyStatus();
+  res.json({
+    ok: keyStatus.valid,
+    interactionsUrl: "https://na5ty.com/api/discord/interactions",
+    publicKey: keyStatus,
+    hint: keyStatus.valid
+      ? "Public key looks valid. In Discord Developer Portal set Interactions Endpoint URL to https://na5ty.com/api/discord/interactions and Save."
+      : "Railway DISCORD_PUBLIC_KEY is wrong. Paste the Public Key from Discord Developer Portal → your app → General Information (64 hex characters). You currently have something else (often the Application/Client ID).",
+  });
+});
+
 /** Discord Interactions Endpoint — set in Developer Portal to https://na5ty.com/api/discord/interactions */
 app.post("/api/discord/interactions", async (req, res) => {
   const verified = discord.verifyInteractionSignature(req);
@@ -688,15 +701,23 @@ app.post("/api/discord/panel", async (req, res) => {
         error: "Discord is not fully configured on the server",
       });
     }
+    const keyStatus = discord.publicKeyStatus();
     const channelId =
       String(req.body?.channelId || "").trim() ||
       discord.getConfig().panelChannelId;
     const posted = await discord.postSubRolePanel(channelId);
     kickSubscriberStore.setDiscordPanelMeta(posted);
+    const warning = keyStatus.valid
+      ? null
+      : `Panel posted, but the Get Subscriber Role button will NOT work until Railway DISCORD_PUBLIC_KEY is fixed. ${keyStatus.error}. Copy Public Key (64 hex chars) from Discord Developer Portal → General Information — not the Application ID.`;
     res.json({
       success: true,
       panel: posted,
-      message: `Posted subscriber role panel in channel ${posted.channelId}`,
+      publicKeyStatus: keyStatus,
+      warning,
+      message: warning
+        ? `Posted panel, but button is broken: ${keyStatus.error}`
+        : `Posted subscriber role panel in channel ${posted.channelId}`,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
