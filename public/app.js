@@ -3745,6 +3745,12 @@ async function refreshDiscordPanelMeta() {
           "in the Discord Developer Portal so the button works."
       );
     }
+    if (data.botInviteUrl) {
+      parts.push(
+        `If post says Missing Access, give the bot channel perms or ` +
+          `<a href="${escapeHtml(data.botInviteUrl)}" target="_blank" rel="noopener">re-invite the bot</a>.`
+      );
+    }
     meta.innerHTML = parts.join(" ");
   } catch (error) {
     meta.textContent = error.message;
