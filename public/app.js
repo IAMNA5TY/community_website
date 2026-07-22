@@ -25,6 +25,7 @@ let dashboardRole = "owner";
 let allowedPages = [
   "overview",
   "only-pixels",
+  "discord",
   "workout",
   "slots",
   "drinking",
@@ -196,6 +197,9 @@ function showPage(page) {
   }
   if (page === "only-pixels") {
     refreshOnlyPixels(dashboardData);
+  }
+  if (page === "discord") {
+    refreshDiscordPanel(dashboardData);
   }
 }
 
@@ -3609,3 +3613,134 @@ function bindOnlyPixelsPartnerEvents() {
 if (location.hash === "#only-pixels") {
   currentPage = "only-pixels";
 }
+if (location.hash === "#discord" || location.hash.startsWith("#discord?")) {
+  currentPage = "discord";
+}
+
+function setDiscordStatus(message, type = "") {
+  const el = document.getElementById("discord-sub-status");
+  if (!el) return;
+  el.textContent = message;
+  el.className = `only-pixels-note${type ? ` ${type}` : ""}`;
+}
+
+function renderDiscordPanel(status = {}) {
+  const linked = Boolean(status.linked);
+  const active = Boolean(status.activeSubscriber);
+  const granted = Boolean(status.roleGranted);
+  const configured = Boolean(status.discordConfigured);
+
+  const lines = [];
+  if (!configured) {
+    lines.push("Discord bot env vars are missing on the server.");
+  } else if (!linked) {
+    lines.push("Discord not linked yet — click Link Discord.");
+  } else {
+    lines.push(`Linked as ${status.discordUsername || status.discordId}`);
+  }
+
+  if (active) {
+    lines.push(
+      status.expiresAt
+        ? `Active Kick sub on record until ${new Date(status.expiresAt).toLocaleString()}`
+        : "Active Kick sub on record"
+    );
+  } else {
+    lines.push(status.note || "No active Kick sub found yet.");
+  }
+
+  if (granted) lines.push("Discord subscriber role is currently granted.");
+  setDiscordStatus(lines.join(" · "), active && linked ? "ok" : "");
+
+  const claimBtn = document.getElementById("discord-claim-btn");
+  const unlinkBtn = document.getElementById("discord-unlink-btn");
+  const linkBtn = document.getElementById("discord-link-btn");
+  if (claimBtn) claimBtn.disabled = !configured || !linked;
+  if (unlinkBtn) unlinkBtn.disabled = !linked;
+  if (linkBtn) linkBtn.textContent = linked ? "Relink Discord" : "Link Discord";
+}
+
+async function refreshDiscordPanel(dashboard) {
+  try {
+    const response = await fetch("/api/discord/status");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not load Discord status");
+    renderDiscordPanel(data);
+    if (dashboard) dashboard.discord = data;
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  }
+
+  const ownerPanel = document.getElementById("discord-owner-subs-panel");
+  if (ownerPanel && (dashboardRole === "owner" || dashboardData?.role === "owner")) {
+    ownerPanel.classList.remove("hidden");
+    refreshDiscordOwnerSubs();
+  }
+}
+
+async function refreshDiscordOwnerSubs() {
+  const list = document.getElementById("discord-owner-subs-list");
+  if (!list) return;
+  try {
+    const response = await fetch("/api/discord/subscribers");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not load roster");
+    const rows = data.subscribers || [];
+    if (!rows.length) {
+      list.innerHTML =
+        '<p class="subtitle">No active subs tracked yet — new/renew/gift webhooks will fill this.</p>';
+      return;
+    }
+    list.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Kick user</th><th>Expires</th><th>Source</th></tr></thead>
+        <tbody>
+          ${rows
+            .map(
+              (row) => `<tr>
+                <td>${escapeHtml(row.username)}</td>
+                <td>${escapeHtml(row.expiresAt ? new Date(row.expiresAt).toLocaleString() : "—")}</td>
+                <td>${escapeHtml(row.source || "—")}</td>
+              </tr>`
+            )
+            .join("")}
+        </tbody>
+      </table>`;
+  } catch (error) {
+    list.innerHTML = `<p class="subtitle err">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+document.getElementById("discord-claim-btn")?.addEventListener("click", async () => {
+  setDiscordStatus("Claiming subscriber role...");
+  try {
+    const response = await fetch("/api/discord/claim", { method: "POST" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Claim failed");
+    renderDiscordPanel(data.discord || {});
+    setDiscordStatus(data.message || "Role granted.", "ok");
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  }
+});
+
+document.getElementById("discord-refresh-btn")?.addEventListener("click", () => {
+  refreshDiscordPanel(dashboardData);
+});
+
+document.getElementById("discord-owner-refresh")?.addEventListener("click", () => {
+  refreshDiscordOwnerSubs();
+});
+
+document.getElementById("discord-unlink-btn")?.addEventListener("click", async () => {
+  if (!confirm("Unlink Discord and remove the subscriber role if present?")) return;
+  try {
+    const response = await fetch("/api/discord/unlink", { method: "POST" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Unlink failed");
+    renderDiscordPanel(data.discord || {});
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  }
+});
+

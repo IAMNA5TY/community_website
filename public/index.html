@@ -104,6 +104,10 @@
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
                 <span class="nav-label">Only Pixels</span>
               </button>
+              <button class="nav-link" data-page="discord" type="button">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 10h.01M16 10h.01M7 16c1.5 1 3.2 1.5 5 1.5s3.5-.5 5-1.5M6 7l1-2c2 .8 4 .8 5 0s3-.8 5 0l1 2c-2.2.6-4.2.6-6 0s-3.8-.6-6 0z"/><path d="M8 17l-1 3M16 17l1 3"/></svg></span>
+                <span class="nav-label">Discord Sub</span>
+              </button>
               <button class="nav-link" data-page="widgets" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
                 <span class="nav-label">Widgets</span>
@@ -187,6 +191,11 @@
                   <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
                   <strong>Only Pixels</strong>
                   <span>Register for Streamer Rewards and track your Kick points.</span>
+                </button>
+                <button class="hub-card" type="button" data-goto-page="discord" data-page="discord" data-hub-filter="discord sub role subscriber">
+                  <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 10h.01M16 10h.01M7 16c1.5 1 3.2 1.5 5 1.5s3.5-.5 5-1.5"/></svg></span>
+                  <strong>Discord Sub Role</strong>
+                  <span>Link Discord and claim the na5ty subscriber role.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="widgets" data-page="widgets" data-hub-filter="widgets alerts chat spotify overlay obs">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
@@ -315,6 +324,42 @@
                 <button class="btn btn-secondary" type="submit">Check another user</button>
               </form>
               <div class="only-pixels-stats" id="only-pixels-stats"></div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="discord">
+            <header class="page-header">
+              <h1>Discord Sub Role</h1>
+              <p class="subtitle">Link Discord and claim the na5ty subscriber role — verified from Kick sub events on this site</p>
+            </header>
+
+            <div class="card panel">
+              <h2>Subscriber role for na5ty</h2>
+              <p class="subtitle">
+                Sign in with Kick, link Discord, then claim the role. This uses Kick sub/renew/gift webhooks
+                (and chat subscriber badges) stored on na5ty.com — not kick.bot.
+              </p>
+              <div id="discord-sub-status" class="only-pixels-note" style="margin:12px 0;">Checking status...</div>
+              <div class="btn-row slots-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
+                <a class="btn btn-kick btn-compact" id="discord-link-btn" href="/auth/discord">Link Discord</a>
+                <button class="btn btn-kick btn-compact" id="discord-claim-btn" type="button">Get Subscriber Role</button>
+                <button class="btn btn-secondary btn-compact" id="discord-refresh-btn" type="button">Refresh</button>
+                <button class="btn btn-secondary btn-compact" id="discord-unlink-btn" type="button">Unlink Discord</button>
+              </div>
+              <p class="subtitle" style="margin-top:14px;">
+                If claim says you’re not a sub yet: stay subscribed on Kick and send a chat message, or wait for a renew/new-sub webhook.
+              </p>
+            </div>
+
+            <div class="card panel hidden" id="discord-owner-subs-panel">
+              <div class="only-pixels-points-head">
+                <div>
+                  <h2>Active sub roster (owner)</h2>
+                  <p class="subtitle">People currently marked active from Kick webhooks / chat badges</p>
+                </div>
+                <button class="btn btn-secondary btn-compact" type="button" id="discord-owner-refresh">Refresh list</button>
+              </div>
+              <div id="discord-owner-subs-list"><p class="subtitle">Loading...</p></div>
             </div>
           </section>
 
@@ -1046,6 +1091,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=52"></script>
+    <script src="/app.js?v=55"></script>
   </body>
 </html>

@@ -55,6 +55,8 @@ const kickRewardsStore = require("./lib/kick-rewards-store");
 const { createKickRewardsRouter } = require("./lib/kick-rewards-routes");
 const kickPusherMonitor = require("./lib/kick-pusher-monitor");
 const dashboardAccess = require("./lib/dashboard-access");
+const discord = require("./lib/discord");
+const kickSubscriberStore = require("./lib/kick-subscriber-store");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -470,6 +472,10 @@ app.get("/api/me", (req, res) => {
     allowedPages: dashboardAccess.getAllowedPages(req.session.user),
     isOwner: role === "owner",
     kickRewards,
+    discord: kickSubscriberStore.getPublicStatusForKickUser(
+      profile?.id,
+      kickUsername
+    ),
     webhookReady: Boolean(req.session.webhookReady),
     webhookUrl: WEBHOOK_URL,
   });
@@ -481,6 +487,178 @@ app.get("/api/auth/kick-info", (req, res) => {
     redirectUri: kickRedirectUri(req),
     baseUrl: publicBaseUrl(req),
   });
+});
+
+app.get("/api/discord/status", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  const kickUsername = user.profile?.username || "";
+  res.json({
+    ok: true,
+    ...kickSubscriberStore.getPublicStatusForKickUser(user.profile?.id, kickUsername),
+    redirectUri: discord.redirectUri(req),
+  });
+});
+
+app.post("/api/discord/claim", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+
+  try {
+    if (!discord.configured()) {
+      return res.status(503).json({
+        success: false,
+        error: "Discord is not fully configured on the server",
+      });
+    }
+
+    const kickUsername = user.profile?.username || "";
+    const link = kickSubscriberStore.getLinkForKickUser(user.profile.id);
+    if (!link?.discordId) {
+      return res.status(400).json({
+        success: false,
+        error: "Link Discord first",
+      });
+    }
+
+    const active =
+      kickSubscriberStore.isActiveSubscriber(kickUsername) ||
+      kickSubscriberStore.isActiveSubscriber(user.profile.id);
+    if (!active) {
+      try {
+        await discord.removeSubRole(link.discordId);
+        kickSubscriberStore.recordGrant(link.discordId, {
+          kickUsername,
+          kickUserId: user.profile.id,
+          active: false,
+        });
+      } catch {
+        /* ignore cleanup errors */
+      }
+      return res.status(403).json({
+        success: false,
+        error:
+          "No active Kick sub found for your account yet. Sub to na5ty (or chat while subbed), then try again.",
+      });
+    }
+
+    await discord.addSubRole(link.discordId);
+    const sub =
+      kickSubscriberStore.getSubscriber(kickUsername) ||
+      kickSubscriberStore.getSubscriber(user.profile.id);
+    kickSubscriberStore.recordGrant(link.discordId, {
+      kickUsername,
+      kickUserId: user.profile.id,
+      active: true,
+      expiresAt: sub?.expiresAt || null,
+    });
+
+    res.json({
+      success: true,
+      message: "Subscriber role granted on Discord",
+      discord: kickSubscriberStore.getPublicStatusForKickUser(
+        user.profile.id,
+        kickUsername
+      ),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/discord/unlink", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  try {
+    const existing = kickSubscriberStore.unlinkDiscord(user.profile.id);
+    if (existing?.discordId && discord.configured()) {
+      try {
+        await discord.removeSubRole(existing.discordId);
+      } catch {
+        /* ignore */
+      }
+      kickSubscriberStore.recordGrant(existing.discordId, {
+        kickUsername: user.profile?.username,
+        kickUserId: user.profile.id,
+        active: false,
+      });
+    }
+    res.json({
+      success: true,
+      discord: kickSubscriberStore.getPublicStatusForKickUser(
+        user.profile.id,
+        user.profile?.username
+      ),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get("/api/discord/subscribers", (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  res.json({
+    ok: true,
+    subscribers: kickSubscriberStore.listActiveSubscribers(200),
+  });
+});
+
+app.get("/auth/discord", (req, res) => {
+  if (!req.session.user || req.session.user.provider !== "kick") {
+    return res.redirect("/auth/kick");
+  }
+  if (!discord.configured()) {
+    return res.redirect("/?error=discord_not_configured");
+  }
+
+  const state = randomState();
+  req.session.oauthState = {
+    provider: "discord",
+    state,
+    redirectUri: discord.redirectUri(req),
+    returnTo: "/#discord",
+  };
+  redirectWithSession(req, res, discord.authorizeUrl(req, state));
+});
+
+app.get("/auth/discord/callback", async (req, res) => {
+  const { code, state, error, error_description: errorDescription } = req.query;
+  if (error) {
+    return res.redirect(
+      `/#discord?error=${encodeURIComponent(errorDescription || error)}`
+    );
+  }
+
+  const saved = req.session.oauthState;
+  if (!saved || saved.provider !== "discord" || saved.state !== state) {
+    return res.redirect("/#discord?error=invalid_state");
+  }
+  delete req.session.oauthState;
+
+  if (!req.session.user || req.session.user.provider !== "kick") {
+    return res.redirect("/auth/kick");
+  }
+
+  try {
+    const tokens = await discord.exchangeCode(req, code);
+    const discordUser = await discord.fetchOauthUser(tokens.access_token);
+    kickSubscriberStore.linkDiscordAccount(
+      req.session.user.profile.id,
+      req.session.user.profile.username,
+      discordUser
+    );
+    redirectWithSession(req, res, "/#discord");
+  } catch (err) {
+    redirectWithSession(
+      req,
+      res,
+      `/#discord?error=${encodeURIComponent(err.message)}`
+    );
+  }
 });
 
 app.get("/api/admin/sign-ins", (req, res) => {
@@ -584,6 +762,10 @@ app.get("/api/dashboard", async (req, res) => {
       role: "owner",
       kickRewards,
       registration,
+      discord: kickSubscriberStore.getPublicStatusForKickUser(
+        req.session.user.profile.id,
+        kickUsername
+      ),
       allowedPages: dashboardAccess.getAllowedPages(user),
       giftedSubLeaderboard,
       spotify: {
@@ -791,6 +973,11 @@ app.post("/api/test/sub", (req, res) => {
   const resolvedQuantity = subscriptionUtils.parseSubscriptionQuantity(eventType, payload);
 
   eventStore.addSubscriptionEvent(broadcasterId, eventType, payload);
+  try {
+    kickSubscriberStore.recordSubscriptionEvent(eventType, payload);
+  } catch (error) {
+    console.warn("[discord-subs] test sub roster failed:", error.message);
+  }
   if (subscriptionUtils.shouldCreditWorkout(eventType)) {
     botEngine.handleSubscriptionEvent(resolvedQuantity);
   }
@@ -2197,6 +2384,11 @@ app.post("/webhooks/kick", (req, res) => {
       eventType,
       payload
     );
+    try {
+      kickSubscriberStore.recordSubscriptionEvent(eventType, payload);
+    } catch (error) {
+      console.warn("[discord-subs] failed to record sub roster:", error.message);
+    }
     if (subscriptionUtils.shouldCreditWorkout(eventType)) {
       botEngine.handleSubscriptionEvent(quantity);
       const gifter =
