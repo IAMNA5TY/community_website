@@ -339,6 +339,24 @@
                 We check the <strong>Kick username you signed in with</strong> (example: <code>na5ty</code>),
                 not your Discord name. Discord is only used to receive the role.
               </p>
+              <div id="discord-status-cards" class="discord-status-cards" aria-live="polite">
+                <div class="discord-status-card">
+                  <span class="discord-status-label">Kick</span>
+                  <strong id="discord-status-kick">—</strong>
+                </div>
+                <div class="discord-status-card">
+                  <span class="discord-status-label">Kick status</span>
+                  <strong id="discord-status-kick-state" class="discord-status-value">—</strong>
+                </div>
+                <div class="discord-status-card">
+                  <span class="discord-status-label">Discord</span>
+                  <strong id="discord-status-discord-state" class="discord-status-value">—</strong>
+                </div>
+                <div class="discord-status-card">
+                  <span class="discord-status-label">Sub role</span>
+                  <strong id="discord-status-role-state" class="discord-status-value">—</strong>
+                </div>
+              </div>
               <div id="discord-sub-status" class="only-pixels-note" style="margin:12px 0;">Checking status...</div>
               <div class="btn-row slots-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;">
                 <a class="btn btn-kick btn-compact" id="discord-link-btn" href="/auth/discord">Link Discord</a>
