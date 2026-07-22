@@ -3793,7 +3793,11 @@ document.getElementById("discord-post-panel-btn")?.addEventListener("click", asy
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Could not post panel");
-    setDiscordStatus(data.message || "Panel posted.", "ok");
+    if (data.warning) {
+      setDiscordStatus(data.warning, "err");
+    } else {
+      setDiscordStatus(data.message || "Panel posted.", "ok");
+    }
     refreshDiscordPanelMeta();
   } catch (error) {
     setDiscordStatus(error.message, "err");
