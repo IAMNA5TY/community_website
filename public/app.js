@@ -1994,16 +1994,27 @@ commandForm.addEventListener("submit", async (event) => {
   const formData = new FormData(commandForm);
   const response = await fetch("/api/bot/commands", {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       trigger: formData.get("trigger"),
       response: formData.get("response"),
     }),
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) return showError(data.error || "Failed to add command");
   commandForm.reset();
   showError("");
+  if (data.command) {
+    const current = dashboardData?.bot?.commands || [];
+    dashboardData = dashboardData || {};
+    dashboardData.bot = {
+      ...(dashboardData.bot || {}),
+      commands: [...current.filter((c) => c.id !== data.command.id), data.command],
+      timers: dashboardData.bot?.timers || [],
+    };
+    renderCommandsTable(dashboardData.bot.commands);
+  }
   loadDashboard();
 });
 
@@ -2012,16 +2023,27 @@ timerForm.addEventListener("submit", async (event) => {
   const formData = new FormData(timerForm);
   const response = await fetch("/api/bot/timers", {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       message: formData.get("message"),
       intervalMinutes: formData.get("intervalMinutes"),
     }),
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) return showError(data.error || "Failed to add timer");
   timerForm.reset();
   showError("");
+  if (data.timer) {
+    const current = dashboardData?.bot?.timers || [];
+    dashboardData = dashboardData || {};
+    dashboardData.bot = {
+      ...(dashboardData.bot || {}),
+      commands: dashboardData.bot?.commands || [],
+      timers: [...current.filter((t) => t.id !== data.timer.id), data.timer],
+    };
+    renderTimersTable(dashboardData.bot.timers);
+  }
   loadDashboard();
 });
 
