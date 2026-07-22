@@ -3741,24 +3741,36 @@ async function refreshDiscordOwnerSubs() {
   const renderBadgeList = (badges) => {
     if (!list) return;
     if (!badges.length) {
-        list.innerHTML =
-          '<p class="subtitle">No Kick chat badge sightings yet — have people type in na5ty chat, then refresh. Hidden sub badges will not show as yes; use Mark as sub for those.</p>';
+      list.innerHTML =
+        '<p class="subtitle">No Kick chat badge sightings yet — have people type in na5ty chat, then refresh. Hidden sub badges will not show as yes; use Mark as sub for those.</p>';
       return;
     }
     list.innerHTML = `
       <table class="data-table">
-        <thead><tr><th>Kick user</th><th>Sub badge</th><th>Last badges</th><th>Last seen</th><th>Discord role</th></tr></thead>
+        <thead><tr><th>Kick user</th><th>Sub badge</th><th>Last badges</th><th>Last seen</th><th>Discord role</th><th>Action</th></tr></thead>
         <tbody>
           ${badges
-            .map(
-              (row) => `<tr>
-                <td>${escapeHtml(row.username)}${row.isOwner ? " <span class=\"pill\">owner</span>" : ""}</td>
+            .map((row) => {
+              const name = escapeHtml(row.username || "");
+              const discordId = escapeHtml(row.discordId || "");
+              let actionCell = "—";
+              if (row.roleGranted) {
+                actionCell = `<span class="pill">Has role</span>
+                  <button class="btn btn-secondary btn-compact discord-give-role-btn" type="button" data-username="${attrQuote(row.username || "")}" data-discord-id="${attrQuote(row.discordId || "")}" data-kick-user-id="${attrQuote(row.kickUserId || "")}">Re-give</button>`;
+              } else if (row.discordLinked || row.discordId) {
+                actionCell = `<button class="btn btn-kick btn-compact discord-give-role-btn" type="button" data-username="${attrQuote(row.username || "")}" data-discord-id="${attrQuote(row.discordId || "")}" data-kick-user-id="${attrQuote(row.kickUserId || "")}">Give role</button>`;
+              } else {
+                actionCell = `<span class="subtitle">Not linked</span>`;
+              }
+              return `<tr data-kick-user="${attrQuote(row.username || "")}">
+                <td>${name}${row.isOwner ? ' <span class="pill">owner</span>' : ""}</td>
                 <td>${row.hasSubscriberBadge ? '<span class="pill">yes</span>' : `<span class="pill">${escapeHtml(row.lastBadgeStatus || "no")}</span>`}</td>
                 <td><code>${escapeHtml((row.lastBadges || []).join(", ") || "—")}</code></td>
                 <td>${escapeHtml(row.lastSeenAt ? new Date(row.lastSeenAt).toLocaleString() : "—")}</td>
-                <td>${row.roleGranted ? "granted" : row.discordLinked ? "linked" : "—"}</td>
-              </tr>`
-            )
+                <td class="discord-role-status">${row.roleGranted ? "granted" : row.discordLinked ? "linked" : "—"}</td>
+                <td class="discord-role-action">${actionCell}</td>
+              </tr>`;
+            })
             .join("")}
         </tbody>
       </table>`;
@@ -4028,6 +4040,36 @@ document.getElementById("discord-recheck-btn")?.addEventListener("click", async 
     setDiscordStatus(error.message, "err");
   } finally {
     if (btn) btn.disabled = false;
+  }
+});
+
+document.getElementById("discord-owner-subs-list")?.addEventListener("click", async (event) => {
+  const btn = event.target.closest(".discord-give-role-btn");
+  if (!btn) return;
+  const kickUsername = btn.dataset.username || "";
+  const discordId = btn.dataset.discordId || "";
+  const kickUserId = btn.dataset.kickUserId || "";
+  btn.disabled = true;
+  const prev = btn.textContent;
+  btn.textContent = "Giving…";
+  setDiscordStatus(`Giving Discord role to @${kickUsername || discordId}…`);
+  try {
+    const response = await fetch("/api/discord/give-role", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kickUsername, discordId, kickUserId }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || "Could not give role");
+    }
+    setDiscordStatus(data.message || "Role given.", "ok");
+    refreshDiscordOwnerSubs();
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+    btn.disabled = false;
+    btn.textContent = prev;
   }
 });
 

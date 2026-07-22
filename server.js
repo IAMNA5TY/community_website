@@ -693,6 +693,103 @@ app.post("/api/discord/recheck", async (req, res) => {
   }
 });
 
+/** Owner: give / re-apply Discord sub role for a Kick user (or Discord id). */
+app.post("/api/discord/give-role", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    if (!discord.configured()) {
+      return res.status(503).json({
+        success: false,
+        error: "Discord is not fully configured on the server",
+      });
+    }
+
+    const kickUsername = String(req.body?.kickUsername || req.body?.username || "")
+      .trim()
+      .replace(/^@/, "");
+    let discordId = String(req.body?.discordId || "").trim();
+    let kickUserId = req.body?.kickUserId ? String(req.body.kickUserId) : null;
+
+    if (!discordId) {
+      if (kickUserId) {
+        const link = kickSubscriberStore.getLinkForKickUser(kickUserId);
+        if (link?.discordId) discordId = String(link.discordId);
+      }
+      if (!discordId && kickUsername) {
+        const name = kickSubscriberStore.normalizeUsername(kickUsername);
+        const fromGrant = kickSubscriberStore
+          .listGrants(500)
+          .find((g) => kickSubscriberStore.normalizeUsername(g.kickUsername) === name);
+        if (fromGrant?.discordId) {
+          discordId = String(fromGrant.discordId);
+          kickUserId = kickUserId || fromGrant.kickUserId || null;
+        }
+      }
+      if (!discordId && kickUsername) {
+        const name = kickSubscriberStore.normalizeUsername(kickUsername);
+        const fromRoster = kickSubscriberStore
+          .listChatBadgeRoster(500)
+          .find((r) => kickSubscriberStore.normalizeUsername(r.username) === name);
+        if (fromRoster?.discordId) {
+          discordId = String(fromRoster.discordId);
+          kickUserId = kickUserId || fromRoster.kickUserId || null;
+        }
+      }
+    }
+
+    if (!discordId) {
+      return res.status(400).json({
+        success: false,
+        error: kickUsername
+          ? `@${kickUsername} has not linked Discord yet — they need to Link Discord on na5ty.com first.`
+          : "discordId or kickUsername required",
+      });
+    }
+
+    // Owner give always marks them eligible + ensures Discord role.
+    if (kickUsername) {
+      kickSubscriberStore.markSubscriberManual({
+        username: kickUsername,
+        userId: kickUserId,
+      });
+    }
+
+    const ensured = await discord.ensureSubRole(discordId);
+    kickSubscriberStore.recordGrant(discordId, {
+      kickUsername: kickUsername || null,
+      kickUserId,
+      active: true,
+      lastCheckedAt: new Date().toISOString(),
+      revokeReason: null,
+    });
+
+    let hasRole = true;
+    try {
+      hasRole = await discord.memberHasSubRole(discordId);
+    } catch {
+      hasRole = Boolean(ensured?.ok);
+    }
+
+    res.json({
+      success: true,
+      discordId,
+      kickUsername: kickUsername || null,
+      alreadyHad: Boolean(ensured.alreadyHad),
+      restored: Boolean(ensured.restored),
+      hasRole,
+      message: ensured.alreadyHad
+        ? `@${kickUsername || discordId} already has the Discord subscriber role.`
+        : `Gave Discord subscriber role to @${kickUsername || discordId}.`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 /** Owner: manually mark a Kick username as an active sub (Kick has no live sub roster API). */
 app.post("/api/discord/mark-subscriber", (req, res) => {
   const user = requireKickUser(req, res);
