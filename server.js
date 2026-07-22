@@ -574,26 +574,40 @@ app.post("/api/discord/claim", async (req, res) => {
     });
 
     try {
-      await discord.announceSubRoleChange({
+      const announcement = await discord.announceSubRoleChange({
         kickName: kickUsername || user.profile?.username,
         action: "granted",
         reason: eligibility.reason,
       });
+      const announceNote = announcement.posted
+        ? " Public thank-you posted in Discord."
+        : ` Public thank-you failed: ${announcement.error || "unknown"}.`;
+      res.json({
+        success: true,
+        announcement,
+        message:
+          (eligibility.reason === "owner"
+            ? "Channel owner — Discord linked and subscriber role granted."
+            : "Subscriber role granted on Discord.") + announceNote,
+        discord: kickSubscriberStore.getPublicStatusForKickUser(
+          user.profile.id,
+          kickUsername
+        ),
+      });
     } catch (error) {
       console.warn("[discord] claim announcement failed:", error.message);
+      res.json({
+        success: true,
+        message:
+          eligibility.reason === "owner"
+            ? "Channel owner — role granted, but public thank-you failed."
+            : "Subscriber role granted, but public thank-you failed.",
+        discord: kickSubscriberStore.getPublicStatusForKickUser(
+          user.profile.id,
+          kickUsername
+        ),
+      });
     }
-
-    res.json({
-      success: true,
-      message:
-        eligibility.reason === "owner"
-          ? "Channel owner — Discord linked, subscriber role granted, and a public thank-you was posted."
-          : "Subscriber role granted on Discord — public thank-you posted.",
-      discord: kickSubscriberStore.getPublicStatusForKickUser(
-        user.profile.id,
-        kickUsername
-      ),
-    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
