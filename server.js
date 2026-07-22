@@ -562,7 +562,10 @@ app.post("/api/discord/claim", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Subscriber role granted on Discord",
+      message:
+        eligibility.reason === "owner"
+          ? "Channel owner — Discord linked and subscriber role granted (owners can't sub to themselves on Kick)."
+          : "Subscriber role granted on Discord",
       discord: kickSubscriberStore.getPublicStatusForKickUser(
         user.profile.id,
         kickUsername
