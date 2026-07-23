@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cam Smoke (texture)</title>
+  <title>Cam Smoke</title>
   <style>
     html, body {
       margin: 0;
@@ -22,11 +22,11 @@
   <canvas id="c"></canvas>
   <script>
     /**
-     * Soft photographic smoke plates drifting around the cam edge.
-     * Layer order: Brick → Drop shadow → THIS → Webcam
+     * Photographic smoke along cam edges (between drop shadow and webcam).
+     * Layers: Brick → Drop shadow → THIS → Webcam
      *
-     * /widgets/cam-smoke.html?obs=1&v=6
-     * ?x=480&y=250&w=960&h=540&intensity=1
+     * https://na5ty.com/widgets/cam-smoke.html?obs=1&v=7
+     * ?x=480&y=250&w=960&h=540&intensity=1.2
      */
     const params = new URLSearchParams(location.search);
     const BASE_W = 1920;
@@ -38,8 +38,7 @@
       w: num(params.get("w"), 960),
       h: num(params.get("h"), 540),
     };
-    // Keep this modest — plates already have detail
-    const intensity = clamp(num(params.get("intensity"), 1), 0.35, 2);
+    const intensity = clamp(num(params.get("intensity"), 1.25), 0.4, 2.5);
 
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d", { alpha: true });
@@ -100,120 +99,88 @@
       return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = src;
+        img.onerror = () => reject(new Error("failed " + src));
+        img.src = src + "?v=7";
       });
     }
 
     async function init() {
-      const urls = [
-        "/widgets/smoke/plate-a.png",
-        "/widgets/smoke/plate-b.png",
-        "/widgets/smoke/plate-c.png",
-      ];
-      plates = await Promise.all(urls.map(loadPlate));
+      plates = await Promise.all([
+        loadPlate("/widgets/smoke/plate-a.png"),
+        loadPlate("/widgets/smoke/plate-b.png"),
+        loadPlate("/widgets/smoke/plate-c.png"),
+      ]);
 
-      // Soft edge layers: bottom lip + right side + light left — photographic drift
+      // Visible but controlled — sits in the shadow lip around the cam
       layers = [
-        { img: plates[0], side: "right",  scale: 0.62, alpha: 0.34, speed: 0.012, phase: 0.0,  bob: 10 },
-        { img: plates[1], side: "bottom", scale: 0.72, alpha: 0.28, speed: 0.009, phase: 1.7,  bob: 8 },
-        { img: plates[2], side: "right",  scale: 0.48, alpha: 0.22, speed: 0.015, phase: 3.1,  bob: 14 },
-        { img: plates[0], side: "bottom", scale: 0.55, alpha: 0.18, speed: 0.007, phase: 4.4,  bob: 6 },
-        { img: plates[1], side: "left",   scale: 0.42, alpha: 0.16, speed: 0.011, phase: 2.2,  bob: 9 },
+        { img: plates[0], side: "right",  scale: 0.78, alpha: 0.72, speed: 0.01,  phase: 0.0, bob: 12 },
+        { img: plates[1], side: "bottom", scale: 0.9,  alpha: 0.62, speed: 0.008, phase: 1.4, bob: 9 },
+        { img: plates[0], side: "bottom", scale: 0.7,  alpha: 0.45, speed: 0.013, phase: 2.8, bob: 14 },
+        { img: plates[2], side: "right",  scale: 0.55, alpha: 0.4,  speed: 0.016, phase: 3.6, bob: 10 },
+        { img: plates[1], side: "left",   scale: 0.5,  alpha: 0.35, speed: 0.011, phase: 5.0, bob: 8 },
       ];
       ready = true;
     }
 
     function layerRect(r, layer, now) {
       const drift = Math.sin(now * layer.speed + layer.phase);
-      const bob = Math.cos(now * layer.speed * 0.85 + layer.phase) * layer.bob;
-      const iw = layer.img.naturalWidth || layer.img.width;
-      const ih = layer.img.naturalHeight || layer.img.height;
+      const bob = Math.cos(now * layer.speed * 0.9 + layer.phase) * layer.bob;
+      const iw = layer.img.naturalWidth || 1;
+      const ih = layer.img.naturalHeight || 1;
       const tw = r.w * layer.scale;
       const th = tw * (ih / iw);
 
       if (layer.side === "right") {
         return {
-          x: r.x + r.w - tw * 0.28 + drift * 18,
-          y: r.y + r.h * 0.12 + bob,
+          x: r.x + r.w - tw * 0.35 + drift * 16,
+          y: r.y + r.h * 0.08 + bob,
           w: tw,
           h: th,
         };
       }
       if (layer.side === "left") {
         return {
-          x: r.x - tw * 0.72 + drift * 12,
-          y: r.y + r.h * 0.25 + bob,
-          w: tw * 0.9,
-          h: th * 0.9,
+          x: r.x - tw * 0.68 + drift * 10,
+          y: r.y + r.h * 0.22 + bob,
+          w: tw * 0.95,
+          h: th * 0.95,
         };
       }
-      // bottom
       return {
-        x: r.x + r.w * 0.08 + drift * 22,
-        y: r.y + r.h - th * 0.45 + bob * 0.6,
-        w: tw * 1.15,
+        x: r.x + r.w * 0.02 + drift * 20,
+        y: r.y + r.h - th * 0.5 + bob * 0.5,
+        w: tw * 1.2,
         h: th,
       };
-    }
-
-    function drawEdgeMask(r) {
-      // Soft band around cam — keeps smoke in the "between" zone
-      const band = 110;
-      const g = ctx.createRadialGradient(
-        r.x + r.w * 0.55,
-        r.y + r.h * 0.55,
-        Math.min(r.w, r.h) * 0.35,
-        r.x + r.w * 0.55,
-        r.y + r.h * 0.55,
-        Math.max(r.w, r.h) * 0.85
-      );
-      // Not used as fill — we punch hole after draw instead
-      return band;
     }
 
     function frame(nowMs) {
       const now = (nowMs - t0) / 1000;
       if (canvas.width < 2 || canvas.height < 2) resize();
-
       ctx.clearRect(0, 0, cssW, cssH);
+
       if (!ready) {
         requestAnimationFrame(frame);
         return;
       }
 
       const r = scaleRect();
-      drawEdgeMask(r);
 
       for (const layer of layers) {
         const rect = layerRect(r, layer, now);
-        const pulse = 0.85 + 0.15 * Math.sin(now * layer.speed * 2 + layer.phase);
+        const pulse = 0.88 + 0.12 * Math.sin(now * layer.speed * 1.8 + layer.phase);
         ctx.save();
-        ctx.globalAlpha = clamp(layer.alpha * intensity * pulse, 0, 0.55);
+        ctx.globalAlpha = clamp(layer.alpha * intensity * pulse, 0, 0.85);
         ctx.drawImage(layer.img, rect.x, rect.y, rect.w, rect.h);
         ctx.restore();
       }
 
-      // Hard clear over the cam face — smoke only peeks at edges
-      const bleed = 6;
+      // Clear face area only — keep a solid edge band for the smoke lip
+      const bleed = 2;
       ctx.save();
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillStyle = "#000";
       roundFill(r.x + bleed, r.y + bleed, r.w - bleed * 2, r.h - bleed * 2, 8);
-      // Also fade far from cam so it doesn't flood the brick
-      const fade = ctx.createRadialGradient(
-        r.x + r.w * 0.6,
-        r.y + r.h * 0.65,
-        Math.min(r.w, r.h) * 0.55,
-        r.x + r.w * 0.6,
-        r.y + r.h * 0.65,
-        Math.max(r.w, r.h) * 0.95
-      );
-      fade.addColorStop(0, "rgba(0,0,0,0)");
-      fade.addColorStop(0.55, "rgba(0,0,0,0)");
-      fade.addColorStop(1, "rgba(0,0,0,0.85)");
-      ctx.fillStyle = fade;
-      ctx.fillRect(0, 0, cssW, cssH);
       ctx.restore();
 
       requestAnimationFrame(frame);
@@ -221,7 +188,7 @@
 
     window.addEventListener("resize", resize);
     resize();
-    init().catch((err) => console.error("smoke plates failed", err));
+    init().catch((err) => console.error(err));
     requestAnimationFrame(frame);
   </script>
 </body>
