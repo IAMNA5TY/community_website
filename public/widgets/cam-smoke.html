@@ -43,7 +43,7 @@
       w: num(params.get("w"), 960),
       h: num(params.get("h"), 540),
     };
-    const intensity = clamp(num(params.get("intensity"), 1.2), 0.35, 2.5);
+    const intensity = clamp(num(params.get("intensity"), 1.8), 0.35, 3);
 
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d", { alpha: true });
@@ -128,25 +128,26 @@
         y = rand(r.y - lip * 0.45, r.y + 4);
       }
 
-      const size = rand(55, 140) * (0.85 + intensity * 0.3);
+      const size = rand(70, 175) * (0.9 + intensity * 0.35);
       return {
         x,
         y,
-        vx: rand(-0.15, 0.2),
-        vy: rand(-0.45, -0.12),
+        vx: rand(-0.18, 0.25),
+        vy: rand(-0.5, -0.14),
         size,
         life: 0,
-        maxLife: rand(2.8, 5.5),
-        spin: rand(-0.2, 0.2),
+        maxLife: rand(3.2, 6.2),
+        spin: rand(-0.25, 0.25),
         rot: rand(0, Math.PI * 2),
-        alpha: rand(0.22, 0.48) * intensity,
+        // Bright so it reads on top of the black drop shadow
+        alpha: rand(0.45, 0.85) * intensity,
       };
     }
 
     function seed() {
       const r = scaleRect();
       particles = [];
-      const count = Math.floor(36 * intensity);
+      const count = Math.floor(52 * intensity);
       for (let i = 0; i < count; i++) {
         const p = spawn(r);
         p.life = rand(0, p.maxLife * 0.8);
@@ -160,15 +161,18 @@
       const a = p.alpha * fadeIn * fadeOut;
       if (a <= 0.02) return;
 
-      const g = ctx.createRadialGradient(0, 0, p.size * 0.06, 0, 0, p.size * 0.55);
-      g.addColorStop(0, `rgba(220, 228, 236, ${a})`);
-      g.addColorStop(0.4, `rgba(165, 175, 190, ${a * 0.6})`);
-      g.addColorStop(1, "rgba(120, 130, 145, 0)");
+      // Hot white core + soft gray falloff — pops against black shadow
+      const g = ctx.createRadialGradient(0, 0, p.size * 0.04, 0, 0, p.size * 0.55);
+      g.addColorStop(0, `rgba(255, 255, 255, ${Math.min(1, a)})`);
+      g.addColorStop(0.25, `rgba(245, 248, 252, ${a * 0.85})`);
+      g.addColorStop(0.55, `rgba(210, 218, 230, ${a * 0.45})`);
+      g.addColorStop(1, "rgba(180, 190, 205, 0)");
 
       ctx.save();
+      ctx.globalCompositeOperation = "lighter";
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
-      ctx.scale(1.35, 0.8);
+      ctx.scale(1.4, 0.85);
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(0, 0, p.size * 0.55, 0, Math.PI * 2);
@@ -200,15 +204,26 @@
       ctx.clearRect(0, 0, cssW, cssH);
       const r = scaleRect();
 
-      // Soft haze only along the bottom/right lip (between shadow & cam)
-      const haze = ctx.createLinearGradient(r.x, r.y + r.h - 20, r.x, r.y + r.h + 90);
-      haze.addColorStop(0, "rgba(160,170,185,0)");
-      haze.addColorStop(0.45, `rgba(150,160,175,${0.16 * intensity})`);
-      haze.addColorStop(1, "rgba(120,130,145,0)");
+      // Bright lip haze so the band between cam + shadow reads clearly
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const haze = ctx.createLinearGradient(r.x, r.y + r.h - 24, r.x, r.y + r.h + 100);
+      haze.addColorStop(0, "rgba(255,255,255,0)");
+      haze.addColorStop(0.35, `rgba(255,255,255,${0.22 * intensity})`);
+      haze.addColorStop(0.7, `rgba(230,235,245,${0.12 * intensity})`);
+      haze.addColorStop(1, "rgba(200,210,225,0)");
       ctx.fillStyle = haze;
-      ctx.fillRect(r.x - 40, r.y + r.h - 30, r.w + 120, 130);
+      ctx.fillRect(r.x - 30, r.y + r.h - 36, r.w + 130, 140);
 
-      const target = Math.floor(40 * intensity);
+      const side = ctx.createLinearGradient(r.x + r.w - 10, r.y, r.x + r.w + 90, r.y);
+      side.addColorStop(0, "rgba(255,255,255,0)");
+      side.addColorStop(0.4, `rgba(255,255,255,${0.18 * intensity})`);
+      side.addColorStop(1, "rgba(220,228,240,0)");
+      ctx.fillStyle = side;
+      ctx.fillRect(r.x + r.w - 20, r.y + r.h * 0.1, 120, r.h * 0.95);
+      ctx.restore();
+
+      const target = Math.floor(58 * intensity);
       while (particles.length < target) particles.push(spawn(r));
 
       for (let i = particles.length - 1; i >= 0; i--) {
