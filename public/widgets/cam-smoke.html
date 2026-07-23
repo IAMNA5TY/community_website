@@ -52,8 +52,9 @@
      * Cinematic B&W rim light / light-leak peeking from behind the webcam.
      * Layers: Brick → Drop shadow → THIS → Webcam
      *
-     * https://na5ty.com/widgets/cam-smoke.html?obs=1&v=11
+     * https://na5ty.com/widgets/cam-smoke.html?obs=1&v=12
      * ?x=480&y=250&w=960&h=540&intensity=1.1
+     * Pure black & white only — no orange / color tint.
      */
     const params = new URLSearchParams(location.search);
     const BASE_W = 1920;
@@ -91,10 +92,8 @@
       return a + Math.random() * (b - a);
     }
     function white(a) {
+      // Pure white only (no warm/orange tint)
       return `rgba(255, 255, 255, ${a})`;
-    }
-    function gray(l, a) {
-      return `rgba(${l}, ${l}, ${l}, ${a})`;
     }
 
     function resize() {
@@ -202,15 +201,15 @@
         r.x + r.w * 0.75,
         r.y + r.h + 10,
         r.w * 0.42,
-        gray(230, 0.2 * k)
+        white(0.2 * k)
       );
 
-      // Soft gray fill on the opposite edge for depth
+      // Soft fill on the opposite edge for depth
       drawBloom(
         r.x - 10,
         r.y + r.h * 0.35,
         r.h * 0.4,
-        gray(220, 0.12 * k)
+        white(0.12 * k)
       );
 
       // Thin bright white rim
