@@ -470,6 +470,17 @@ function resolveWebhookBroadcasterId(payload) {
   );
 }
 
+app.get("/api/health", (_req, res) => {
+  const mem = process.memoryUsage();
+  res.json({
+    ok: true,
+    uptimeSec: Math.round(process.uptime()),
+    startedAt: process.env.BOOT_STARTED_AT || null,
+    rssMb: Math.round(mem.rss / 1024 / 1024),
+    heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+  });
+});
+
 app.get("/api/me", (req, res) => {
   if (!req.session.user) {
     return res.json({ loggedIn: false });
@@ -2923,7 +2934,9 @@ webhook.loadPublicKey().then(async () => {
     ensureStoredWebhookSubscriptions({ webhookUrlChanged: false }).catch((error) => {
       console.warn("[webhooks] background ensure failed:", error.message);
     });
-  }, WEBHOOK_RETRY_MS);  await bootstrapKickRewardPartners();
+  }, WEBHOOK_RETRY_MS);
+
+  await bootstrapKickRewardPartners();
   if (typeof kickRewardsStore.dedupePartnerSlugVariants === "function") {
     kickRewardsStore.dedupePartnerSlugVariants();
   }
@@ -2953,18 +2966,74 @@ webhook.loadPublicKey().then(async () => {
     console.warn("[govee-lan] init failed:", error.message);
     console.warn("[govee-lan] Restart with start-everything.bat to free UDP port 4002");
   });
-  const shutdown = () => {
+
+  const flushPersistentStores = () => {
+    try {
+      eventStore.flushSync?.();
+    } catch (error) {
+      console.warn("[shutdown] event store flush:", error.message);
+    }
+    try {
+      kickRewardsStore.flushSync?.();
+    } catch (error) {
+      console.warn("[shutdown] rewards store flush:", error.message);
+    }
+    try {
+      kickSubscriberStore.flushSync?.();
+    } catch (error) {
+      console.warn("[shutdown] subscriber store flush:", error.message);
+    }
+  };
+
+  let shuttingDown = false;
+  const shutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[shutdown] ${signal || "exit"} — flushing stores`);
+    try {
+      kickPusherMonitor.stop?.();
+    } catch {
+      /* ignore */
+    }
+    try {
+      discordRoleWatch.stop?.();
+    } catch {
+      /* ignore */
+    }
+    try {
+      discordGateway.stop?.();
+    } catch {
+      /* ignore */
+    }
+    flushPersistentStores();
     goveeLan.closeSharedSocket();
   };
-  process.once("SIGINT", shutdown);
-  process.once("SIGTERM", shutdown);
-  process.once("exit", shutdown);
+  process.once("SIGINT", () => shutdown("SIGINT"));
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("exit", () => shutdown("exit"));
+
+  process.on("unhandledRejection", (reason) => {
+    const message = reason?.stack || reason?.message || String(reason);
+    console.error("[process] unhandledRejection:", message);
+  });
+  process.on("uncaughtException", (error) => {
+    console.error("[process] uncaughtException:", error?.stack || error);
+    try {
+      flushPersistentStores();
+    } catch {
+      /* ignore */
+    }
+    // Exit so Railway ALWAYS restart policy brings us back cleanly.
+    setTimeout(() => process.exit(1), 250).unref?.();
+  });
+
   const audioBroadcasterId = tokenStore.getPrimaryBroadcasterId();
   if (audioBroadcasterId) {
     spotifyHueSync.syncAudioCapture(audioBroadcasterId).catch((error) => {
       console.warn("[lighting] audio capture on boot:", error.message);
     });
   }
+  process.env.BOOT_STARTED_AT = new Date().toISOString();
   app.listen(PORT, () => {
     console.log(`Server running at ${BASE_URL}`);
     console.log(`Webhook URL: ${WEBHOOK_URL}`);
