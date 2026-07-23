@@ -3852,25 +3852,36 @@ function renderDiscordRoleWatchMeta(data = {}) {
   if (!el) return;
   const watch = data.roleWatch || {};
   const parts = [
-    "Watches Discord audit logs so manually adding/removing the subscriber role posts in #kick.",
+    "Watches Discord audit logs. If RoleLogic (or anyone else) strips Kick Supporter from someone we still know is eligible, we put the role back.",
   ];
   if (!watch.enabled) {
     parts.push("Currently disabled (DISCORD_ROLE_WATCH=0).");
   } else if (!watch.started) {
     parts.push("Not started yet — waiting for Discord config / deploy.");
   } else {
-    const secs = Math.round((watch.pollMs || 12000) / 1000);
+    const secs = Math.round((watch.pollMs || 8000) / 1000);
     parts.push(`Polling every ~${secs}s.`);
+    parts.push(
+      watch.restoreExternalRemoves === false
+        ? "Auto-restore external removes is OFF."
+        : "Auto-restore external removes is ON."
+    );
     if (watch.lastPollAt) {
       parts.push(`Last poll ${escapeHtml(new Date(watch.lastPollAt).toLocaleString())}.`);
     }
+    if (watch.lastRestoreAt) {
+      parts.push(
+        `Last auto-restore ${escapeHtml(new Date(watch.lastRestoreAt).toLocaleString())} (${watch.restoresTotal || 0} total).`
+      );
+    }
     if (watch.lastEventAt) {
       parts.push(
-        `Last manual role event ${escapeHtml(new Date(watch.lastEventAt).toLocaleString())} (${watch.eventsSeen || 0} total).`
+        `Last role event ${escapeHtml(new Date(watch.lastEventAt).toLocaleString())} (${watch.eventsSeen || 0} announced).`
       );
-    } else {
-      parts.push("No manual role events seen yet since deploy.");
     }
+  }
+  if (watch.roleLogicWarning) {
+    parts.push(`<strong>${escapeHtml(watch.roleLogicWarning)}</strong>`);
   }
   if (watch.lastError) {
     parts.push(
