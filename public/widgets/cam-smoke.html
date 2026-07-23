@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cam Smoke (between shadow & cam)</title>
+  <title>Cam Smoke (texture)</title>
   <style>
     html, body {
       margin: 0;
@@ -22,16 +22,11 @@
   <canvas id="c"></canvas>
   <script>
     /**
-     * OBS Browser Source — smoke that peeks out from BETWEEN drop shadow and webcam.
+     * Soft photographic smoke plates drifting around the cam edge.
+     * Layer order: Brick → Drop shadow → THIS → Webcam
      *
-     * Layer order (bottom → top):
-     *   1. Brick background
-     *   2. Drop shadow
-     *   3. THIS smoke
-     *   4. Webcam (on top — covers the hole so face stays clear)
-     *
-     * URL: /widgets/cam-smoke.html?obs=1&v=4
-     * Params (1920×1080): ?x=480&y=250&w=960&h=540&intensity=1.2
+     * /widgets/cam-smoke.html?obs=1&v=6
+     * ?x=480&y=250&w=960&h=540&intensity=1
      */
     const params = new URLSearchParams(location.search);
     const BASE_W = 1920;
@@ -43,15 +38,18 @@
       w: num(params.get("w"), 960),
       h: num(params.get("h"), 540),
     };
-    const intensity = clamp(num(params.get("intensity"), 1.8), 0.35, 3);
+    // Keep this modest — plates already have detail
+    const intensity = clamp(num(params.get("intensity"), 1), 0.35, 2);
 
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d", { alpha: true });
 
     let cssW = BASE_W;
     let cssH = BASE_H;
-    let particles = [];
-    let t = 0;
+    let plates = [];
+    let layers = [];
+    let t0 = performance.now();
+    let ready = false;
 
     function num(v, fallback) {
       if (v == null || v === "") return fallback;
@@ -61,17 +59,12 @@
     function clamp(v, a, b) {
       return Math.max(a, Math.min(b, v));
     }
-    function rand(a, b) {
-      return a + Math.random() * (b - a);
-    }
 
     function resize() {
-      // Lock to 1920×1080 in OBS so cam hole stays aligned
       const iw = window.innerWidth || 0;
       const ih = window.innerHeight || 0;
       cssW = iw >= 2 ? iw : BASE_W;
       cssH = ih >= 2 ? ih : BASE_H;
-      // Prefer design space when OBS is set to 1920×1080
       if (Math.abs(cssW - BASE_W) < 8 && Math.abs(cssH - BASE_H) < 8) {
         cssW = BASE_W;
         cssH = BASE_H;
@@ -103,161 +96,132 @@
       ctx.fill();
     }
 
-    /** Spawn ONLY outside the cam — sides + bottom lip (between shadow & cam). */
-    function spawn(r) {
-      const lip = 70;
-      const roll = Math.random();
-      let x;
-      let y;
+    function loadPlate(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
 
-      if (roll < 0.42) {
-        // bottom lip (over the drop shadow)
-        x = rand(r.x - 10, r.x + r.w + 10);
-        y = rand(r.y + r.h - 8, r.y + r.h + lip);
-      } else if (roll < 0.72) {
-        // right side (main peek with bottom-right shadow)
-        x = rand(r.x + r.w - 6, r.x + r.w + lip);
-        y = rand(r.y + r.h * 0.15, r.y + r.h + lip * 0.7);
-      } else if (roll < 0.92) {
-        // left side
-        x = rand(r.x - lip, r.x + 6);
-        y = rand(r.y + r.h * 0.2, r.y + r.h + lip * 0.55);
-      } else {
-        // top edge, light
-        x = rand(r.x + 20, r.x + r.w - 20);
-        y = rand(r.y - lip * 0.45, r.y + 4);
+    async function init() {
+      const urls = [
+        "/widgets/smoke/plate-a.png",
+        "/widgets/smoke/plate-b.png",
+        "/widgets/smoke/plate-c.png",
+      ];
+      plates = await Promise.all(urls.map(loadPlate));
+
+      // Soft edge layers: bottom lip + right side + light left — photographic drift
+      layers = [
+        { img: plates[0], side: "right",  scale: 0.62, alpha: 0.34, speed: 0.012, phase: 0.0,  bob: 10 },
+        { img: plates[1], side: "bottom", scale: 0.72, alpha: 0.28, speed: 0.009, phase: 1.7,  bob: 8 },
+        { img: plates[2], side: "right",  scale: 0.48, alpha: 0.22, speed: 0.015, phase: 3.1,  bob: 14 },
+        { img: plates[0], side: "bottom", scale: 0.55, alpha: 0.18, speed: 0.007, phase: 4.4,  bob: 6 },
+        { img: plates[1], side: "left",   scale: 0.42, alpha: 0.16, speed: 0.011, phase: 2.2,  bob: 9 },
+      ];
+      ready = true;
+    }
+
+    function layerRect(r, layer, now) {
+      const drift = Math.sin(now * layer.speed + layer.phase);
+      const bob = Math.cos(now * layer.speed * 0.85 + layer.phase) * layer.bob;
+      const iw = layer.img.naturalWidth || layer.img.width;
+      const ih = layer.img.naturalHeight || layer.img.height;
+      const tw = r.w * layer.scale;
+      const th = tw * (ih / iw);
+
+      if (layer.side === "right") {
+        return {
+          x: r.x + r.w - tw * 0.28 + drift * 18,
+          y: r.y + r.h * 0.12 + bob,
+          w: tw,
+          h: th,
+        };
       }
-
-      const size = rand(70, 175) * (0.9 + intensity * 0.35);
+      if (layer.side === "left") {
+        return {
+          x: r.x - tw * 0.72 + drift * 12,
+          y: r.y + r.h * 0.25 + bob,
+          w: tw * 0.9,
+          h: th * 0.9,
+        };
+      }
+      // bottom
       return {
-        x,
-        y,
-        vx: rand(-0.18, 0.25),
-        vy: rand(-0.5, -0.14),
-        size,
-        life: 0,
-        maxLife: rand(3.2, 6.2),
-        spin: rand(-0.25, 0.25),
-        rot: rand(0, Math.PI * 2),
-        // Bright so it reads on top of the black drop shadow
-        alpha: rand(0.45, 0.85) * intensity,
+        x: r.x + r.w * 0.08 + drift * 22,
+        y: r.y + r.h - th * 0.45 + bob * 0.6,
+        w: tw * 1.15,
+        h: th,
       };
     }
 
-    function seed() {
-      const r = scaleRect();
-      particles = [];
-      const count = Math.floor(52 * intensity);
-      for (let i = 0; i < count; i++) {
-        const p = spawn(r);
-        p.life = rand(0, p.maxLife * 0.8);
-        particles.push(p);
+    function drawEdgeMask(r) {
+      // Soft band around cam — keeps smoke in the "between" zone
+      const band = 110;
+      const g = ctx.createRadialGradient(
+        r.x + r.w * 0.55,
+        r.y + r.h * 0.55,
+        Math.min(r.w, r.h) * 0.35,
+        r.x + r.w * 0.55,
+        r.y + r.h * 0.55,
+        Math.max(r.w, r.h) * 0.85
+      );
+      // Not used as fill — we punch hole after draw instead
+      return band;
+    }
+
+    function frame(nowMs) {
+      const now = (nowMs - t0) / 1000;
+      if (canvas.width < 2 || canvas.height < 2) resize();
+
+      ctx.clearRect(0, 0, cssW, cssH);
+      if (!ready) {
+        requestAnimationFrame(frame);
+        return;
       }
-    }
 
-    function drawParticle(p) {
-      const fadeIn = Math.min(1, p.life / 0.55);
-      const fadeOut = Math.min(1, (p.maxLife - p.life) / 1.2);
-      const a = p.alpha * fadeIn * fadeOut;
-      if (a <= 0.02) return;
+      const r = scaleRect();
+      drawEdgeMask(r);
 
-      // Hot white core + soft gray falloff — pops against black shadow
-      const g = ctx.createRadialGradient(0, 0, p.size * 0.04, 0, 0, p.size * 0.55);
-      g.addColorStop(0, `rgba(255, 255, 255, ${Math.min(1, a)})`);
-      g.addColorStop(0.25, `rgba(245, 248, 252, ${a * 0.85})`);
-      g.addColorStop(0.55, `rgba(210, 218, 230, ${a * 0.45})`);
-      g.addColorStop(1, "rgba(180, 190, 205, 0)");
+      for (const layer of layers) {
+        const rect = layerRect(r, layer, now);
+        const pulse = 0.85 + 0.15 * Math.sin(now * layer.speed * 2 + layer.phase);
+        ctx.save();
+        ctx.globalAlpha = clamp(layer.alpha * intensity * pulse, 0, 0.55);
+        ctx.drawImage(layer.img, rect.x, rect.y, rect.w, rect.h);
+        ctx.restore();
+      }
 
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot);
-      ctx.scale(1.4, 0.85);
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(0, 0, p.size * 0.55, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    function punchCamHole(r) {
-      // OBS CEF often ignores clip("evenodd") — punch after draw instead.
-      // Leave a tiny outer bleed so smoke can tuck under the cam edge.
-      const bleed = 4;
+      // Hard clear over the cam face — smoke only peeks at edges
+      const bleed = 6;
       ctx.save();
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillStyle = "#000";
       roundFill(r.x + bleed, r.y + bleed, r.w - bleed * 2, r.h - bleed * 2, 8);
-      ctx.restore();
-    }
-
-    function frame(now) {
-      const dt = Math.min(0.05, (now - (frame.prev || now)) / 1000);
-      frame.prev = now;
-      t += dt;
-
-      if (canvas.width < 2 || canvas.height < 2) {
-        resize();
-        seed();
-      }
-
-      ctx.clearRect(0, 0, cssW, cssH);
-      const r = scaleRect();
-
-      // Bright lip haze so the band between cam + shadow reads clearly
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      const haze = ctx.createLinearGradient(r.x, r.y + r.h - 24, r.x, r.y + r.h + 100);
-      haze.addColorStop(0, "rgba(255,255,255,0)");
-      haze.addColorStop(0.35, `rgba(255,255,255,${0.22 * intensity})`);
-      haze.addColorStop(0.7, `rgba(230,235,245,${0.12 * intensity})`);
-      haze.addColorStop(1, "rgba(200,210,225,0)");
-      ctx.fillStyle = haze;
-      ctx.fillRect(r.x - 30, r.y + r.h - 36, r.w + 130, 140);
-
-      const side = ctx.createLinearGradient(r.x + r.w - 10, r.y, r.x + r.w + 90, r.y);
-      side.addColorStop(0, "rgba(255,255,255,0)");
-      side.addColorStop(0.4, `rgba(255,255,255,${0.18 * intensity})`);
-      side.addColorStop(1, "rgba(220,228,240,0)");
-      ctx.fillStyle = side;
-      ctx.fillRect(r.x + r.w - 20, r.y + r.h * 0.1, 120, r.h * 0.95);
+      // Also fade far from cam so it doesn't flood the brick
+      const fade = ctx.createRadialGradient(
+        r.x + r.w * 0.6,
+        r.y + r.h * 0.65,
+        Math.min(r.w, r.h) * 0.55,
+        r.x + r.w * 0.6,
+        r.y + r.h * 0.65,
+        Math.max(r.w, r.h) * 0.95
+      );
+      fade.addColorStop(0, "rgba(0,0,0,0)");
+      fade.addColorStop(0.55, "rgba(0,0,0,0)");
+      fade.addColorStop(1, "rgba(0,0,0,0.85)");
+      ctx.fillStyle = fade;
+      ctx.fillRect(0, 0, cssW, cssH);
       ctx.restore();
 
-      const target = Math.floor(58 * intensity);
-      while (particles.length < target) particles.push(spawn(r));
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.life += dt;
-        p.rot += p.spin * dt;
-        p.x += p.vx + Math.sin(t * 0.8 + p.y * 0.012) * 0.12;
-        p.y += p.vy;
-        p.size *= 1 + dt * 0.035;
-        drawParticle(p);
-
-        // Kill anything that drifts deep into the cam face area
-        const deepInCam =
-          p.x > r.x + 40 &&
-          p.x < r.x + r.w - 40 &&
-          p.y > r.y + 40 &&
-          p.y < r.y + r.h - 40;
-
-        if (p.life >= p.maxLife || p.y < r.y - 120 || deepInCam) {
-          particles[i] = spawn(r);
-        }
-      }
-
-      punchCamHole(r);
       requestAnimationFrame(frame);
     }
 
-    window.addEventListener("resize", () => {
-      resize();
-      seed();
-    });
-
+    window.addEventListener("resize", resize);
     resize();
-    seed();
+    init().catch((err) => console.error("smoke plates failed", err));
     requestAnimationFrame(frame);
   </script>
 </body>
