@@ -3024,7 +3024,8 @@ webhook.loadPublicKey().then(async () => {
       /* ignore */
     }
     // Exit so Railway ALWAYS restart policy brings us back cleanly.
-    setTimeout(() => process.exit(1), 250).unref?.();
+    const exitTimer = setTimeout(() => process.exit(1), 250);
+    if (typeof exitTimer.unref === "function") exitTimer.unref();
   });
 
   const audioBroadcasterId = tokenStore.getPrimaryBroadcasterId();
