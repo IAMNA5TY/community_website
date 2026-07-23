@@ -4,5 +4,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 5
+# ALWAYS — never leave the site dead after a few crashes (ON_FAILURE + max 5 did that).
+restartPolicyType = "ALWAYS"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
