@@ -338,25 +338,25 @@ function isObsMode() {
 async function pushWorkoutUpdate(onUpdate, state) {
   const beforeBank = state.minutesBank || 0;
   const ticked = WorkoutStoreActions.tick({ ...state });
-  // Never persist a zero wipe from a stale/restart tick.
+  // Running → stopped with bank zeroed.
   if (state.isRunning && !ticked.isRunning && (ticked.minutesBank || 0) === 0 && beforeBank > 0) {
     const endAt = state.treadmillEndAt || 0;
     const overdue = endAt ? Date.now() - endAt : 0;
+    // Deploy/crash left a very stale endAt — pause and keep the bank.
     if (overdue > WorkoutStoreActions.STALE_EXPIRE_MS) {
-      onUpdate(ticked);
-      return ticked;
-    }
-    // Even inside the "fresh finish" window, refuse to save 0 if the bank was still high
-    // right before tick (deploy clock skew / multi-tab race). Keep UI paused with bank.
-    if (beforeBank > 1) {
       const kept = WorkoutStoreActions.pauseKeepBank({
         ...state,
         minutesBank: beforeBank,
         _secondsLeft: state._secondsLeft || beforeBank * 60,
       });
+      await WorkoutStore.save(kept);
       onUpdate(kept);
       return kept;
     }
+    // Real finish (timer hit zero while server stayed up) — persist it.
+    await WorkoutStore.save(ticked);
+    onUpdate(ticked);
+    return ticked;
   }
   if (state.isRunning && !ticked.isRunning) {
     await WorkoutStore.save(ticked);
