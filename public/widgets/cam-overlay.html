@@ -90,6 +90,8 @@
     let shadowKey = "";
 
     function num(v, fallback) {
+      // URLSearchParams.get() returns null when missing — Number(null) is 0, so guard that.
+      if (v == null || v === "") return fallback;
       const n = Number(v);
       return Number.isFinite(n) ? n : fallback;
     }

@@ -54,6 +54,7 @@
     let t = 0;
 
     function num(v, fallback) {
+      if (v == null || v === "") return fallback;
       const n = Number(v);
       return Number.isFinite(n) ? n : fallback;
     }
