@@ -49,14 +49,11 @@
   <div class="demo-cam" id="demoCam">Your webcam</div>
   <script>
     /**
-     * Cinematic rim light / light-leak peeking from behind the webcam.
+     * Cinematic B&W rim light / light-leak peeking from behind the webcam.
      * Layers: Brick → Drop shadow → THIS → Webcam
      *
-     * https://na5ty.com/widgets/cam-smoke.html?obs=1&v=10
-     * (same OBS URL slot — effect swapped to rim light)
-     *
-     * ?x=480&y=250&w=960&h=540&intensity=1&hue=32
-     * hue = warm accent degrees (32 ≈ amber). Use 210 for cool blue.
+     * https://na5ty.com/widgets/cam-smoke.html?obs=1&v=11
+     * ?x=480&y=250&w=960&h=540&intensity=1.1
      */
     const params = new URLSearchParams(location.search);
     const BASE_W = 1920;
@@ -70,8 +67,8 @@
       w: num(params.get("w"), 960),
       h: num(params.get("h"), 540),
     };
-    const intensity = clamp(num(params.get("intensity"), 1), 0.35, 2);
-    const hue = num(params.get("hue"), 32);
+    // Slightly stronger default glow than v10, still restrained
+    const intensity = clamp(num(params.get("intensity"), 1.12), 0.35, 2);
 
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d", { alpha: true });
@@ -93,8 +90,11 @@
     function rand(a, b) {
       return a + Math.random() * (b - a);
     }
-    function hsla(h, s, l, a) {
-      return `hsla(${h}, ${s}%, ${l}%, ${a})`;
+    function white(a) {
+      return `rgba(255, 255, 255, ${a})`;
+    }
+    function gray(l, a) {
+      return `rgba(${l}, ${l}, ${l}, ${a})`;
     }
 
     function resize() {
@@ -182,48 +182,49 @@
     function drawRim(r, breath) {
       const ox = 26 + Math.sin(t * 0.35) * 6;
       const oy = 30 + Math.cos(t * 0.28) * 5;
+      const k = intensity * breath;
 
       ctx.save();
-      // Warm key light behind bottom-right corner
+      // Soft white key light behind bottom-right (B&W)
       drawBloom(
         r.x + r.w + ox * 0.2,
         r.y + r.h + oy * 0.15,
-        Math.max(r.w, r.h) * 0.55,
-        hsla(hue, 85, 62, 0.22 * intensity * breath)
+        Math.max(r.w, r.h) * 0.58,
+        white(0.26 * k)
       );
       drawBloom(
         r.x + r.w + 8,
         r.y + r.h * 0.72,
-        r.h * 0.42,
-        hsla(hue, 90, 68, 0.28 * intensity * breath)
+        r.h * 0.45,
+        white(0.32 * k)
       );
       drawBloom(
         r.x + r.w * 0.75,
         r.y + r.h + 10,
-        r.w * 0.4,
-        hsla(hue + 12, 80, 70, 0.18 * intensity * breath)
+        r.w * 0.42,
+        gray(230, 0.2 * k)
       );
 
-      // Cool fill on the opposite edge for depth
+      // Soft gray fill on the opposite edge for depth
       drawBloom(
         r.x - 10,
         r.y + r.h * 0.35,
-        r.h * 0.38,
-        hsla(210, 70, 70, 0.1 * intensity * breath)
+        r.h * 0.4,
+        gray(220, 0.12 * k)
       );
 
-      // Thin bright rim hugging the cam edge (reads as light leaking out)
+      // Thin bright white rim
       ctx.lineWidth = 3;
-      ctx.strokeStyle = hsla(hue, 90, 78, 0.55 * intensity * breath);
-      ctx.shadowColor = hsla(hue, 100, 60, 0.65 * intensity);
-      ctx.shadowBlur = 18 * intensity;
+      ctx.strokeStyle = white(0.62 * k);
+      ctx.shadowColor = white(0.7 * intensity);
+      ctx.shadowBlur = 22 * intensity;
       roundPath(r.x - 1, r.y - 1, r.w + 2, r.h + 2, 10);
       ctx.stroke();
 
-      // Softer outer halo stroke
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = hsla(hue, 80, 65, 0.16 * intensity * breath);
-      ctx.shadowBlur = 28 * intensity;
+      // Softer outer halo — a little more glow, still restrained
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = white(0.2 * k);
+      ctx.shadowBlur = 34 * intensity;
       roundPath(r.x - 2, r.y - 2, r.w + 4, r.h + 4, 12);
       ctx.stroke();
       ctx.restore();
@@ -244,8 +245,8 @@
         const tw = 0.55 + 0.45 * Math.sin(t * p.twinkle + p.phase);
         const a = 0.55 * intensity * fadeIn * fadeOut * tw;
         if (a > 0.03) {
-          drawBloom(p.x, p.y, p.r * 3.5, hsla(hue + 8, 90, 85, a));
-          ctx.fillStyle = hsla(40, 20, 98, a);
+          drawBloom(p.x, p.y, p.r * 3.5, white(a * 0.85));
+          ctx.fillStyle = white(a);
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r * 0.55, 0, Math.PI * 2);
           ctx.fill();
