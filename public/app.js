@@ -840,8 +840,8 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
       ["Kick chat box (OBS)", widgetsUrls.chatBox],
       ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
       ["Now playing — Spotify (OBS)", widgetsUrls.nowPlaying],
-      ["Cam overlay — shadow + mist (OBS)", widgetsUrls.camOverlay],
-      ["Cam mist / edge smoke (OBS)", widgetsUrls.camSmoke],
+      ["Cam overlay — shadow + rim light (OBS)", widgetsUrls.camOverlay],
+      ["Cam rim light / light leak (OBS)", widgetsUrls.camSmoke],
       ["Cam drop shadow image (OBS)", widgetsUrls.camShadow],
     ]);
   }

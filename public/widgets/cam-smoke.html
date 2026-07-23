@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cam Mist</title>
+  <title>Cam Rim Light</title>
   <style>
     html, body {
       margin: 0;
@@ -11,26 +11,58 @@
       overflow: hidden;
       background: transparent;
     }
+    body.embed {
+      background:
+        repeating-linear-gradient(
+          0deg,
+          #d8d2ca 0px,
+          #d8d2ca 18px,
+          #cfc8bf 18px,
+          #cfc8bf 19px
+        );
+    }
     canvas {
       display: block;
       width: 100%;
       height: 100%;
     }
+    .demo-cam {
+      display: none;
+      position: absolute;
+      border-radius: 8px;
+      background: #1a1a1e;
+      color: rgba(255,255,255,0.5);
+      font: 700 13px/1 system-ui, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+    }
+    body.embed .demo-cam { display: flex; }
   </style>
 </head>
 <body>
   <canvas id="c"></canvas>
+  <div class="demo-cam" id="demoCam">Your webcam</div>
   <script>
     /**
-     * Soft animated edge mist — between drop shadow and webcam.
-     * Layers (bottom → top): Brick → Drop shadow → THIS → Webcam
+     * Cinematic rim light / light-leak peeking from behind the webcam.
+     * Layers: Brick → Drop shadow → THIS → Webcam
      *
-     * https://na5ty.com/widgets/cam-smoke.html?obs=1&v=9
-     * ?x=480&y=250&w=960&h=540&intensity=1
+     * https://na5ty.com/widgets/cam-smoke.html?obs=1&v=10
+     * (same OBS URL slot — effect swapped to rim light)
+     *
+     * ?x=480&y=250&w=960&h=540&intensity=1&hue=32
+     * hue = warm accent degrees (32 ≈ amber). Use 210 for cool blue.
      */
     const params = new URLSearchParams(location.search);
     const BASE_W = 1920;
     const BASE_H = 1080;
+    const embed = params.get("embed") === "1";
+    if (embed) document.body.classList.add("embed");
 
     const cam = {
       x: num(params.get("x"), 480),
@@ -38,15 +70,17 @@
       w: num(params.get("w"), 960),
       h: num(params.get("h"), 540),
     };
-    const intensity = clamp(num(params.get("intensity"), 1), 0.4, 2);
+    const intensity = clamp(num(params.get("intensity"), 1), 0.35, 2);
+    const hue = num(params.get("hue"), 32);
 
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d", { alpha: true });
+    const demoCam = document.getElementById("demoCam");
 
     let cssW = BASE_W;
     let cssH = BASE_H;
-    let particles = [];
     let t = 0;
+    let sparks = [];
 
     function num(v, fallback) {
       if (v == null || v === "") return fallback;
@@ -58,6 +92,9 @@
     }
     function rand(a, b) {
       return a + Math.random() * (b - a);
+    }
+    function hsla(h, s, l, a) {
+      return `hsla(${h}, ${s}%, ${l}%, ${a})`;
     }
 
     function resize() {
@@ -71,6 +108,13 @@
       }
       canvas.width = cssW;
       canvas.height = cssH;
+      const r = scaleRect();
+      Object.assign(demoCam.style, {
+        left: `${r.x}px`,
+        top: `${r.y}px`,
+        width: `${r.w}px`,
+        height: `${r.h}px`,
+      });
     }
 
     function scaleRect() {
@@ -84,7 +128,7 @@
       };
     }
 
-    function roundFill(x, y, w, h, rad) {
+    function roundPath(x, y, w, h, rad) {
       const rr = Math.min(rad, w / 2, h / 2);
       ctx.beginPath();
       ctx.moveTo(x + rr, y);
@@ -93,73 +137,122 @@
       ctx.arcTo(x, y + h, x, y, rr);
       ctx.arcTo(x, y, x + w, y, rr);
       ctx.closePath();
-      ctx.fill();
     }
 
-    /** Spawn only in the shadow lip: right + bottom (+ light left). */
-    function spawn(r) {
-      const lip = Math.max(48, r.w * 0.08);
-      const roll = Math.random();
+    function seedSparks(r) {
+      sparks = [];
+      const n = Math.floor(18 * intensity);
+      for (let i = 0; i < n; i++) sparks.push(makeSpark(r, true));
+    }
+
+    function makeSpark(r, randomLife) {
+      const side = Math.random();
       let x;
       let y;
-
-      if (roll < 0.5) {
-        // right of cam
-        x = rand(r.x + r.w - 4, r.x + r.w + lip * 1.35);
-        y = rand(r.y + r.h * 0.1, r.y + r.h + lip * 0.4);
-      } else if (roll < 0.88) {
-        // under cam
-        x = rand(r.x + r.w * 0.05, r.x + r.w + lip * 0.3);
-        y = rand(r.y + r.h - 6, r.y + r.h + lip * 1.1);
+      if (side < 0.55) {
+        x = rand(r.x + r.w - 6, r.x + r.w + 55);
+        y = rand(r.y + r.h * 0.15, r.y + r.h + 40);
       } else {
-        // left accent
-        x = rand(r.x - lip, r.x + 4);
-        y = rand(r.y + r.h * 0.25, r.y + r.h + lip * 0.3);
+        x = rand(r.x + r.w * 0.15, r.x + r.w + 40);
+        y = rand(r.y + r.h - 4, r.y + r.h + 50);
       }
-
-      const size = rand(14, 38) * (0.85 + intensity * 0.25);
       return {
         x,
         y,
-        size,
-        baseSize: size,
-        vx: rand(-0.08, 0.14),
-        vy: rand(-0.42, -0.12),
-        life: 0,
-        maxLife: rand(2.8, 5.5),
-        wobble: rand(0.6, 1.6),
+        r: rand(1.2, 2.8),
+        vx: rand(-0.05, 0.12),
+        vy: rand(-0.35, -0.08),
+        life: randomLife ? rand(0, 4) : 0,
+        maxLife: rand(3.5, 6.5),
+        twinkle: rand(2, 5),
         phase: rand(0, Math.PI * 2),
-        alpha: rand(0.18, 0.38) * intensity,
       };
     }
 
-    function seed() {
-      const r = scaleRect();
-      const count = Math.floor(70 * intensity);
-      particles = [];
-      for (let i = 0; i < count; i++) {
-        const p = spawn(r);
-        p.life = rand(0, p.maxLife);
-        particles.push(p);
-      }
-    }
-
-    function drawSoft(p) {
-      const fadeIn = Math.min(1, p.life / 0.5);
-      const fadeOut = Math.min(1, (p.maxLife - p.life) / 1.1);
-      const a = p.alpha * fadeIn * fadeOut;
-      if (a < 0.02) return;
-
-      const s = p.size;
-      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, s);
-      // Soft cool mist — readable on black shadow, not blown out on brick
-      g.addColorStop(0, `rgba(255,255,255,${a * 0.85})`);
-      g.addColorStop(0.35, `rgba(230,235,245,${a * 0.4})`);
-      g.addColorStop(1, "rgba(200,210,220,0)");
+    function drawBloom(x, y, radius, color) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      g.addColorStop(0, color);
+      g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, s, 0, Math.PI * 2);
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    function drawRim(r, breath) {
+      const ox = 26 + Math.sin(t * 0.35) * 6;
+      const oy = 30 + Math.cos(t * 0.28) * 5;
+
+      ctx.save();
+      // Warm key light behind bottom-right corner
+      drawBloom(
+        r.x + r.w + ox * 0.2,
+        r.y + r.h + oy * 0.15,
+        Math.max(r.w, r.h) * 0.55,
+        hsla(hue, 85, 62, 0.22 * intensity * breath)
+      );
+      drawBloom(
+        r.x + r.w + 8,
+        r.y + r.h * 0.72,
+        r.h * 0.42,
+        hsla(hue, 90, 68, 0.28 * intensity * breath)
+      );
+      drawBloom(
+        r.x + r.w * 0.75,
+        r.y + r.h + 10,
+        r.w * 0.4,
+        hsla(hue + 12, 80, 70, 0.18 * intensity * breath)
+      );
+
+      // Cool fill on the opposite edge for depth
+      drawBloom(
+        r.x - 10,
+        r.y + r.h * 0.35,
+        r.h * 0.38,
+        hsla(210, 70, 70, 0.1 * intensity * breath)
+      );
+
+      // Thin bright rim hugging the cam edge (reads as light leaking out)
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = hsla(hue, 90, 78, 0.55 * intensity * breath);
+      ctx.shadowColor = hsla(hue, 100, 60, 0.65 * intensity);
+      ctx.shadowBlur = 18 * intensity;
+      roundPath(r.x - 1, r.y - 1, r.w + 2, r.h + 2, 10);
+      ctx.stroke();
+
+      // Softer outer halo stroke
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = hsla(hue, 80, 65, 0.16 * intensity * breath);
+      ctx.shadowBlur = 28 * intensity;
+      roundPath(r.x - 2, r.y - 2, r.w + 4, r.h + 4, 12);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawSparks(r, dt) {
+      const target = Math.floor(20 * intensity);
+      while (sparks.length < target) sparks.push(makeSpark(r, false));
+
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const p = sparks[i];
+        p.life += dt;
+        p.x += p.vx + Math.sin(t * p.twinkle + p.phase) * 0.08;
+        p.y += p.vy;
+
+        const fadeIn = Math.min(1, p.life / 0.4);
+        const fadeOut = Math.min(1, (p.maxLife - p.life) / 1.2);
+        const tw = 0.55 + 0.45 * Math.sin(t * p.twinkle + p.phase);
+        const a = 0.55 * intensity * fadeIn * fadeOut * tw;
+        if (a > 0.03) {
+          drawBloom(p.x, p.y, p.r * 3.5, hsla(hue + 8, 90, 85, a));
+          ctx.fillStyle = hsla(40, 20, 98, a);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (p.life >= p.maxLife || p.y < r.y - 30) sparks[i] = makeSpark(r, false);
+      }
     }
 
     function frame(now) {
@@ -167,56 +260,21 @@
       frame.prev = now;
       t += dt;
 
-      if (canvas.width < 2) {
-        resize();
-        seed();
-      }
-
+      if (canvas.width < 2) resize();
       ctx.clearRect(0, 0, cssW, cssH);
+
       const r = scaleRect();
+      const breath = 0.82 + 0.18 * Math.sin(t * 0.9);
 
-      // Very soft pooled haze in the lip (helps sell depth without a blob)
-      ctx.save();
-      const hazeR = ctx.createLinearGradient(r.x + r.w, r.y, r.x + r.w + 90, r.y);
-      hazeR.addColorStop(0, `rgba(255,255,255,${0.06 * intensity})`);
-      hazeR.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = hazeR;
-      ctx.fillRect(r.x + r.w - 8, r.y + r.h * 0.15, 100, r.h * 0.85);
+      drawRim(r, breath);
+      drawSparks(r, dt);
 
-      const hazeB = ctx.createLinearGradient(r.x, r.y + r.h, r.x, r.y + r.h + 80);
-      hazeB.addColorStop(0, `rgba(255,255,255,${0.07 * intensity})`);
-      hazeB.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = hazeB;
-      ctx.fillRect(r.x, r.y + r.h - 10, r.w + 70, 90);
-      ctx.restore();
-
-      const target = Math.floor(80 * intensity);
-      while (particles.length < target) particles.push(spawn(r));
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.life += dt;
-        p.x += p.vx + Math.sin(t * p.wobble + p.phase) * 0.22;
-        p.y += p.vy;
-        p.size = p.baseSize * (1 + p.life * 0.08);
-        drawSoft(p);
-
-        const dead =
-          p.life >= p.maxLife ||
-          p.y < r.y - 40 ||
-          (p.x > r.x + 50 &&
-            p.x < r.x + r.w - 50 &&
-            p.y > r.y + 50 &&
-            p.y < r.y + r.h - 50);
-
-        if (dead) particles[i] = spawn(r);
-      }
-
-      // Keep the lens clean
+      // Punch cam so light only peeks around / behind it
       ctx.save();
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillStyle = "#000";
-      roundFill(r.x + 3, r.y + 3, r.w - 6, r.h - 6, 8);
+      roundPath(r.x + 2, r.y + 2, r.w - 4, r.h - 4, 8);
+      ctx.fill();
       ctx.restore();
 
       requestAnimationFrame(frame);
@@ -224,11 +282,11 @@
 
     window.addEventListener("resize", () => {
       resize();
-      seed();
+      seedSparks(scaleRect());
     });
 
     resize();
-    seed();
+    seedSparks(scaleRect());
     requestAnimationFrame(frame);
   </script>
 </body>
