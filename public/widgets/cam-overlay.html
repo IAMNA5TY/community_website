@@ -203,44 +203,13 @@
       ctx.drawImage(buildShadow(r), 0, 0);
     }
 
-    function spawn(r) {
-      const pad = 120;
-      let x;
-      let y;
-      const roll = Math.random();
-      if (roll < 0.6) {
-        x = rand(r.x - pad * 0.3, r.x + r.w + pad * 0.3);
-        y = rand(r.y + r.h * 0.45, r.y + r.h + pad * 1.2);
-      } else if (roll < 0.9) {
-        const left = Math.random() < 0.5;
-        x = left ? rand(r.x - pad, r.x + 40) : rand(r.x + r.w - 40, r.x + r.w + pad);
-        y = rand(r.y + r.h * 0.15, r.y + r.h + pad * 0.6);
-      } else {
-        x = rand(r.x - 20, r.x + r.w + 20);
-        y = rand(r.y - pad * 0.25, r.y + 50);
-      }
-      const size = rand(90, 210) * (0.8 + intensity * 0.35);
-      return {
-        x,
-        y,
-        vx: rand(-0.22, 0.22),
-        vy: rand(-0.65, -0.22),
-        size,
-        life: 0,
-        maxLife: rand(3.5, 7),
-        spin: rand(-0.3, 0.3),
-        rot: rand(0, Math.PI * 2),
-        alpha: rand(0.28, 0.55) * intensity,
-      };
-    }
-
     function seed() {
       const r = scaleRect();
-      const count = Math.floor(40 * intensity);
+      const count = Math.floor(36 * intensity);
       particles = [];
       for (let i = 0; i < count; i++) {
-        const p = spawn(r);
-        p.life = rand(0, p.maxLife * 0.85);
+        const p = spawnEdge(r);
+        p.life = rand(0, p.maxLife * 0.8);
         particles.push(p);
       }
     }
@@ -267,38 +236,78 @@
       ctx.restore();
     }
 
+    function spawnEdge(r) {
+      // Edge-only spawns so smoke reads as coming out from behind the cam
+      const lip = 70;
+      const roll = Math.random();
+      let x;
+      let y;
+      if (roll < 0.42) {
+        x = rand(r.x - 10, r.x + r.w + 10);
+        y = rand(r.y + r.h - 8, r.y + r.h + lip);
+      } else if (roll < 0.72) {
+        x = rand(r.x + r.w - 6, r.x + r.w + lip);
+        y = rand(r.y + r.h * 0.15, r.y + r.h + lip * 0.7);
+      } else if (roll < 0.92) {
+        x = rand(r.x - lip, r.x + 6);
+        y = rand(r.y + r.h * 0.2, r.y + r.h + lip * 0.55);
+      } else {
+        x = rand(r.x + 20, r.x + r.w - 20);
+        y = rand(r.y - lip * 0.45, r.y + 4);
+      }
+      const size = rand(55, 140) * (0.85 + intensity * 0.3);
+      return {
+        x,
+        y,
+        vx: rand(-0.15, 0.2),
+        vy: rand(-0.45, -0.12),
+        size,
+        life: 0,
+        maxLife: rand(2.8, 5.5),
+        spin: rand(-0.2, 0.2),
+        rot: rand(0, Math.PI * 2),
+        alpha: rand(0.22, 0.48) * intensity,
+      };
+    }
+
     function drawSmoke(r, dt) {
       if (!showSmoke) return;
 
-      // Ground haze under cam
-      const haze = ctx.createLinearGradient(r.x, r.y + r.h * 0.65, r.x, r.y + r.h + 130);
+      const haze = ctx.createLinearGradient(r.x, r.y + r.h - 20, r.x, r.y + r.h + 90);
       haze.addColorStop(0, "rgba(160,170,185,0)");
-      haze.addColorStop(0.4, `rgba(150,160,175,${0.18 * intensity})`);
+      haze.addColorStop(0.45, `rgba(150,160,175,${0.16 * intensity})`);
       haze.addColorStop(1, "rgba(120,130,145,0)");
       ctx.fillStyle = haze;
-      ctx.fillRect(r.x - 100, r.y + r.h * 0.5, r.w + 200, r.h * 0.6 + 140);
+      ctx.fillRect(r.x - 40, r.y + r.h - 30, r.w + 120, 130);
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, cssW, cssH);
-      roundPath(ctx, r.x + 6, r.y + 6, r.w - 12, r.h - 12, 8);
-      ctx.clip("evenodd");
-
-      const target = Math.floor(44 * intensity);
-      while (particles.length < target) particles.push(spawn(r));
+      const target = Math.floor(40 * intensity);
+      while (particles.length < target) particles.push(spawnEdge(r));
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.life += dt;
         p.rot += p.spin * dt;
-        p.x += p.vx + Math.sin(t * 0.7 + p.y * 0.01) * 0.14;
+        p.x += p.vx + Math.sin(t * 0.8 + p.y * 0.012) * 0.12;
         p.y += p.vy;
-        p.size *= 1 + dt * 0.045;
+        p.size *= 1 + dt * 0.035;
         drawParticle(p);
-        if (p.life >= p.maxLife || p.y < r.y - 160) {
-          particles[i] = spawn(r);
+        const deepInCam =
+          p.x > r.x + 40 &&
+          p.x < r.x + r.w - 40 &&
+          p.y > r.y + 40 &&
+          p.y < r.y + r.h - 40;
+        if (p.life >= p.maxLife || p.y < r.y - 120 || deepInCam) {
+          particles[i] = spawnEdge(r);
         }
       }
+
+      // Hard punch — OBS CEF often ignores clip("evenodd")
+      const bleed = 4;
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = "#000";
+      roundPath(ctx, r.x + bleed, r.y + bleed, r.w - bleed * 2, r.h - bleed * 2, 8);
+      ctx.fill();
       ctx.restore();
     }
 
