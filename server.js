@@ -1209,6 +1209,9 @@ app.get("/api/dashboard", async (req, res) => {
         chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
+        camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=1`,
+        camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=1`,
+        camShadow: `${BASE_URL}/widgets/cam-drop-shadow.png`,
       },
       drinkingUrls: {
         beerCounter: `${BASE_URL}/drinking/beer-counter.html`,
@@ -3044,6 +3047,7 @@ webhook.loadPublicKey().then(async () => {
     console.log(`Drinking OBS overlays: ${BASE_URL}/drinking/shotgun-cam.html`);
     console.log(`Widget OBS overlays: ${BASE_URL}/widgets/chat-box.html?obs=1`);
     console.log(`Stream alerts: ${BASE_URL}/widgets/stream-alerts.html?obs=1`);
+    console.log(`Cam overlay: ${BASE_URL}/widgets/cam-overlay.html?obs=1`);
     if (!config.kick.clientId) console.warn("KICK_CLIENT_ID is not set");
   });
 });

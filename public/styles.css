@@ -1309,6 +1309,12 @@ body.is-dashboard {
   height: 96px;
 }
 
+.widgets-embed-frame--cam-overlay {
+  min-height: 360px;
+  aspect-ratio: 16 / 9;
+  background: #cfc8bf;
+}
+
 #widgets-alert-status.ok {
   color: var(--green, #66bb6a);
 }

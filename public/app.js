@@ -283,6 +283,7 @@ function renderOverviewQuickLinks(data) {
     ["Slots timer", data.slotsUrls?.timer],
     ["Slots widget", data.slotsUrls?.widget],
     ["Now playing", data.widgetsUrls?.nowPlaying],
+    ["Cam overlay (shadow + smoke)", data.widgetsUrls?.camOverlay],
   ];
 
   renderObsUrlTable(container, links);
@@ -839,6 +840,9 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
       ["Kick chat box (OBS)", widgetsUrls.chatBox],
       ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
       ["Now playing — Spotify (OBS)", widgetsUrls.nowPlaying],
+      ["Cam overlay — shadow + smoke (OBS)", widgetsUrls.camOverlay],
+      ["Cam smoke only (OBS)", widgetsUrls.camSmoke],
+      ["Cam drop shadow image (OBS)", widgetsUrls.camShadow],
     ]);
   }
 

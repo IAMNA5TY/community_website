@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cam Smoke (between brick & cam)</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <script>
+    /**
+     * OBS Browser Source — soft smoke under the webcam.
+     * Layer order (bottom → top): Brick → Drop Shadow → THIS → Webcam
+     *
+     * Optional URL params to match your cam:
+     *   ?x=480&y=250&w=960&h=540&intensity=1&tint=1
+     * x/y/w/h = cam rect in 1920×1080 space
+     * intensity = 0.5–2 (default 1)
+     * tint = 0 off / 1 cool blue-gray haze (default 1)
+     */
+    const params = new URLSearchParams(location.search);
+    const BASE_W = 1920;
+    const BASE_H = 1080;
+
+    const cam = {
+      x: num(params.get("x"), 480),
+      y: num(params.get("y"), 250),
+      w: num(params.get("w"), 960),
+      h: num(params.get("h"), 540),
+    };
+    const intensity = clamp(num(params.get("intensity"), 1), 0.35, 2.5);
+    const useTint = params.get("tint") !== "0";
+
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d", { alpha: true });
+
+    let dpr = 1;
+    let cssW = BASE_W;
+    let cssH = BASE_H;
+    let particles = [];
+    let t = 0;
+
+    function num(v, fallback) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+    function clamp(v, a, b) {
+      return Math.max(a, Math.min(b, v));
+    }
+    function rand(a, b) {
+      return a + Math.random() * (b - a);
+    }
+
+    function resize() {
+      cssW = window.innerWidth || BASE_W;
+      cssH = window.innerHeight || BASE_H;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function scaleRect() {
+      const sx = cssW / BASE_W;
+      const sy = cssH / BASE_H;
+      return {
+        x: cam.x * sx,
+        y: cam.y * sy,
+        w: cam.w * sx,
+        h: cam.h * sy,
+      };
+    }
+
+    function spawn(r, bias) {
+      // bias: "bottom" | "side" | "top" — more smoke under cam for depth
+      let x, y;
+      const pad = 90;
+      if (bias === "bottom" || Math.random() < 0.55) {
+        x = rand(r.x - pad * 0.4, r.x + r.w + pad * 0.4);
+        y = rand(r.y + r.h * 0.55, r.y + r.h + pad * 1.1);
+      } else if (bias === "side" || Math.random() < 0.7) {
+        const left = Math.random() < 0.5;
+        x = left
+          ? rand(r.x - pad, r.x + 40)
+          : rand(r.x + r.w - 40, r.x + r.w + pad);
+        y = rand(r.y + r.h * 0.25, r.y + r.h + pad * 0.6);
+      } else {
+        x = rand(r.x - 20, r.x + r.w + 20);
+        y = rand(r.y - pad * 0.3, r.y + 50);
+      }
+
+      const size = rand(70, 180) * (0.75 + intensity * 0.35);
+      return {
+        x,
+        y,
+        vx: rand(-0.18, 0.18),
+        vy: rand(-0.55, -0.18),
+        size,
+        life: 0,
+        maxLife: rand(3.2, 6.5),
+        spin: rand(-0.25, 0.25),
+        rot: rand(0, Math.PI * 2),
+        alpha: rand(0.1, 0.28) * intensity,
+      };
+    }
+
+    function seed() {
+      const r = scaleRect();
+      const count = Math.floor(28 * intensity);
+      particles = [];
+      for (let i = 0; i < count; i++) {
+        const p = spawn(r, i % 3 === 0 ? "side" : "bottom");
+        p.life = rand(0, p.maxLife * 0.85);
+        particles.push(p);
+      }
+    }
+
+    function drawParticle(p) {
+      const fadeIn = Math.min(1, p.life / 0.7);
+      const fadeOut = Math.min(1, (p.maxLife - p.life) / 1.4);
+      const a = p.alpha * fadeIn * fadeOut;
+      if (a <= 0.01) return;
+
+      const g = ctx.createRadialGradient(0, 0, p.size * 0.05, 0, 0, p.size * 0.55);
+      if (useTint) {
+        g.addColorStop(0, `rgba(210, 220, 230, ${a})`);
+        g.addColorStop(0.35, `rgba(170, 180, 195, ${a * 0.55})`);
+        g.addColorStop(1, `rgba(120, 130, 145, 0)`);
+      } else {
+        g.addColorStop(0, `rgba(255, 255, 255, ${a})`);
+        g.addColorStop(0.4, `rgba(220, 220, 220, ${a * 0.5})`);
+        g.addColorStop(1, `rgba(180, 180, 180, 0)`);
+      }
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.scale(1.25, 0.85);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function frame(now) {
+      const dt = Math.min(0.05, (now - (frame.prev || now)) / 1000);
+      frame.prev = now;
+      t += dt;
+
+      ctx.clearRect(0, 0, cssW, cssH);
+      const r = scaleRect();
+
+      // Soft ground haze under cam (sells "something in the middle")
+      const haze = ctx.createLinearGradient(r.x, r.y + r.h * 0.7, r.x, r.y + r.h + 110);
+      haze.addColorStop(0, "rgba(180,190,200,0)");
+      haze.addColorStop(0.35, `rgba(160,170,185,${0.08 * intensity})`);
+      haze.addColorStop(1, "rgba(140,150,165,0)");
+      ctx.fillStyle = haze;
+      ctx.fillRect(r.x - 80, r.y + r.h * 0.55, r.w + 160, r.h * 0.55 + 120);
+
+      // Keep face clear: punch a soft hole over the cam interior
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, cssW, cssH);
+      roundRectPath(r.x + 8, r.y + 8, r.w - 16, r.h - 16, 8);
+      ctx.clip("evenodd");
+
+      const target = Math.floor(34 * intensity);
+      while (particles.length < target) {
+        particles.push(spawn(r, Math.random() < 0.65 ? "bottom" : "side"));
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life += dt;
+        p.rot += p.spin * dt;
+        p.x += p.vx + Math.sin(t * 0.7 + p.y * 0.01) * 0.12;
+        p.y += p.vy;
+        p.size *= 1 + dt * 0.04;
+        drawParticle(p);
+        if (p.life >= p.maxLife || p.y < r.y - 140) {
+          particles[i] = spawn(r, Math.random() < 0.6 ? "bottom" : "side");
+        }
+      }
+
+      ctx.restore();
+      requestAnimationFrame(frame);
+    }
+
+    function roundRectPath(x, y, w, h, rad) {
+      const rr = Math.min(rad, w / 2, h / 2);
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    window.addEventListener("resize", () => {
+      resize();
+      seed();
+    });
+
+    resize();
+    seed();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

@@ -764,6 +764,26 @@
               ></iframe>
             </div>
 
+            <div class="card panel widgets-preview-card" style="margin-top:16px;">
+              <div class="panel-header">
+                <h2>Cam Overlay — Shadow + Smoke</h2>
+                <p class="subtitle">
+                  Soft black drop shadow + animated smoke under your webcam.
+                  OBS layer order: Brick → this overlay → Webcam
+                </p>
+              </div>
+              <iframe
+                class="widgets-embed-frame widgets-embed-frame--cam-overlay"
+                src="/widgets/cam-overlay.html?embed=1&intensity=1.2"
+                title="Cam overlay preview"
+              ></iframe>
+              <p class="subtitle" style="margin-top:12px;">
+                Tune cam position with URL params:
+                <code>?x=480&amp;y=250&amp;w=960&amp;h=540&amp;intensity=1.3</code>
+                · <code>smoke=0</code> shadow only · <code>shadow=0</code> smoke only
+              </p>
+            </div>
+
             <div class="card panel">
               <h2>OBS Browser Source URLs</h2>
               <div id="widgets-urls-table"></div>
@@ -771,6 +791,7 @@
                 Add as a browser source with a transparent background. Use <code>?obs=1</code> for faster updates.
                 Stream alerts sit at the top of the scene — same look as your rules banner.
                 Chat box: optional <code>?max=30</code> message limit, <code>?compact=1</code> for a smaller box.
+                Cam overlay: 1920×1080 browser source under your webcam (not on top).
               </p>
               <table class="data-table" style="margin-top:16px;">
                 <thead>
