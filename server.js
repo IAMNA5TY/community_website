@@ -1209,8 +1209,8 @@ app.get("/api/dashboard", async (req, res) => {
         chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
-        camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=1`,
-        camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=1`,
+        camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=2`,
+        camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=2`,
         camShadow: `${BASE_URL}/widgets/cam-drop-shadow.png`,
       },
       drinkingUrls: {

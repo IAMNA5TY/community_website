@@ -34,6 +34,7 @@
       background: #1a1a1e;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
       pointer-events: none;
+      z-index: 2;
     }
     body.embed .demo-cam {
       display: flex;
@@ -44,9 +45,6 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
-    .demo-cam span {
-      opacity: 0.7;
-    }
   </style>
 </head>
 <body>
@@ -54,16 +52,20 @@
   <div class="demo-cam" id="demoCam"><span>Your webcam goes here</span></div>
   <script>
     /**
-     * OBS Browser Source — soft black drop shadow + animated smoke under the webcam.
+     * OBS Browser Source — dense black drop shadow + animated smoke under the webcam.
      * Layer order (bottom → top): Brick → THIS → Webcam
      *
-     * URL params (1920×1080 space):
-     *   ?x=480&y=250&w=960&h=540&intensity=1.2&shadow=1&smoke=1&embed=1
+     * URL: /widgets/cam-overlay.html?obs=1
+     * Params (1920×1080 space):
+     *   ?x=480&y=250&w=960&h=540&intensity=1.3&shadow=1&smoke=1&embed=1
+     *
+     * OBS: set Width 1920, Height 1080, transparent background.
      */
     const params = new URLSearchParams(location.search);
     const BASE_W = 1920;
     const BASE_H = 1080;
-    const embed = params.get("embed") === "1" || params.get("obs") === "0";
+    const obsMode = params.has("obs") ? params.get("obs") !== "0" : true;
+    const embed = params.get("embed") === "1";
     if (embed) document.body.classList.add("embed");
 
     const cam = {
@@ -72,20 +74,20 @@
       w: num(params.get("w"), 960),
       h: num(params.get("h"), 540),
     };
-    const intensity = clamp(num(params.get("intensity"), 1.15), 0.35, 2.5);
+    const intensity = clamp(num(params.get("intensity"), 1.35), 0.4, 3);
     const showShadow = params.get("shadow") !== "0";
     const showSmoke = params.get("smoke") !== "0";
-    const useTint = params.get("tint") !== "0";
 
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d", { alpha: true });
     const demoCam = document.getElementById("demoCam");
 
-    let dpr = 1;
     let cssW = BASE_W;
     let cssH = BASE_H;
     let particles = [];
     let t = 0;
+    let shadowCache = null;
+    let shadowKey = "";
 
     function num(v, fallback) {
       const n = Number(v);
@@ -99,12 +101,21 @@
     }
 
     function resize() {
-      cssW = window.innerWidth || BASE_W;
-      cssH = window.innerHeight || BASE_H;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(cssW * dpr);
-      canvas.height = Math.floor(cssH * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // OBS/CEF can report 0 briefly — never use a zero canvas.
+      const iw = window.innerWidth || 0;
+      const ih = window.innerHeight || 0;
+      if (obsMode && !embed) {
+        cssW = BASE_W;
+        cssH = BASE_H;
+      } else {
+        cssW = Math.max(iw, 2);
+        cssH = Math.max(ih, 2);
+      }
+      canvas.width = cssW;
+      canvas.height = cssH;
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      shadowCache = null;
       layoutDemo();
     }
 
@@ -127,91 +138,103 @@
       demoCam.style.height = `${r.h}px`;
     }
 
-    function drawShadow(r) {
-      if (!showShadow) return;
-      const ox = 28 * (cssW / BASE_W);
-      const oy = 34 * (cssH / BASE_H);
-
-      ctx.save();
-      // Soft ambient
-      ctx.shadowColor = `rgba(0,0,0,${0.55 * intensity})`;
-      ctx.shadowBlur = 48 * intensity;
-      ctx.shadowOffsetX = ox * 0.45;
-      ctx.shadowOffsetY = oy * 0.45;
-      ctx.fillStyle = `rgba(0,0,0,${0.35 * intensity})`;
-      roundFill(r.x, r.y, r.w, r.h, 10);
-
-      // Main drop
-      ctx.shadowColor = `rgba(0,0,0,${0.85 * intensity})`;
-      ctx.shadowBlur = 22 * intensity;
-      ctx.shadowOffsetX = ox;
-      ctx.shadowOffsetY = oy;
-      ctx.fillStyle = `rgba(0,0,0,${0.55 * intensity})`;
-      roundFill(r.x, r.y, r.w, r.h, 10);
-
-      // Dense contact
-      ctx.shadowColor = `rgba(0,0,0,${0.95 * intensity})`;
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = ox + 4;
-      ctx.shadowOffsetY = oy + 6;
-      ctx.fillStyle = `rgba(0,0,0,${0.75 * intensity})`;
-      roundFill(r.x, r.y, r.w, r.h, 10);
-      ctx.restore();
-
-      // Clear the cam footprint so shadow only peeks around edges
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.fillStyle = "#000";
-      roundFill(r.x - 1, r.y - 1, r.w + 2, r.h + 2, 8);
-      ctx.restore();
+    function roundPath(target, x, y, w, h, rad) {
+      const rr = Math.min(rad, w / 2, h / 2);
+      target.beginPath();
+      target.moveTo(x + rr, y);
+      target.arcTo(x + w, y, x + w, y + h, rr);
+      target.arcTo(x + w, y + h, x, y + h, rr);
+      target.arcTo(x, y + h, x, y, rr);
+      target.arcTo(x, y, x + w, y, rr);
+      target.closePath();
     }
 
-    function roundFill(x, y, w, h, rad) {
-      const rr = Math.min(rad, w / 2, h / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + rr, y);
-      ctx.arcTo(x + w, y, x + w, y + h, rr);
-      ctx.arcTo(x + w, y + h, x, y + h, rr);
-      ctx.arcTo(x, y + h, x, y, rr);
-      ctx.arcTo(x, y, x + w, y, rr);
-      ctx.closePath();
-      ctx.fill();
+    /** Build an explicit soft black plate (no ctx.shadow — unreliable in OBS CEF). */
+    function buildShadow(r) {
+      const key = [cssW, cssH, r.x, r.y, r.w, r.h, intensity].map((n) => Math.round(n * 10)).join(":");
+      if (shadowCache && shadowKey === key) return shadowCache;
+
+      const off = document.createElement("canvas");
+      off.width = cssW;
+      off.height = cssH;
+      const o = off.getContext("2d");
+
+      const ox = 34 * (cssW / BASE_W);
+      const oy = 42 * (cssH / BASE_H);
+
+      function blob(dx, dy, alpha, blur, grow) {
+        o.save();
+        o.filter = `blur(${blur}px)`;
+        o.fillStyle = `rgba(0,0,0,${alpha})`;
+        roundPath(
+          o,
+          r.x + dx - grow,
+          r.y + dy - grow,
+          r.w + grow * 2,
+          r.h + grow * 2,
+          14
+        );
+        o.fill();
+        o.restore();
+      }
+
+      // Dense layers — these must stay visible on light brick in OBS
+      blob(ox * 0.4, oy * 0.4, 0.45 * intensity, 40, 28);
+      blob(ox * 0.75, oy * 0.75, 0.7 * intensity, 22, 10);
+      blob(ox, oy, 0.92 * intensity, 10, 2);
+      blob(ox + 6, oy + 8, 1.0 * intensity, 3, -4);
+
+      // Punch cam hole
+      o.globalCompositeOperation = "destination-out";
+      o.filter = "none";
+      o.fillStyle = "#000";
+      roundPath(o, r.x - 1, r.y - 1, r.w + 2, r.h + 2, 8);
+      o.fill();
+
+      shadowCache = off;
+      shadowKey = key;
+      return off;
+    }
+
+    function drawShadow(r) {
+      if (!showShadow) return;
+      ctx.drawImage(buildShadow(r), 0, 0);
     }
 
     function spawn(r) {
-      const pad = 100;
+      const pad = 120;
       let x;
       let y;
       const roll = Math.random();
-      if (roll < 0.58) {
-        x = rand(r.x - pad * 0.35, r.x + r.w + pad * 0.35);
-        y = rand(r.y + r.h * 0.5, r.y + r.h + pad * 1.15);
-      } else if (roll < 0.88) {
+      if (roll < 0.6) {
+        x = rand(r.x - pad * 0.3, r.x + r.w + pad * 0.3);
+        y = rand(r.y + r.h * 0.45, r.y + r.h + pad * 1.2);
+      } else if (roll < 0.9) {
         const left = Math.random() < 0.5;
-        x = left ? rand(r.x - pad, r.x + 36) : rand(r.x + r.w - 36, r.x + r.w + pad);
-        y = rand(r.y + r.h * 0.2, r.y + r.h + pad * 0.55);
+        x = left ? rand(r.x - pad, r.x + 40) : rand(r.x + r.w - 40, r.x + r.w + pad);
+        y = rand(r.y + r.h * 0.15, r.y + r.h + pad * 0.6);
       } else {
-        x = rand(r.x - 16, r.x + r.w + 16);
-        y = rand(r.y - pad * 0.25, r.y + 40);
+        x = rand(r.x - 20, r.x + r.w + 20);
+        y = rand(r.y - pad * 0.25, r.y + 50);
       }
-      const size = rand(70, 185) * (0.75 + intensity * 0.35);
+      const size = rand(90, 210) * (0.8 + intensity * 0.35);
       return {
         x,
         y,
-        vx: rand(-0.18, 0.18),
-        vy: rand(-0.55, -0.18),
+        vx: rand(-0.22, 0.22),
+        vy: rand(-0.65, -0.22),
         size,
         life: 0,
-        maxLife: rand(3.2, 6.5),
-        spin: rand(-0.25, 0.25),
+        maxLife: rand(3.5, 7),
+        spin: rand(-0.3, 0.3),
         rot: rand(0, Math.PI * 2),
-        alpha: rand(0.12, 0.3) * intensity,
+        alpha: rand(0.28, 0.55) * intensity,
       };
     }
 
     function seed() {
       const r = scaleRect();
-      const count = Math.floor(30 * intensity);
+      const count = Math.floor(40 * intensity);
       particles = [];
       for (let i = 0; i < count; i++) {
         const p = spawn(r);
@@ -221,26 +244,20 @@
     }
 
     function drawParticle(p) {
-      const fadeIn = Math.min(1, p.life / 0.7);
-      const fadeOut = Math.min(1, (p.maxLife - p.life) / 1.4);
+      const fadeIn = Math.min(1, p.life / 0.6);
+      const fadeOut = Math.min(1, (p.maxLife - p.life) / 1.3);
       const a = p.alpha * fadeIn * fadeOut;
-      if (a <= 0.01) return;
+      if (a <= 0.02) return;
 
-      const g = ctx.createRadialGradient(0, 0, p.size * 0.05, 0, 0, p.size * 0.55);
-      if (useTint) {
-        g.addColorStop(0, `rgba(210, 220, 230, ${a})`);
-        g.addColorStop(0.35, `rgba(170, 180, 195, ${a * 0.55})`);
-        g.addColorStop(1, `rgba(120, 130, 145, 0)`);
-      } else {
-        g.addColorStop(0, `rgba(255, 255, 255, ${a})`);
-        g.addColorStop(0.4, `rgba(220, 220, 220, ${a * 0.5})`);
-        g.addColorStop(1, `rgba(180, 180, 180, 0)`);
-      }
+      const g = ctx.createRadialGradient(0, 0, p.size * 0.08, 0, 0, p.size * 0.55);
+      g.addColorStop(0, `rgba(225, 230, 238, ${a})`);
+      g.addColorStop(0.4, `rgba(170, 180, 195, ${a * 0.65})`);
+      g.addColorStop(1, "rgba(120, 130, 145, 0)");
 
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
-      ctx.scale(1.25, 0.85);
+      ctx.scale(1.3, 0.85);
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(0, 0, p.size * 0.55, 0, Math.PI * 2);
@@ -251,51 +268,48 @@
     function drawSmoke(r, dt) {
       if (!showSmoke) return;
 
-      const haze = ctx.createLinearGradient(r.x, r.y + r.h * 0.7, r.x, r.y + r.h + 110);
-      haze.addColorStop(0, "rgba(180,190,200,0)");
-      haze.addColorStop(0.35, `rgba(160,170,185,${0.09 * intensity})`);
-      haze.addColorStop(1, "rgba(140,150,165,0)");
+      // Ground haze under cam
+      const haze = ctx.createLinearGradient(r.x, r.y + r.h * 0.65, r.x, r.y + r.h + 130);
+      haze.addColorStop(0, "rgba(160,170,185,0)");
+      haze.addColorStop(0.4, `rgba(150,160,175,${0.18 * intensity})`);
+      haze.addColorStop(1, "rgba(120,130,145,0)");
       ctx.fillStyle = haze;
-      ctx.fillRect(r.x - 80, r.y + r.h * 0.55, r.w + 160, r.h * 0.55 + 120);
+      ctx.fillRect(r.x - 100, r.y + r.h * 0.5, r.w + 200, r.h * 0.6 + 140);
 
       ctx.save();
       ctx.beginPath();
       ctx.rect(0, 0, cssW, cssH);
-      roundRectPath(r.x + 8, r.y + 8, r.w - 16, r.h - 16, 8);
+      roundPath(ctx, r.x + 6, r.y + 6, r.w - 12, r.h - 12, 8);
       ctx.clip("evenodd");
 
-      const target = Math.floor(36 * intensity);
+      const target = Math.floor(44 * intensity);
       while (particles.length < target) particles.push(spawn(r));
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.life += dt;
         p.rot += p.spin * dt;
-        p.x += p.vx + Math.sin(t * 0.7 + p.y * 0.01) * 0.12;
+        p.x += p.vx + Math.sin(t * 0.7 + p.y * 0.01) * 0.14;
         p.y += p.vy;
-        p.size *= 1 + dt * 0.04;
+        p.size *= 1 + dt * 0.045;
         drawParticle(p);
-        if (p.life >= p.maxLife || p.y < r.y - 140) {
+        if (p.life >= p.maxLife || p.y < r.y - 160) {
           particles[i] = spawn(r);
         }
       }
       ctx.restore();
     }
 
-    function roundRectPath(x, y, w, h, rad) {
-      const rr = Math.min(rad, w / 2, h / 2);
-      ctx.moveTo(x + rr, y);
-      ctx.arcTo(x + w, y, x + w, y + h, rr);
-      ctx.arcTo(x + w, y + h, x, y + h, rr);
-      ctx.arcTo(x, y + h, x, y, rr);
-      ctx.arcTo(x, y, x + w, y, rr);
-      ctx.closePath();
-    }
-
     function frame(now) {
       const dt = Math.min(0.05, (now - (frame.prev || now)) / 1000);
       frame.prev = now;
       t += dt;
+
+      // Re-check size if OBS started at 0
+      if (canvas.width < 2 || canvas.height < 2) {
+        resize();
+        seed();
+      }
 
       ctx.clearRect(0, 0, cssW, cssH);
       const r = scaleRect();
