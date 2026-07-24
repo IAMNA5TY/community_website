@@ -739,12 +739,13 @@ app.post("/api/discord/block-rolelogic", async (req, res) => {
       });
     }
     if (req.body?.kick === true || req.body?.kickRoleLogic === true) {
-      const kicked = await discord.kickRoleLogicFromGuild(
-        "Owner stopped RoleLogic Kick Supporter strip loop"
-      );
+      const removed = await discord.removeRoleLogicPermanently({
+        reason: "Owner stopped RoleLogic Kick Supporter strip loop",
+        ban: req.body?.ban !== false,
+      });
       return res.json({
-        success: Boolean(kicked.ok),
-        ...kicked,
+        success: Boolean(removed.ok),
+        ...removed,
       });
     }
     const result = await discord.blockRoleLogicFromManagingSubRole();
@@ -2957,37 +2958,45 @@ webhook.loadPublicKey().then(async () => {
     discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
     discordRoleWatch.start(kickSubscriberStore);
     discordGateway.start(kickSubscriberStore);
-    // Stop RoleLogic from stripping Kick Supporter (strip perms + demote).
+    // RoleLogic false-removes Kick Supporter every ~10 min — kick+ban it on boot.
     if (String(process.env.DISCORD_BLOCK_ROLELOGIC || "1").trim() !== "0") {
-      const runRoleLogicBlock = (why) =>
-        discord
-          .blockRoleLogicFromManagingSubRole()
+      const autoKick =
+        String(process.env.DISCORD_KICK_ROLELOGIC || "1").trim() !== "0";
+      const runRoleLogicStop = (why) => {
+        const run = autoKick
+          ? discord.removeRoleLogicPermanently({
+              reason: `Auto-remove RoleLogic (${why})`,
+              ban: String(process.env.DISCORD_BAN_ROLELOGIC || "1").trim() !== "0",
+            })
+          : discord.blockRoleLogicFromManagingSubRole();
+        return Promise.resolve(run)
           .then((result) => {
             if (result.alreadySafe || result.skipped) {
               console.log(
-                `[discord] RoleLogic block (${why}): ${result.message || result.reason}`
+                `[discord] RoleLogic stop (${why}): ${result.message || result.reason}`
               );
             } else if (result.ok) {
-              console.log(`[discord] RoleLogic block (${why}): ${result.message}`);
+              console.log(`[discord] RoleLogic stop (${why}): ${result.message}`);
             } else {
               console.warn(
-                `[discord] RoleLogic block failed (${why}): ${result.error || result.message || "unknown"}`
+                `[discord] RoleLogic stop failed (${why}): ${result.error || result.message || "unknown"}`
               );
             }
           })
           .catch((error) => {
-            console.warn(`[discord] RoleLogic block error (${why}):`, error.message);
+            console.warn(`[discord] RoleLogic stop error (${why}):`, error.message);
           });
+      };
 
-      runRoleLogicBlock("boot");
-      // RoleLogic re-asserts hierarchy / perms on its sync loop — keep clamping it.
+      // Delay slightly so Discord gateway/session is ready.
+      setTimeout(() => runRoleLogicStop("boot"), 8000);
       const ROLELOGIC_REBLOCK_MS = Math.max(
         5 * 60 * 1000,
         Number(process.env.DISCORD_ROLELOGIC_REBLOCK_MS || 10 * 60 * 1000) ||
           10 * 60 * 1000
       );
       const reblockTimer = setInterval(
-        () => runRoleLogicBlock("timer"),
+        () => runRoleLogicStop("timer"),
         ROLELOGIC_REBLOCK_MS
       );
       if (typeof reblockTimer.unref === "function") reblockTimer.unref();
