@@ -4129,25 +4129,25 @@ document.getElementById("discord-kick-rolelogic-btn")?.addEventListener("click",
   const btn = document.getElementById("discord-kick-rolelogic-btn");
   if (
     !window.confirm(
-      "Kick RoleLogic from the Discord server? This stops the Kick Supporter strip loop completely."
+      "Kick + ban RoleLogic from the Discord server? This stops the Kick Supporter strip loop."
     )
   ) {
     return;
   }
   if (btn) btn.disabled = true;
-  setDiscordStatus("Kicking RoleLogic from Discord…");
+  setDiscordStatus("Kicking + banning RoleLogic…");
   try {
     const response = await fetch("/api/discord/block-rolelogic", {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kick: true }),
+      body: JSON.stringify({ kick: true, ban: true }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success === false) {
-      throw new Error(data.error || data.message || "Could not kick RoleLogic");
+      throw new Error(data.error || data.message || "Could not remove RoleLogic");
     }
-    setDiscordStatus(data.message || "RoleLogic kicked.", "ok");
+    setDiscordStatus(data.message || "RoleLogic removed.", "ok");
   } catch (error) {
     setDiscordStatus(error.message, "err");
   } finally {
