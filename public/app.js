@@ -3751,6 +3751,7 @@ async function refreshDiscordPanel(dashboard) {
   if (ownerPanel && (dashboardRole === "owner" || dashboardData?.role === "owner")) {
     ownerPanel.classList.remove("hidden");
     refreshDiscordOwnerSubs();
+    refreshRoleLogicStatus();
   }
 }
 
