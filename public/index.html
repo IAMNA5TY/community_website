@@ -1097,7 +1097,10 @@
               <p class="subtitle">Live webhook events while streaming</p>
             </header>
             <div class="card panel">
-              <h2>Recent chat</h2>
+              <h2>Today’s chatters</h2>
+              <p class="subtitle" id="daily-chat-meta" style="margin:0 0 10px;">
+                Message counts per Kick user for today. OBS chat widget and /kickmenu still use live chat separately — this page is counts only.
+              </p>
               <div id="messages-table"></div>
             </div>
             <div class="card panel">
@@ -1178,6 +1181,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=74"></script>
+    <script src="/app.js?v=75"></script>
   </body>
 </html>
