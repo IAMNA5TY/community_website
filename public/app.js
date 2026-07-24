@@ -4099,7 +4099,7 @@ document.getElementById("discord-recheck-btn")?.addEventListener("click", async 
 document.getElementById("discord-block-rolelogic-btn")?.addEventListener("click", async () => {
   const btn = document.getElementById("discord-block-rolelogic-btn");
   if (btn) btn.disabled = true;
-  setDiscordStatus("Moving RoleLogic below Kick Supporter…");
+  setDiscordStatus("Hard-blocking RoleLogic (strip Manage Roles + demote)…");
   try {
     const response = await fetch("/api/discord/block-rolelogic", {
       method: "POST",
@@ -4114,10 +4114,40 @@ document.getElementById("discord-block-rolelogic-btn")?.addEventListener("click"
     setDiscordStatus(
       data.message ||
         (data.alreadySafe
-          ? "RoleLogic is already below Kick Supporter."
+          ? "RoleLogic is already blocked from Kick Supporter."
           : "RoleLogic blocked from stripping Kick Supporter."),
       "ok"
     );
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+document.getElementById("discord-kick-rolelogic-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-kick-rolelogic-btn");
+  if (
+    !window.confirm(
+      "Kick RoleLogic from the Discord server? This stops the Kick Supporter strip loop completely."
+    )
+  ) {
+    return;
+  }
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Kicking RoleLogic from Discord…");
+  try {
+    const response = await fetch("/api/discord/block-rolelogic", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kick: true }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || data.message || "Could not kick RoleLogic");
+    }
+    setDiscordStatus(data.message || "RoleLogic kicked.", "ok");
   } catch (error) {
     setDiscordStatus(error.message, "err");
   } finally {
