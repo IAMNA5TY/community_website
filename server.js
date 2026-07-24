@@ -724,6 +724,30 @@ app.post("/api/discord/recheck", async (req, res) => {
   }
 });
 
+/** Owner: demote RoleLogic below Kick Supporter so it cannot strip that role. */
+app.post("/api/discord/block-rolelogic", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    if (!discord.configured()) {
+      return res.status(503).json({
+        success: false,
+        error: "Discord is not fully configured on the server",
+      });
+    }
+    const result = await discord.blockRoleLogicFromManagingSubRole();
+    res.json({
+      success: Boolean(result.ok),
+      ...result,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 /** Owner: give / re-apply Discord sub role for a Kick user (or Discord id). */
 app.post("/api/discord/give-role", async (req, res) => {
   const user = requireKickUser(req, res);
@@ -2924,6 +2948,25 @@ webhook.loadPublicKey().then(async () => {
     discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
     discordRoleWatch.start(kickSubscriberStore);
     discordGateway.start(kickSubscriberStore);
+    // Stop RoleLogic from stripping Kick Supporter (move its bot role below that role).
+    if (String(process.env.DISCORD_BLOCK_ROLELOGIC || "1").trim() !== "0") {
+      discord
+        .blockRoleLogicFromManagingSubRole()
+        .then((result) => {
+          if (result.alreadySafe || result.skipped) {
+            console.log(`[discord] RoleLogic block: ${result.message || result.reason}`);
+          } else if (result.ok && result.moved) {
+            console.log(`[discord] RoleLogic block: ${result.message}`);
+          } else {
+            console.warn(
+              `[discord] RoleLogic block failed: ${result.error || result.message || "unknown"}`
+            );
+          }
+        })
+        .catch((error) => {
+          console.warn("[discord] RoleLogic block error:", error.message);
+        });
+    }
   } else {
     console.log("[discord-recheck] skipped — Discord not fully configured");
   }

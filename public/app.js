@@ -4079,6 +4079,35 @@ document.getElementById("discord-recheck-btn")?.addEventListener("click", async 
   }
 });
 
+document.getElementById("discord-block-rolelogic-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-block-rolelogic-btn");
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Moving RoleLogic below Kick Supporter…");
+  try {
+    const response = await fetch("/api/discord/block-rolelogic", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || data.message || "Could not block RoleLogic");
+    }
+    setDiscordStatus(
+      data.message ||
+        (data.alreadySafe
+          ? "RoleLogic is already below Kick Supporter."
+          : "RoleLogic blocked from stripping Kick Supporter."),
+      "ok"
+    );
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
 document.getElementById("discord-owner-subs-list")?.addEventListener("click", async (event) => {
   const btn = event.target.closest(".discord-give-role-btn");
   if (!btn) return;
