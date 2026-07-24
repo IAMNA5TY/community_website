@@ -701,6 +701,9 @@ app.get("/api/discord/subscribers", (req, res) => {
     recheckBatchSize: discordSubRoleRecheck.getBatchSize(),
     roleWatch: discordRoleWatch.getStatus(),
     botInviteUrl: discord.botInviteUrl(),
+    privateSubRole: discord.getConfig().privateSubRole,
+    subRoleId: discord.getConfig().subRoleId,
+    envSubRoleId: discord.getConfig().envSubRoleId,
   });
 });
 
@@ -754,6 +757,42 @@ app.post("/api/discord/block-rolelogic", async (req, res) => {
       success: Boolean(result.ok),
       ...result,
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/** Owner: create/switch to a na5ty-only role RoleLogic does not manage (kick.bot style). */
+app.post("/api/discord/private-sub-role", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    if (!discord.configured()) {
+      return res.status(503).json({
+        success: false,
+        error: "Discord is not fully configured on the server",
+      });
+    }
+    const result = await discord.ensureNa5tyManagedSubRole({
+      forceCreate: Boolean(req.body?.forceCreate),
+      migrateGrants: req.body?.migrateGrants !== false,
+      kickSubscriberStore,
+      roleName: req.body?.roleName || null,
+    });
+    // Re-sync grants onto the new role.
+    if (result.ok) {
+      try {
+        await discordSubRoleRecheck.runRecheck(kickSubscriberStore, {
+          forceAll: true,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+    res.json({ success: Boolean(result.ok), ...result });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -2976,6 +3015,21 @@ webhook.loadPublicKey().then(async () => {
   await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
 
   if (discord.configured()) {
+    // Escape RoleLogic: use a na5ty-owned role (like old Kick bot) RoleLogic doesn't manage.
+    if (String(process.env.DISCORD_PRIVATE_SUB_ROLE || "1").trim() !== "0") {
+      try {
+        const privateRole = await discord.ensureNa5tyManagedSubRole({
+          kickSubscriberStore,
+          migrateGrants: true,
+        });
+        console.log(
+          `[discord] private sub role: ${privateRole.message || privateRole.error || "ok"}`
+        );
+      } catch (error) {
+        console.warn("[discord] private sub role setup failed:", error.message);
+      }
+    }
+
     discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
     discordRoleWatch.start(kickSubscriberStore);
     discordGateway.start(kickSubscriberStore);
