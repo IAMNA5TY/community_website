@@ -376,6 +376,7 @@
                   <p class="subtitle">Live Kick chat badges, Discord-linked Kick users, and people who tapped <strong>Get Subscriber Role</strong> / Claim (even if it failed). Refresh reloads this list.</p>
                 </div>
                 <div class="btn-row slots-actions" style="flex-wrap:wrap;gap:8px;justify-content:flex-end;">
+                  <button class="btn btn-kick btn-compact" type="button" id="discord-block-rolelogic-btn">Stop RoleLogic strips</button>
                   <button class="btn btn-kick btn-compact" type="button" id="discord-recheck-btn">Sync Discord roles now</button>
                   <button class="btn btn-secondary btn-compact" type="button" id="discord-owner-refresh">Refresh list</button>
                 </div>
@@ -384,12 +385,7 @@
                 If Discord is missing the role but this page says <strong>granted</strong>, hit <strong>Sync Discord roles now</strong> (or wait ~1–2 min for auto sync).
               </p>
               <div class="only-pixels-note" style="margin:0 0 14px;border-color:rgba(255,170,60,0.45);">
-                <strong>Stop RoleLogic (required):</strong> Those “Role Link Sync: Kick Supporter — Removed from 14 users” posts are from the <em>RoleLogic</em> app, not na5ty.com. We keep putting roles back, but RoleLogic will keep stripping them every ~10 minutes until you stop it. Do <strong>one</strong> of these:
-                <ol style="margin:8px 0 0 1.2em;padding:0;">
-                  <li style="margin-bottom:6px;"><strong>Fastest:</strong> Discord → Server Settings → Roles → drag the <strong>RoleLogic</strong> bot role <em>below</em> <strong>Kick Supporter</strong>. RoleLogic then can’t remove that role.</li>
-                  <li style="margin-bottom:6px;"><strong>Proper:</strong> Open <a href="https://rolelogic.faizo.net/" target="_blank" rel="noopener">rolelogic.faizo.net</a> → disable / delete the Kick rule that assigns <strong>Kick Supporter</strong>.</li>
-                  <li><strong>Nuclear:</strong> Kick RoleLogic from the server if you don’t need it. Use this site’s claim + Sync only.</li>
-                </ol>
+                <strong>RoleLogic is still looping:</strong> those #Bot-Logs posts are RoleLogic every ~12 min — not na5ty.com. Hit <strong>Stop RoleLogic strips</strong> (moves RoleLogic below Kick Supporter so it can’t remove that role). Our bot must sit <em>above</em> RoleLogic in Server Settings → Roles for that button to work. Or disable the Kick rule at <a href="https://rolelogic.faizo.net/" target="_blank" rel="noopener">rolelogic.faizo.net</a> / kick RoleLogic.
               </div>
               <div id="discord-owner-subs-list"><p class="subtitle">Open Discord Sub as owner to load badge sightings.</p></div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
@@ -1182,6 +1178,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=73"></script>
+    <script src="/app.js?v=74"></script>
   </body>
 </html>
