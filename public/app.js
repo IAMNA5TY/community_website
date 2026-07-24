@@ -580,12 +580,29 @@ function renderMessagesTable(messages) {
     document.getElementById("messages-table"),
     [
       { label: "User", render: (row) => escapeHtml(row.username) },
-      { label: "Message", render: (row) => escapeHtml(row.content) },
-      { label: "Time", render: (row) => new Date(row.createdAt).toLocaleString() },
+      { label: "Messages today", render: (row) => escapeHtml(row.count || 0) },
+      {
+        label: "Last message",
+        render: (row) =>
+          row.lastAt ? escapeHtml(new Date(row.lastAt).toLocaleString()) : "—",
+      },
     ],
     messages,
-    "No chat messages captured yet."
+    "No chat messages counted yet today."
   );
+}
+
+function renderDailyChatters(dailyChat) {
+  const meta = document.getElementById("daily-chat-meta");
+  const chatters = Array.isArray(dailyChat?.chatters) ? dailyChat.chatters : [];
+  if (meta) {
+    const day = dailyChat?.day ? escapeHtml(dailyChat.day) : "today";
+    const total = Number(dailyChat?.totalMessages || 0);
+    const unique = Number(dailyChat?.uniqueChatters || chatters.length || 0);
+    const tz = escapeHtml(dailyChat?.timeZone || "America/Chicago");
+    meta.textContent = `${unique} chatters · ${total} messages · ${day} (${tz}). OBS chat widget + /kickmenu are unchanged.`;
+  }
+  renderMessagesTable(chatters);
 }
 
 function renderSubsTable(subs) {
@@ -1851,7 +1868,7 @@ function renderDashboard(data) {
   renderStakeUrls(data.stakeUrls);
   renderCommandsTable(data.bot?.commands || []);
   renderTimersTable(data.bot?.timers || []);
-  renderMessagesTable(data.chat?.messages || []);
+  renderDailyChatters(data.chat?.dailyChat || { chatters: [] });
   renderSubsTable(data.chat?.subscriptions || []);
   renderRewardsTable(data.rewards || []);
   renderRedemptionsTable("pending-table", data.redemptions?.pending || [], "No pending redemptions.");
