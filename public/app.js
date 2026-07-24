@@ -4129,13 +4129,13 @@ document.getElementById("discord-kick-rolelogic-btn")?.addEventListener("click",
   const btn = document.getElementById("discord-kick-rolelogic-btn");
   if (
     !window.confirm(
-      "Kick + ban RoleLogic from the Discord server? This stops the Kick Supporter strip loop."
+      "Ban RoleLogic from Discord now? Put the na5ty bot role at the TOP first or Discord will block the ban."
     )
   ) {
     return;
   }
   if (btn) btn.disabled = true;
-  setDiscordStatus("Kicking + banning RoleLogic…");
+  setDiscordStatus("Purging RoleLogic (find + kick + ban)…");
   try {
     const response = await fetch("/api/discord/block-rolelogic", {
       method: "POST",
@@ -4147,13 +4147,41 @@ document.getElementById("discord-kick-rolelogic-btn")?.addEventListener("click",
     if (!response.ok || data.success === false) {
       throw new Error(data.error || data.message || "Could not remove RoleLogic");
     }
-    setDiscordStatus(data.message || "RoleLogic removed.", "ok");
+    setDiscordStatus(data.message || "RoleLogic removed.", data.purged ? "ok" : "err");
+    refreshRoleLogicStatus();
   } catch (error) {
     setDiscordStatus(error.message, "err");
   } finally {
     if (btn) btn.disabled = false;
   }
 });
+
+async function refreshRoleLogicStatus() {
+  const el = document.getElementById("discord-rolelogic-status");
+  if (!el) return;
+  try {
+    const response = await fetch("/api/discord/rolelogic-status", {
+      credentials: "same-origin",
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return;
+    if (data.presentCount > 0) {
+      const names = (data.present || [])
+        .map((row) => escapeHtml(row.username || row.id))
+        .join(", ");
+      el.innerHTML =
+        `<strong>RoleLogic STILL IN SERVER (${data.presentCount}):</strong> ${names}. ` +
+        `Ban it manually: put na5ty bot at top → right-click RoleLogic → Ban Member → then hit <strong>Kick RoleLogic</strong>.`;
+      el.style.borderColor = "rgba(255,80,80,0.55)";
+    } else {
+      el.innerHTML =
+        "<strong>RoleLogic not found in the server.</strong> If #Bot-Logs still posts removes, refresh in a minute or ban RoleLogic manually once.";
+      el.style.borderColor = "rgba(80,200,120,0.45)";
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 document.getElementById("discord-owner-subs-list")?.addEventListener("click", async (event) => {
   const btn = event.target.closest(".discord-give-role-btn");
