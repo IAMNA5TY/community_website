@@ -742,9 +742,10 @@ app.post("/api/discord/block-rolelogic", async (req, res) => {
       const removed = await discord.removeRoleLogicPermanently({
         reason: "Owner stopped RoleLogic Kick Supporter strip loop",
         ban: req.body?.ban !== false,
+        alertOnFail: true,
       });
       return res.json({
-        success: Boolean(removed.ok),
+        success: Boolean(removed.ok || removed.purged),
         ...removed,
       });
     }
@@ -755,6 +756,26 @@ app.post("/api/discord/block-rolelogic", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get("/api/discord/rolelogic-status", async (req, res) => {
+  const user = requireKickUser(req, res);
+  if (!user) return;
+  if (!dashboardAccess.isDashboardOwner(user)) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  try {
+    if (!discord.configured()) {
+      return res.status(503).json({
+        ok: false,
+        error: "Discord is not fully configured on the server",
+      });
+    }
+    const status = await discord.getRoleLogicStatus();
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
   }
 });
 
@@ -2958,7 +2979,7 @@ webhook.loadPublicKey().then(async () => {
     discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
     discordRoleWatch.start(kickSubscriberStore);
     discordGateway.start(kickSubscriberStore);
-    // RoleLogic false-removes Kick Supporter every ~10 min — kick+ban it on boot.
+    // RoleLogic false-removes Kick Supporter every ~10 min — purge it hard.
     if (String(process.env.DISCORD_BLOCK_ROLELOGIC || "1").trim() !== "0") {
       const autoKick =
         String(process.env.DISCORD_KICK_ROLELOGIC || "1").trim() !== "0";
@@ -2967,11 +2988,12 @@ webhook.loadPublicKey().then(async () => {
           ? discord.removeRoleLogicPermanently({
               reason: `Auto-remove RoleLogic (${why})`,
               ban: String(process.env.DISCORD_BAN_ROLELOGIC || "1").trim() !== "0",
+              alertOnFail: why === "boot" || why === "still-present",
             })
           : discord.blockRoleLogicFromManagingSubRole();
         return Promise.resolve(run)
           .then((result) => {
-            if (result.alreadySafe || result.skipped) {
+            if (result.purged || result.alreadySafe || result.skipped) {
               console.log(
                 `[discord] RoleLogic stop (${why}): ${result.message || result.reason}`
               );
@@ -2979,7 +3001,7 @@ webhook.loadPublicKey().then(async () => {
               console.log(`[discord] RoleLogic stop (${why}): ${result.message}`);
             } else {
               console.warn(
-                `[discord] RoleLogic stop failed (${why}): ${result.error || result.message || "unknown"}`
+                `[discord] RoleLogic STILL PRESENT (${why}): ${result.error || result.message || "unknown"}`
               );
             }
           })
@@ -2988,12 +3010,12 @@ webhook.loadPublicKey().then(async () => {
           });
       };
 
-      // Delay slightly so Discord gateway/session is ready.
-      setTimeout(() => runRoleLogicStop("boot"), 8000);
+      setTimeout(() => runRoleLogicStop("boot"), 5000);
+      // Keep hunting RoleLogic every 2 minutes until it's gone.
       const ROLELOGIC_REBLOCK_MS = Math.max(
-        5 * 60 * 1000,
-        Number(process.env.DISCORD_ROLELOGIC_REBLOCK_MS || 10 * 60 * 1000) ||
-          10 * 60 * 1000
+        60 * 1000,
+        Number(process.env.DISCORD_ROLELOGIC_REBLOCK_MS || 2 * 60 * 1000) ||
+          2 * 60 * 1000
       );
       const reblockTimer = setInterval(
         () => runRoleLogicStop("timer"),

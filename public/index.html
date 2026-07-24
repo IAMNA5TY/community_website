@@ -385,8 +385,14 @@
               <p class="subtitle" id="discord-recheck-meta" style="margin:8px 0 12px;">
                 If Discord is missing the role but this page says <strong>granted</strong>, hit <strong>Sync Discord roles now</strong> (or wait ~1–2 min for auto sync).
               </p>
-              <div class="only-pixels-note" style="margin:0 0 14px;border-color:rgba(255,80,80,0.55);">
-                <strong>RoleLogic is being removed:</strong> on deploy the site now <strong>kicks + bans RoleLogic</strong> automatically so it can’t keep stripping Kick Supporter every ~10 min. If that fails, hit <strong>Kick RoleLogic</strong> (needs Kick/Ban Members on the na5ty bot, and the bot role above RoleLogic). Then <strong>Sync Discord roles now</strong>.
+              <div class="only-pixels-note" id="discord-rolelogic-status" style="margin:0 0 14px;border-color:rgba(255,80,80,0.55);">
+                <strong>DO THIS NOW:</strong> RoleLogic is still in your Discord and keeps stripping Kick Supporter.
+                <ol style="margin:8px 0 0 1.2em;padding:0;">
+                  <li>Server Settings → Roles → put <strong>na5ty bot at the top</strong></li>
+                  <li>Right-click <strong>RoleLogic</strong> → <strong>Ban Member</strong></li>
+                  <li>Then click <strong>Kick RoleLogic</strong> + <strong>Sync Discord roles now</strong> below</li>
+                </ol>
+                The site also auto-hunts/bans RoleLogic every 2 minutes and posts in Discord if it can’t.
               </div>
               <div id="discord-owner-subs-list"><p class="subtitle">Open Discord Sub as owner to load badge sightings.</p></div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
@@ -1182,6 +1188,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=77"></script>
+    <script src="/app.js?v=78"></script>
   </body>
 </html>
