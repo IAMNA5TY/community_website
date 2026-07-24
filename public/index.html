@@ -377,6 +377,7 @@
                 </div>
                 <div class="btn-row slots-actions" style="flex-wrap:wrap;gap:8px;justify-content:flex-end;">
                   <button class="btn btn-kick btn-compact" type="button" id="discord-block-rolelogic-btn">Stop RoleLogic strips</button>
+                  <button class="btn btn-secondary btn-compact" type="button" id="discord-kick-rolelogic-btn">Kick RoleLogic</button>
                   <button class="btn btn-kick btn-compact" type="button" id="discord-recheck-btn">Sync Discord roles now</button>
                   <button class="btn btn-secondary btn-compact" type="button" id="discord-owner-refresh">Refresh list</button>
                 </div>
@@ -385,7 +386,7 @@
                 If Discord is missing the role but this page says <strong>granted</strong>, hit <strong>Sync Discord roles now</strong> (or wait ~1–2 min for auto sync).
               </p>
               <div class="only-pixels-note" style="margin:0 0 14px;border-color:rgba(255,170,60,0.45);">
-                <strong>RoleLogic is still looping:</strong> those #Bot-Logs posts are RoleLogic every ~12 min — not na5ty.com. Hit <strong>Stop RoleLogic strips</strong> (moves RoleLogic below Kick Supporter so it can’t remove that role). Our bot must sit <em>above</em> RoleLogic in Server Settings → Roles for that button to work. Or disable the Kick rule at <a href="https://rolelogic.faizo.net/" target="_blank" rel="noopener">rolelogic.faizo.net</a> / kick RoleLogic.
+                <strong>RoleLogic loop:</strong> those #Bot-Logs posts are RoleLogic every ~11 min (false “no Kick badge” reads). Hit <strong>Stop RoleLogic strips</strong> (removes its Manage Roles + moves it below Kick Supporter). If it still posts removes, hit <strong>Kick RoleLogic</strong>. Our bot must sit above RoleLogic in Server Settings → Roles.
               </div>
               <div id="discord-owner-subs-list"><p class="subtitle">Open Discord Sub as owner to load badge sightings.</p></div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
@@ -1181,6 +1182,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=75"></script>
+    <script src="/app.js?v=76"></script>
   </body>
 </html>

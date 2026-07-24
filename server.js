@@ -724,7 +724,7 @@ app.post("/api/discord/recheck", async (req, res) => {
   }
 });
 
-/** Owner: demote RoleLogic below Kick Supporter so it cannot strip that role. */
+/** Owner: demote RoleLogic + strip Manage Roles so it cannot strip Kick Supporter. */
 app.post("/api/discord/block-rolelogic", async (req, res) => {
   const user = requireKickUser(req, res);
   if (!user) return;
@@ -736,6 +736,15 @@ app.post("/api/discord/block-rolelogic", async (req, res) => {
       return res.status(503).json({
         success: false,
         error: "Discord is not fully configured on the server",
+      });
+    }
+    if (req.body?.kick === true || req.body?.kickRoleLogic === true) {
+      const kicked = await discord.kickRoleLogicFromGuild(
+        "Owner stopped RoleLogic Kick Supporter strip loop"
+      );
+      return res.json({
+        success: Boolean(kicked.ok),
+        ...kicked,
       });
     }
     const result = await discord.blockRoleLogicFromManagingSubRole();
@@ -2948,24 +2957,40 @@ webhook.loadPublicKey().then(async () => {
     discordSubRoleRecheck.startRecheckLoop(kickSubscriberStore);
     discordRoleWatch.start(kickSubscriberStore);
     discordGateway.start(kickSubscriberStore);
-    // Stop RoleLogic from stripping Kick Supporter (move its bot role below that role).
+    // Stop RoleLogic from stripping Kick Supporter (strip perms + demote).
     if (String(process.env.DISCORD_BLOCK_ROLELOGIC || "1").trim() !== "0") {
-      discord
-        .blockRoleLogicFromManagingSubRole()
-        .then((result) => {
-          if (result.alreadySafe || result.skipped) {
-            console.log(`[discord] RoleLogic block: ${result.message || result.reason}`);
-          } else if (result.ok && result.moved) {
-            console.log(`[discord] RoleLogic block: ${result.message}`);
-          } else {
-            console.warn(
-              `[discord] RoleLogic block failed: ${result.error || result.message || "unknown"}`
-            );
-          }
-        })
-        .catch((error) => {
-          console.warn("[discord] RoleLogic block error:", error.message);
-        });
+      const runRoleLogicBlock = (why) =>
+        discord
+          .blockRoleLogicFromManagingSubRole()
+          .then((result) => {
+            if (result.alreadySafe || result.skipped) {
+              console.log(
+                `[discord] RoleLogic block (${why}): ${result.message || result.reason}`
+              );
+            } else if (result.ok) {
+              console.log(`[discord] RoleLogic block (${why}): ${result.message}`);
+            } else {
+              console.warn(
+                `[discord] RoleLogic block failed (${why}): ${result.error || result.message || "unknown"}`
+              );
+            }
+          })
+          .catch((error) => {
+            console.warn(`[discord] RoleLogic block error (${why}):`, error.message);
+          });
+
+      runRoleLogicBlock("boot");
+      // RoleLogic re-asserts hierarchy / perms on its sync loop — keep clamping it.
+      const ROLELOGIC_REBLOCK_MS = Math.max(
+        5 * 60 * 1000,
+        Number(process.env.DISCORD_ROLELOGIC_REBLOCK_MS || 10 * 60 * 1000) ||
+          10 * 60 * 1000
+      );
+      const reblockTimer = setInterval(
+        () => runRoleLogicBlock("timer"),
+        ROLELOGIC_REBLOCK_MS
+      );
+      if (typeof reblockTimer.unref === "function") reblockTimer.unref();
     }
   } else {
     console.log("[discord-recheck] skipped — Discord not fully configured");
