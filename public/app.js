@@ -4125,6 +4125,31 @@ document.getElementById("discord-block-rolelogic-btn")?.addEventListener("click"
   }
 });
 
+document.getElementById("discord-private-role-btn")?.addEventListener("click", async () => {
+  const btn = document.getElementById("discord-private-role-btn");
+  if (btn) btn.disabled = true;
+  setDiscordStatus("Creating/switching to na5ty-only Supporter role (bypasses RoleLogic)…");
+  try {
+    const response = await fetch("/api/discord/private-sub-role", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ migrateGrants: true }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+      throw new Error(data.error || data.message || "Could not switch role");
+    }
+    setDiscordStatus(data.message || "Now using na5ty-only role.", "ok");
+    refreshRoleLogicStatus();
+    refreshDiscordOwnerSubs();
+  } catch (error) {
+    setDiscordStatus(error.message, "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
 document.getElementById("discord-kick-rolelogic-btn")?.addEventListener("click", async () => {
   const btn = document.getElementById("discord-kick-rolelogic-btn");
   if (
@@ -4160,23 +4185,42 @@ async function refreshRoleLogicStatus() {
   const el = document.getElementById("discord-rolelogic-status");
   if (!el) return;
   try {
-    const response = await fetch("/api/discord/rolelogic-status", {
-      credentials: "same-origin",
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) return;
+    const [rlRes, subRes] = await Promise.all([
+      fetch("/api/discord/rolelogic-status", { credentials: "same-origin" }),
+      fetch("/api/discord/subscribers", { credentials: "same-origin" }).catch(() => null),
+    ]);
+    const data = await rlRes.json().catch(() => ({}));
+    if (!rlRes.ok) return;
+    const subData = subRes && subRes.ok ? await subRes.json().catch(() => ({})) : {};
+    const priv = subData.privateSubRole || null;
+    const roleName = escapeHtml(priv?.roleName || "na5ty Supporter");
+    const roleId = priv?.roleId ? escapeHtml(priv.roleId) : "";
+
+    if (priv?.roleId) {
+      const rlNote =
+        data.presentCount > 0
+          ? ` RoleLogic is still in the server (optional ban to stop its log spam) — it cannot strip <strong>${roleName}</strong>.`
+          : " RoleLogic is not in the server.";
+      el.innerHTML =
+        `<strong>Using na5ty-only role:</strong> claims use <strong>${roleName}</strong> (<code>${roleId}</code>) — same approach as the old Kick bot.` +
+        ` Add this role to sub-only channel permissions if needed.` +
+        rlNote;
+      el.style.borderColor = "rgba(80,200,120,0.45)";
+      return;
+    }
+
     if (data.presentCount > 0) {
       const names = (data.present || [])
         .map((row) => escapeHtml(row.username || row.id))
         .join(", ");
       el.innerHTML =
-        `<strong>RoleLogic STILL IN SERVER (${data.presentCount}):</strong> ${names}. ` +
-        `Ban it manually: put na5ty bot at top → right-click RoleLogic → Ban Member → then hit <strong>Kick RoleLogic</strong>.`;
-      el.style.borderColor = "rgba(255,80,80,0.55)";
+        `<strong>Still on shared Kick Supporter</strong> — RoleLogic (${names || "present"}) keeps stripping it. ` +
+        `Hit <strong>Use na5ty-only role</strong> so claims move to a role only na5ty manages (like the old Kick bot).`;
+      el.style.borderColor = "rgba(255,170,60,0.55)";
     } else {
       el.innerHTML =
-        "<strong>RoleLogic not found in the server.</strong> If #Bot-Logs still posts removes, refresh in a minute or ban RoleLogic manually once.";
-      el.style.borderColor = "rgba(80,200,120,0.45)";
+        "<strong>Tip:</strong> Hit <strong>Use na5ty-only role</strong> so claims don’t share Kick Supporter with RoleLogic (kick.bot style). RoleLogic not found in the server right now.";
+      el.style.borderColor = "rgba(255,170,60,0.55)";
     }
   } catch {
     /* ignore */

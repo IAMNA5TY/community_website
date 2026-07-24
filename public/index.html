@@ -376,6 +376,7 @@
                   <p class="subtitle">Live Kick chat badges, Discord-linked Kick users, and people who tapped <strong>Get Subscriber Role</strong> / Claim (even if it failed). Refresh reloads this list.</p>
                 </div>
                 <div class="btn-row slots-actions" style="flex-wrap:wrap;gap:8px;justify-content:flex-end;">
+                  <button class="btn btn-kick btn-compact" type="button" id="discord-private-role-btn">Use na5ty-only role</button>
                   <button class="btn btn-kick btn-compact" type="button" id="discord-block-rolelogic-btn">Stop RoleLogic strips</button>
                   <button class="btn btn-secondary btn-compact" type="button" id="discord-kick-rolelogic-btn">Kick RoleLogic</button>
                   <button class="btn btn-kick btn-compact" type="button" id="discord-recheck-btn">Sync Discord roles now</button>
@@ -385,14 +386,8 @@
               <p class="subtitle" id="discord-recheck-meta" style="margin:8px 0 12px;">
                 If Discord is missing the role but this page says <strong>granted</strong>, hit <strong>Sync Discord roles now</strong> (or wait ~1–2 min for auto sync).
               </p>
-              <div class="only-pixels-note" id="discord-rolelogic-status" style="margin:0 0 14px;border-color:rgba(255,80,80,0.55);">
-                <strong>DO THIS NOW:</strong> RoleLogic is still in your Discord and keeps stripping Kick Supporter.
-                <ol style="margin:8px 0 0 1.2em;padding:0;">
-                  <li>Server Settings → Roles → put <strong>na5ty bot at the top</strong></li>
-                  <li>Right-click <strong>RoleLogic</strong> → <strong>Ban Member</strong></li>
-                  <li>Then click <strong>Kick RoleLogic</strong> + <strong>Sync Discord roles now</strong> below</li>
-                </ol>
-                The site also auto-hunts/bans RoleLogic every 2 minutes and posts in Discord if it can’t.
+              <div class="only-pixels-note" id="discord-rolelogic-status" style="margin:0 0 14px;border-color:rgba(255,170,60,0.55);">
+                <strong>Fix (like old Kick bot):</strong> RoleLogic keeps stripping shared <em>Kick Supporter</em>. Hit <strong>Use na5ty-only role</strong> — creates <strong>na5ty Supporter</strong> that only this site manages (RoleLogic can’t remove it). Then add that role to any sub-only channels once. Ban RoleLogic if you want its logs gone too.
               </div>
               <div id="discord-owner-subs-list"><p class="subtitle">Open Discord Sub as owner to load badge sightings.</p></div>
               <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);">
@@ -1188,6 +1183,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=78"></script>
+    <script src="/app.js?v=79"></script>
   </body>
 </html>
