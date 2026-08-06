@@ -1982,8 +1982,18 @@ let partnerStreamersState = {
 const MAX_STREAM_TILES = 12;
 let streamTileSeq = 0;
 
-function kickPlayerEmbedUrl(slug) {
-  return `https://player.kick.com/${encodeURIComponent(slug)}?autoplay=true`;
+function kickPlayerEmbedUrl(slug, { muted = false } = {}) {
+  const params = new URLSearchParams({
+    autoplay: "true",
+    muted: muted ? "true" : "false",
+  });
+  return `https://player.kick.com/${encodeURIComponent(slug)}?${params}`;
+}
+
+function tileShouldBeMuted(tile) {
+  if (!tile) return true;
+  if (tile.userMuted) return true;
+  return tile.id !== partnerStreamersState.focusedTileId;
 }
 
 function getFocusedStreamTile() {
@@ -2010,7 +2020,7 @@ function updateStreamerTheaterHeader() {
   if (slugEl) {
     slugEl.textContent =
       count > 1
-        ? `Focused: kick.com/${focused.slug} · click a tile or Add to manage`
+        ? `Chat focused: kick.com/${focused.slug} · click another window to switch`
         : `kick.com/${focused.slug}`;
   }
 }
@@ -2021,6 +2031,31 @@ function syncStreamerTheaterVisibility() {
   const hasTiles = partnerStreamersState.tiles.length > 0;
   empty?.classList.toggle("hidden", hasTiles);
   active?.classList.toggle("hidden", !hasTiles);
+}
+
+function syncStreamTileChrome(node, tile) {
+  if (!node || !tile) return;
+  const focused = tile.id === partnerStreamersState.focusedTileId;
+  const muted = tileShouldBeMuted(tile);
+  node.classList.toggle("is-focused", focused);
+  node.classList.toggle("is-muted", muted);
+
+  const muteBtn = node.querySelector("[data-mute-tile]");
+  if (muteBtn) {
+    muteBtn.classList.toggle("is-muted", muted);
+    muteBtn.title = muted ? "Unmute this stream" : "Mute this stream";
+    muteBtn.setAttribute("aria-label", muted ? "Unmute" : "Mute");
+    muteBtn.textContent = muted ? "Unmute" : "Mute";
+  }
+
+  const frame = node.querySelector("iframe");
+  if (frame) {
+    const nextSrc = kickPlayerEmbedUrl(tile.slug, { muted });
+    if (frame.dataset.embedMuted !== String(muted) || !frame.src) {
+      frame.dataset.embedMuted = String(muted);
+      frame.src = nextSrc;
+    }
+  }
 }
 
 function createStreamTileElement(tile) {
@@ -2039,6 +2074,12 @@ function createStreamTileElement(tile) {
   nameBtn.textContent = tile.displayName || tile.slug;
   nameBtn.title = `Focus chat on ${tile.slug}`;
 
+  const muteBtn = document.createElement("button");
+  muteBtn.type = "button";
+  muteBtn.className = "stream-tile__mute";
+  muteBtn.dataset.muteTile = tile.id;
+  muteBtn.textContent = "Mute";
+
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.className = "stream-tile__close";
@@ -2047,6 +2088,7 @@ function createStreamTileElement(tile) {
   closeBtn.textContent = "×";
 
   bar.appendChild(nameBtn);
+  bar.appendChild(muteBtn);
   bar.appendChild(closeBtn);
 
   const frame = document.createElement("iframe");
@@ -2054,10 +2096,18 @@ function createStreamTileElement(tile) {
   frame.allow = "autoplay; fullscreen; picture-in-picture";
   frame.allowFullscreen = true;
   frame.loading = "lazy";
-  frame.src = kickPlayerEmbedUrl(tile.slug);
+
+  const catcher = document.createElement("button");
+  catcher.type = "button";
+  catcher.className = "stream-tile__catcher";
+  catcher.dataset.focusTile = tile.id;
+  catcher.setAttribute("aria-label", `Switch chat to ${tile.displayName || tile.slug}`);
+  catcher.title = "Click to switch chat to this stream";
 
   el.appendChild(bar);
   el.appendChild(frame);
+  el.appendChild(catcher);
+  syncStreamTileChrome(el, tile);
   return el;
 }
 
@@ -2082,8 +2132,9 @@ function renderStreamerPlayerGrid() {
     if (!node) {
       node = createStreamTileElement(tile);
       grid.appendChild(node);
+    } else {
+      syncStreamTileChrome(node, tile);
     }
-    node.classList.toggle("is-focused", tile.id === partnerStreamersState.focusedTileId);
   }
 
   updateStreamerTheaterHeader();
@@ -2093,12 +2144,23 @@ function renderStreamerPlayerGrid() {
 function focusStreamTile(tileId, { refreshChat = true } = {}) {
   const tile = partnerStreamersState.tiles.find((row) => row.id === tileId);
   if (!tile) return;
-  const slugChanged = partnerStreamersState.selectedSlug !== tile.slug;
+
+  const prevSlug = partnerStreamersState.selectedSlug;
+  const prevFocus = partnerStreamersState.focusedTileId;
+  if (prevFocus === tile.id && prevSlug === tile.slug) {
+    // Still re-apply chrome (unmute focused) if needed
+    renderStreamerPlayerGrid();
+    return;
+  }
+
+  // Focusing a stream unmutes it for listening; others stay muted.
+  tile.userMuted = false;
   partnerStreamersState.focusedTileId = tile.id;
   partnerStreamersState.selectedSlug = tile.slug;
   renderStreamerPlayerGrid();
   renderPartnerStreamersList();
-  if (refreshChat && slugChanged) {
+
+  if (refreshChat && prevSlug !== tile.slug) {
     partnerStreamersState.chatMessages = [];
     partnerStreamersState.chatCommands = [];
     partnerStreamersState.points = null;
@@ -2111,6 +2173,20 @@ function focusStreamTile(tileId, { refreshChat = true } = {}) {
   }
 }
 
+function toggleStreamTileMute(tileId) {
+  const tile = partnerStreamersState.tiles.find((row) => row.id === tileId);
+  if (!tile) return;
+
+  if (tile.id !== partnerStreamersState.focusedTileId) {
+    // Mute on another window = switch focus (and sound) to it.
+    focusStreamTile(tile.id);
+    return;
+  }
+
+  tile.userMuted = !tile.userMuted;
+  renderStreamerPlayerGrid();
+}
+
 function removeStreamTile(tileId) {
   const tiles = partnerStreamersState.tiles.filter((tile) => tile.id !== tileId);
   partnerStreamersState.tiles = tiles;
@@ -2120,6 +2196,7 @@ function removeStreamTile(tileId) {
   }
   if (partnerStreamersState.focusedTileId === tileId) {
     const next = tiles[tiles.length - 1];
+    next.userMuted = false;
     partnerStreamersState.focusedTileId = next.id;
     partnerStreamersState.selectedSlug = next.slug;
     partnerStreamersState.chatMessages = [];
@@ -2162,7 +2239,13 @@ function openStreamerTheater(partnerOrSlug) {
     id: `tile-${streamTileSeq}`,
     slug,
     displayName: partner.displayName || slug,
+    userMuted: false,
   };
+
+  // Mute every existing window so only the newly focused one has sound.
+  for (const existing of partnerStreamersState.tiles) {
+    existing.userMuted = false;
+  }
 
   partnerStreamersState.tiles.push(tile);
   partnerStreamersState.focusedTileId = tile.id;
@@ -2341,9 +2424,11 @@ async function refreshSiteChat() {
     const input = document.getElementById("site-chat-input");
     const sendBtn = document.getElementById("site-chat-send");
     if (hint) {
+      const focused = getFocusedStreamTile();
+      const channel = focused?.slug || data.slug || "chat";
       hint.textContent = data.canSend
-        ? `as ${data.username || "you"}`
-        : "Kick sign-in needed to send";
+        ? `${channel} · as ${data.username || "you"}`
+        : `${channel} · Kick sign-in needed to send`;
     }
     if (input) {
       input.disabled = !data.canSend;
@@ -2681,11 +2766,19 @@ document.getElementById("streamers-close-btn")?.addEventListener("click", () => 
 document.getElementById("streamers-player-grid")?.addEventListener("click", (event) => {
   const removeBtn = event.target.closest("[data-remove-tile]");
   if (removeBtn) {
+    event.preventDefault();
     removeStreamTile(removeBtn.dataset.removeTile);
+    return;
+  }
+  const muteBtn = event.target.closest("[data-mute-tile]");
+  if (muteBtn) {
+    event.preventDefault();
+    toggleStreamTileMute(muteBtn.dataset.muteTile);
     return;
   }
   const focusBtn = event.target.closest("[data-focus-tile]");
   if (focusBtn) {
+    event.preventDefault();
     focusStreamTile(focusBtn.dataset.focusTile);
     return;
   }

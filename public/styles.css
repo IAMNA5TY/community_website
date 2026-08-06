@@ -943,22 +943,39 @@ body.platform-twitch .profile-card__platform-badge {
   color: var(--kick);
 }
 
+.stream-tile__mute,
 .stream-tile__close {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
   border: 1px solid #333;
   border-radius: 6px;
   background: #1a1a1a;
   color: var(--muted);
   cursor: pointer;
   line-height: 1;
-  font-size: 0.85rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
+.stream-tile__mute {
+  padding: 3px 7px;
+}
+
+.stream-tile__mute.is-muted {
+  color: #ffb4b4;
+  border-color: #553333;
+}
+
+.stream-tile__mute:hover,
 .stream-tile__close:hover {
   color: #fff;
   border-color: #555;
+}
+
+.stream-tile__close {
+  width: 22px;
+  height: 22px;
+  font-size: 0.85rem;
 }
 
 .stream-tile iframe {
@@ -968,6 +985,24 @@ body.platform-twitch .profile-card__platform-badge {
   border: 0;
   display: block;
   background: #0a0a0a;
+}
+
+.stream-tile__catcher {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28px;
+  bottom: 0;
+  z-index: 3;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.stream-tile.is-focused .stream-tile__catcher {
+  display: none;
 }
 
 .streamers-theater__chat {
