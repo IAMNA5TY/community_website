@@ -292,10 +292,10 @@ function buildWebhookNote(req) {
     if (err && /rate limit/i.test(err)) {
       return `Kick API rate limit — wait a bit, then refresh. Chat still works via Pusher. Webhook URL for subs/gifts: ${WEBHOOK_URL}.`;
     }
+    // Real failure only — don't show the normal "Pusher is fine / set webhooks" tip.
     if (err) {
       return `${err} In Kick Developer → Enable Webhooks, set Webhook URL = ${WEBHOOK_URL} (for subs/gifts — chat uses Pusher).`;
     }
-    return `Chat is read via Pusher (no chat webhook needed). For subs/gifts, set Kick Developer → Enable Webhooks → ${WEBHOOK_URL}.`;
   }
 
   return null;
@@ -1224,8 +1224,7 @@ app.get("/api/dashboard", async (req, res) => {
       webhookReady: false,
       webhookError: null,
       webhookUrl: WEBHOOK_URL,
-      webhookNote:
-        "Signed in with Twitch. Kick chat, rewards, and Discord sub tools need Kick sign-in.",
+      webhookNote: null,
       widgetsUrls: {
         chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
