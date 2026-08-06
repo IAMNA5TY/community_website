@@ -3263,21 +3263,7 @@ setInterval(() => {
 }, 60000);
 
 async function loadKickRedirectHint() {
-  const hint = document.getElementById("kick-redirect-hint");
-  if (!hint) return;
-
-  try {
-    const response = await fetch("/api/auth/kick-info");
-    if (!response.ok) return;
-    const data = await response.json();
-    if (!data.redirectUri) return;
-
-    hint.innerHTML =
-      `Kick Developer → Redirect URL must include exactly:<br><code>${escapeHtml(data.redirectUri)}</code>`;
-    hint.classList.remove("hidden");
-  } catch {
-    // ignore
-  }
+  // Keep developer redirect hints off the public welcome screen.
 }
 
 loadKickRedirectHint();
