@@ -775,23 +775,26 @@ body.platform-twitch .profile-card__platform-badge {
 
 .streamers-layout {
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 12px;
   align-items: stretch;
-  width: min(1200px, 100%);
+  width: 100%;
+  min-height: calc(100vh - 120px);
   justify-self: stretch;
 }
 
 .streamers-sidebar {
-  padding: 14px;
+  padding: 12px;
   background: #141414;
   border: 1px solid #222;
+  max-height: calc(100vh - 120px);
+  overflow: auto;
 }
 
 .streamers-theater {
-  min-height: 520px;
-  padding: 16px;
-  background: #101010;
+  min-height: calc(100vh - 120px);
+  padding: 10px;
+  background: #0c0c0c;
   border: 1px solid #222;
   display: grid;
 }
@@ -805,78 +808,79 @@ body.platform-twitch .profile-card__platform-badge {
 
 .streamers-theater__active {
   display: grid;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
   min-height: 0;
+  height: 100%;
 }
 
 .streamers-theater__top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 0 2px;
 }
 
 .streamers-theater__top h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+}
+
+.streamers-theater__top .subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
 }
 
 .streamers-theater__stage {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 0;
   min-height: 0;
-}
-
-.streamers-theater__player,
-.streamers-theater__chat {
+  height: 100%;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #222;
   background: #000;
-  min-height: 420px;
 }
 
-.streamers-theater__player iframe {
+.streamers-theater__player,
+.streamers-theater__chat {
+  min-height: 0;
+  height: 100%;
+  background: #000;
+  position: relative;
+}
+
+.streamers-theater__chat {
+  border-left: 1px solid #222;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.streamers-theater__player iframe,
+.streamers-theater__chat iframe {
   width: 100%;
   height: 100%;
-  min-height: 420px;
+  min-height: 560px;
   border: 0;
   display: block;
+  background: #0a0a0a;
 }
 
-.streamers-chat-panel {
-  height: 100%;
-  min-height: 420px;
-  padding: 20px 18px;
+.streamers-chat-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
   background: #121212;
-  display: grid;
-  align-content: center;
-  gap: 12px;
-}
-
-.streamers-chat-panel__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  color: var(--kick);
-}
-
-.streamers-chat-panel__note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-.streamers-chat-panel .btn {
-  justify-content: center;
-  border-radius: 12px;
+  border-top: 1px solid #222;
 }
 
 .streamers-chat-panel__link {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-decoration: none;
 }
 
@@ -887,6 +891,15 @@ body.platform-twitch .profile-card__platform-badge {
 @media (max-width: 980px) {
   .streamers-layout {
     grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .streamers-sidebar {
+    max-height: 280px;
+  }
+
+  .streamers-theater {
+    min-height: auto;
   }
 
   .streamers-theater__stage {
@@ -894,7 +907,14 @@ body.platform-twitch .profile-card__platform-badge {
   }
 
   .streamers-theater__chat {
-    min-height: 320px;
+    border-left: 0;
+    border-top: 1px solid #222;
+    min-height: 420px;
+  }
+
+  .streamers-theater__player iframe,
+  .streamers-theater__chat iframe {
+    min-height: 360px;
   }
 }
 

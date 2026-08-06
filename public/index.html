@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=17" />
+    <link rel="stylesheet" href="/styles.css?v=18" />
   </head>
   <body>
     <main class="page">
@@ -194,7 +194,7 @@
             <header class="page-header">
               <div>
                 <h1>Partner streamers</h1>
-                <p class="subtitle">Watch approved partners live, embedded here — chat beside the stream</p>
+                <p class="subtitle">Watch approved partners live — stream + chat together on this page</p>
               </div>
               <p class="profile-streamers__meta" id="profile-streamers-meta">Loading…</p>
             </header>
@@ -232,17 +232,17 @@
                       ></iframe>
                     </div>
                     <div class="streamers-theater__chat" id="streamers-chat-panel">
-                      <div class="streamers-chat-panel">
-                        <p class="streamers-chat-panel__title">Kick chat</p>
-                        <p class="streamers-chat-panel__note">
-                          Kick blocks chat inside other sites, so it opens in a Kick window where you can sign in and send messages.
-                        </p>
-                        <button class="btn btn-kick" type="button" id="streamers-open-chat-btn">
-                          Open chat
+                      <iframe
+                        id="streamers-chat-frame"
+                        title="Kick chat"
+                        allow="clipboard-write; fullscreen"
+                        loading="lazy"
+                      ></iframe>
+                      <div class="streamers-chat-fallback">
+                        <button class="btn btn-secondary btn-compact" type="button" id="streamers-open-chat-btn">
+                          Pop out chat
                         </button>
-                        <a class="streamers-chat-panel__link" id="streamers-chat-link" href="#" target="_blank" rel="noopener noreferrer">
-                          Open on kick.com
-                        </a>
+                        <a class="streamers-chat-panel__link" id="streamers-chat-link" href="#" target="_blank" rel="noopener noreferrer">Open on Kick</a>
                       </div>
                     </div>
                   </div>
@@ -1276,6 +1276,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=84"></script>
+    <script src="/app.js?v=85"></script>
   </body>
 </html>

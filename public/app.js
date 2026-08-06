@@ -1980,6 +1980,11 @@ function kickChatPopoutUrl(slug) {
   return `https://kick.com/popout/${encodeURIComponent(slug)}/chat`;
 }
 
+function kickChatEmbedUrl(slug) {
+  // Official Kick chat cannot be iframed. KickCX is an embeddable Kick chat with login.
+  return `https://chat.kick.cx/embed/${encodeURIComponent(slug)}`;
+}
+
 function openKickChatWindow(slug) {
   if (!slug) return null;
   const url = kickChatPopoutUrl(slug);
@@ -2012,6 +2017,7 @@ function openStreamerTheater(partnerOrSlug) {
   const title = document.getElementById("streamers-theater-title");
   const slugEl = document.getElementById("streamers-theater-slug");
   const player = document.getElementById("streamers-player-frame");
+  const chat = document.getElementById("streamers-chat-frame");
   const chatLink = document.getElementById("streamers-chat-link");
 
   empty?.classList.add("hidden");
@@ -2019,19 +2025,10 @@ function openStreamerTheater(partnerOrSlug) {
   if (title) title.textContent = partner.displayName || slug;
   if (slugEl) slugEl.textContent = `kick.com/${slug}`;
   if (player) player.src = kickPlayerEmbedUrl(slug);
+  if (chat) chat.src = kickChatEmbedUrl(slug);
   if (chatLink) {
-    chatLink.href = `https://kick.com/${encodeURIComponent(slug)}`;
-    chatLink.textContent = `kick.com/${slug}`;
-  }
-
-  // Kick refuses chat iframes — open a real Kick chat window for typing.
-  const chatWin = openKickChatWindow(slug);
-  if (!chatWin) {
-    const note = document.querySelector(".streamers-chat-panel__note");
-    if (note) {
-      note.textContent =
-        "Popup blocked — click Open chat (and allow popups for na5ty.com).";
-    }
+    chatLink.href = kickChatPopoutUrl(slug);
+    chatLink.textContent = "Kick popout";
   }
   renderPartnerStreamersList();
 }
@@ -2041,9 +2038,11 @@ function closeStreamerTheater() {
   const empty = document.getElementById("streamers-theater-empty");
   const active = document.getElementById("streamers-theater-active");
   const player = document.getElementById("streamers-player-frame");
+  const chat = document.getElementById("streamers-chat-frame");
   empty?.classList.remove("hidden");
   active?.classList.add("hidden");
   if (player) player.removeAttribute("src");
+  if (chat) chat.removeAttribute("src");
   renderPartnerStreamersList();
 }
 
