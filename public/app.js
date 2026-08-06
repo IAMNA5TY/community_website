@@ -1969,30 +1969,85 @@ let partnerStreamersState = {
   filter: "live",
   loading: false,
   timer: null,
+  chatTimer: null,
   selectedSlug: null,
+  canSend: false,
+  chatMessages: [],
 };
 
 function kickPlayerEmbedUrl(slug) {
   return `https://player.kick.com/${encodeURIComponent(slug)}?autoplay=true`;
 }
 
-function kickChatPopoutUrl(slug) {
-  return `https://kick.com/popout/${encodeURIComponent(slug)}/chat`;
+function setSiteChatStatus(text, isError = false) {
+  const el = document.getElementById("site-chat-status");
+  if (!el) return;
+  el.textContent = text || "";
+  el.classList.toggle("is-error", Boolean(isError && text));
 }
 
-function kickChatEmbedUrl(slug) {
-  // Official Kick chat cannot be iframed. KickCX is an embeddable Kick chat with login.
-  return `https://chat.kick.cx/embed/${encodeURIComponent(slug)}`;
+function renderSiteChatMessages() {
+  const box = document.getElementById("site-chat-messages");
+  if (!box) return;
+  const messages = partnerStreamersState.chatMessages || [];
+  if (!messages.length) {
+    box.innerHTML = `<p class="site-chat__empty">Chat will show up here once messages come in.</p>`;
+    return;
+  }
+  box.innerHTML = messages
+    .map((msg) => {
+      const user = escapeHtml(msg.username || "user");
+      const content = escapeHtml(msg.content || "");
+      return `<div class="site-chat__row"><strong>${user}</strong><span>${content}</span></div>`;
+    })
+    .join("");
+  box.scrollTop = box.scrollHeight;
 }
 
-function openKickChatWindow(slug) {
-  if (!slug) return null;
-  const url = kickChatPopoutUrl(slug);
-  return window.open(
-    url,
-    `kick-chat-${slug}`,
-    "popup=yes,width=420,height=740,resizable=yes,scrollbars=yes"
-  );
+async function refreshSiteChat() {
+  const slug = partnerStreamersState.selectedSlug;
+  if (!slug) return;
+  try {
+    const response = await fetch(
+      `/api/rewards/live-partners/${encodeURIComponent(slug)}/chat`,
+      { credentials: "same-origin" }
+    );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Failed to load chat");
+
+    partnerStreamersState.canSend = Boolean(data.canSend);
+    partnerStreamersState.chatMessages = Array.isArray(data.messages)
+      ? data.messages
+      : [];
+    renderSiteChatMessages();
+
+    const hint = document.getElementById("site-chat-hint");
+    const input = document.getElementById("site-chat-input");
+    const sendBtn = document.getElementById("site-chat-send");
+    if (hint) {
+      hint.textContent = data.canSend
+        ? `as ${data.username || "you"}`
+        : "Kick sign-in needed to send";
+    }
+    if (input) {
+      input.disabled = !data.canSend;
+      input.placeholder = data.canSend
+        ? "Send a message…"
+        : "Sign in with Kick to chat";
+    }
+    if (sendBtn) sendBtn.disabled = !data.canSend;
+  } catch (error) {
+    setSiteChatStatus(error.message || "Chat failed", true);
+  }
+}
+
+function ensureSiteChatPolling() {
+  if (partnerStreamersState.chatTimer) return;
+  partnerStreamersState.chatTimer = setInterval(() => {
+    if (currentPage === "streamers" && partnerStreamersState.selectedSlug) {
+      refreshSiteChat();
+    }
+  }, 2500);
 }
 
 function openStreamerTheater(partnerOrSlug) {
@@ -2010,6 +2065,7 @@ function openStreamerTheater(partnerOrSlug) {
     };
 
   partnerStreamersState.selectedSlug = slug;
+  partnerStreamersState.chatMessages = [];
   showPage("streamers");
 
   const empty = document.getElementById("streamers-theater-empty");
@@ -2017,32 +2073,30 @@ function openStreamerTheater(partnerOrSlug) {
   const title = document.getElementById("streamers-theater-title");
   const slugEl = document.getElementById("streamers-theater-slug");
   const player = document.getElementById("streamers-player-frame");
-  const chat = document.getElementById("streamers-chat-frame");
-  const chatLink = document.getElementById("streamers-chat-link");
 
   empty?.classList.add("hidden");
   active?.classList.remove("hidden");
   if (title) title.textContent = partner.displayName || slug;
   if (slugEl) slugEl.textContent = `kick.com/${slug}`;
   if (player) player.src = kickPlayerEmbedUrl(slug);
-  if (chat) chat.src = kickChatEmbedUrl(slug);
-  if (chatLink) {
-    chatLink.href = kickChatPopoutUrl(slug);
-    chatLink.textContent = "Kick popout";
-  }
+
+  setSiteChatStatus("");
+  renderSiteChatMessages();
+  refreshSiteChat();
+  ensureSiteChatPolling();
   renderPartnerStreamersList();
 }
 
 function closeStreamerTheater() {
   partnerStreamersState.selectedSlug = null;
+  partnerStreamersState.chatMessages = [];
   const empty = document.getElementById("streamers-theater-empty");
   const active = document.getElementById("streamers-theater-active");
   const player = document.getElementById("streamers-player-frame");
-  const chat = document.getElementById("streamers-chat-frame");
   empty?.classList.remove("hidden");
   active?.classList.add("hidden");
   if (player) player.removeAttribute("src");
-  if (chat) chat.removeAttribute("src");
+  renderSiteChatMessages();
   renderPartnerStreamersList();
 }
 
@@ -2348,12 +2402,46 @@ document.getElementById("streamers-refresh-btn")?.addEventListener("click", () =
 document.getElementById("streamers-close-btn")?.addEventListener("click", () => {
   closeStreamerTheater();
 });
-document.getElementById("streamers-open-chat-btn")?.addEventListener("click", () => {
+document.getElementById("site-chat-form")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
   const slug = partnerStreamersState.selectedSlug;
-  if (!slug) return;
-  const chatWin = openKickChatWindow(slug);
-  if (!chatWin) {
-    window.location.href = kickChatPopoutUrl(slug);
+  const input = document.getElementById("site-chat-input");
+  const content = String(input?.value || "").trim();
+  if (!slug || !content) return;
+  if (!partnerStreamersState.canSend) {
+    setSiteChatStatus("Sign in with Kick on na5ty.com to send chat", true);
+    return;
+  }
+
+  const sendBtn = document.getElementById("site-chat-send");
+  if (sendBtn) sendBtn.disabled = true;
+  setSiteChatStatus("Sending…");
+  try {
+    const response = await fetch(
+      `/api/rewards/live-partners/${encodeURIComponent(slug)}/chat`,
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      }
+    );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Failed to send");
+    if (input) input.value = "";
+    if (data.message) {
+      partnerStreamersState.chatMessages = [
+        ...partnerStreamersState.chatMessages,
+        data.message,
+      ];
+      renderSiteChatMessages();
+    }
+    setSiteChatStatus("");
+    refreshSiteChat();
+  } catch (error) {
+    setSiteChatStatus(error.message || "Failed to send", true);
+  } finally {
+    if (sendBtn) sendBtn.disabled = !partnerStreamersState.canSend;
   }
 });
 document.getElementById("profile-streamers-list")?.addEventListener("click", (event) => {

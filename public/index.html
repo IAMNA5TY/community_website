@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=18" />
+    <link rel="stylesheet" href="/styles.css?v=19" />
   </head>
   <body>
     <main class="page">
@@ -232,17 +232,25 @@
                       ></iframe>
                     </div>
                     <div class="streamers-theater__chat" id="streamers-chat-panel">
-                      <iframe
-                        id="streamers-chat-frame"
-                        title="Kick chat"
-                        allow="clipboard-write; fullscreen"
-                        loading="lazy"
-                      ></iframe>
-                      <div class="streamers-chat-fallback">
-                        <button class="btn btn-secondary btn-compact" type="button" id="streamers-open-chat-btn">
-                          Pop out chat
-                        </button>
-                        <a class="streamers-chat-panel__link" id="streamers-chat-link" href="#" target="_blank" rel="noopener noreferrer">Open on Kick</a>
+                      <div class="site-chat">
+                        <div class="site-chat__head">
+                          <span>Chat</span>
+                          <span class="site-chat__hint" id="site-chat-hint"></span>
+                        </div>
+                        <div class="site-chat__messages" id="site-chat-messages"></div>
+                        <form class="site-chat__composer" id="site-chat-form">
+                          <input
+                            id="site-chat-input"
+                            type="text"
+                            maxlength="500"
+                            placeholder="Send a message…"
+                            autocomplete="off"
+                          />
+                          <button class="btn btn-kick btn-compact" type="submit" id="site-chat-send">
+                            Chat
+                          </button>
+                        </form>
+                        <p class="site-chat__status" id="site-chat-status"></p>
                       </div>
                     </div>
                   </div>
@@ -1276,6 +1284,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=85"></script>
+    <script src="/app.js?v=86"></script>
   </body>
 </html>
