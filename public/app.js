@@ -24,6 +24,7 @@ let currentPage = "profile";
 let dashboardRole = "owner";
 let allowedPages = [
   "profile",
+  "streamers",
   "overview",
   "only-pixels",
   "discord",
@@ -212,7 +213,7 @@ function showPage(page) {
   if (page === "discord") {
     refreshDiscordPanel(dashboardData);
   }
-  if (page === "profile") {
+  if (page === "streamers") {
     refreshPartnerStreamers();
     ensurePartnerStreamersPolling();
   }
@@ -1961,7 +1962,6 @@ function renderProfilePage(data) {
   }
 
   renderProfileAccountActions(provider);
-  refreshPartnerStreamers();
 }
 
 let partnerStreamersState = {
@@ -1969,7 +1969,63 @@ let partnerStreamersState = {
   filter: "live",
   loading: false,
   timer: null,
+  selectedSlug: null,
 };
+
+function kickPlayerEmbedUrl(slug) {
+  return `https://player.kick.com/${encodeURIComponent(slug)}?autoplay=true`;
+}
+
+function kickChatEmbedUrl(slug) {
+  // Kick chatroom iframe — falls back to Kick if the host blocks framing.
+  return `https://kick.com/${encodeURIComponent(slug)}/chatroom`;
+}
+
+function openStreamerTheater(partnerOrSlug) {
+  const slug =
+    typeof partnerOrSlug === "string"
+      ? partnerOrSlug
+      : partnerOrSlug?.slug;
+  if (!slug) return;
+
+  const partner =
+    (typeof partnerOrSlug === "object" && partnerOrSlug) ||
+    partnerStreamersState.partners.find((row) => row.slug === slug) || {
+      slug,
+      displayName: slug,
+    };
+
+  partnerStreamersState.selectedSlug = slug;
+  showPage("streamers");
+
+  const empty = document.getElementById("streamers-theater-empty");
+  const active = document.getElementById("streamers-theater-active");
+  const title = document.getElementById("streamers-theater-title");
+  const slugEl = document.getElementById("streamers-theater-slug");
+  const player = document.getElementById("streamers-player-frame");
+  const chat = document.getElementById("streamers-chat-frame");
+
+  empty?.classList.add("hidden");
+  active?.classList.remove("hidden");
+  if (title) title.textContent = partner.displayName || slug;
+  if (slugEl) slugEl.textContent = `kick.com/${slug}`;
+  if (player) player.src = kickPlayerEmbedUrl(slug);
+  if (chat) chat.src = kickChatEmbedUrl(slug);
+  renderPartnerStreamersList();
+}
+
+function closeStreamerTheater() {
+  partnerStreamersState.selectedSlug = null;
+  const empty = document.getElementById("streamers-theater-empty");
+  const active = document.getElementById("streamers-theater-active");
+  const player = document.getElementById("streamers-player-frame");
+  const chat = document.getElementById("streamers-chat-frame");
+  empty?.classList.remove("hidden");
+  active?.classList.add("hidden");
+  if (player) player.removeAttribute("src");
+  if (chat) chat.removeAttribute("src");
+  renderPartnerStreamersList();
+}
 
 function renderPartnerStreamersList() {
   const list = document.getElementById("profile-streamers-list");
@@ -2011,22 +2067,19 @@ function renderPartnerStreamersList() {
   list.innerHTML = shown
     .map((partner) => {
       const liveClass = partner.isLive ? "is-live" : "";
+      const selectedClass =
+        partner.slug === partnerStreamersState.selectedSlug ? "is-selected" : "";
       const slug = escapeHtml(partner.slug);
       const name = escapeHtml(partner.displayName || partner.slug);
-      const streamUrl = escapeHtml(partner.streamUrl || `https://kick.com/${partner.slug}`);
-      const chatUrl = escapeHtml(partner.chatUrl || `https://kick.com/${partner.slug}/chatroom`);
       return `
-        <div class="streamer-row">
+        <button class="streamer-row ${selectedClass}" type="button" data-watch-slug="${slug}">
           <span class="streamer-row__live ${liveClass}" title="${partner.isLive ? "Live" : "Offline"}"></span>
           <div class="streamer-row__meta">
             <span class="streamer-row__name">${name}</span>
             <span class="streamer-row__slug">kick.com/${slug}</span>
           </div>
-          <div class="streamer-row__actions">
-            <a href="${streamUrl}" target="_blank" rel="noopener noreferrer">Watch</a>
-            <a href="${chatUrl}" target="_blank" rel="noopener noreferrer">Chat</a>
-          </div>
-        </div>
+          <span class="streamer-row__watch">${partner.isLive ? "Watch" : "Open"}</span>
+        </button>
       `;
     })
     .join("");
@@ -2062,7 +2115,7 @@ async function refreshPartnerStreamers(force = false) {
 function ensurePartnerStreamersPolling() {
   if (partnerStreamersState.timer) return;
   partnerStreamersState.timer = setInterval(() => {
-    if (currentPage === "profile") refreshPartnerStreamers();
+    if (currentPage === "streamers") refreshPartnerStreamers();
   }, 60000);
 }
 
@@ -2272,6 +2325,14 @@ document.getElementById("streamers-filter-all")?.addEventListener("click", () =>
 });
 document.getElementById("streamers-refresh-btn")?.addEventListener("click", () => {
   refreshPartnerStreamers(true);
+});
+document.getElementById("streamers-close-btn")?.addEventListener("click", () => {
+  closeStreamerTheater();
+});
+document.getElementById("profile-streamers-list")?.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-watch-slug]");
+  if (!row) return;
+  openStreamerTheater(row.dataset.watchSlug);
 });
 
 leaderboardTabs.addEventListener("click", (event) => {
