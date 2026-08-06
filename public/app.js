@@ -20,9 +20,10 @@ let sessionProfile = null;
 let sessionRole = "player";
 let leaderboardPeriod = "week";
 let stakeAffiliatePeriod = "month";
-let currentPage = "overview";
+let currentPage = "profile";
 let dashboardRole = "owner";
 let allowedPages = [
+  "profile",
   "overview",
   "only-pixels",
   "discord",
@@ -38,6 +39,7 @@ let allowedPages = [
   "leaderboard",
   "settings",
 ];
+let sessionProvider = "kick";
 let hueDevicesCache = null;
 let hueDevicesRequestId = 0;
 let goveeDevicesCache = null;
@@ -140,9 +142,11 @@ function applyNavAccess(me = {}) {
   }
 
   if (!allowedPages.includes(currentPage)) {
-    currentPage = allowedPages.includes("only-pixels")
-      ? "only-pixels"
-      : allowedPages[0] || "overview";
+    currentPage = allowedPages.includes("profile")
+      ? "profile"
+      : allowedPages.includes("only-pixels")
+        ? "only-pixels"
+        : allowedPages[0] || "profile";
   }
 }
 
@@ -170,9 +174,11 @@ function filterHubCards(query = "") {
 
 function showPage(page) {
   if (allowedPages.length && !allowedPages.includes(page)) {
-    page = allowedPages.includes("only-pixels")
-      ? "only-pixels"
-      : allowedPages[0] || "overview";
+    page = allowedPages.includes("profile")
+      ? "profile"
+      : allowedPages.includes("only-pixels")
+        ? "only-pixels"
+        : allowedPages[0] || "profile";
   }
   currentPage = page;
   document.querySelectorAll(".page-view").forEach((section) => {
@@ -1816,10 +1822,119 @@ async function refreshStake() {
   await refreshStakeAffiliate();
 }
 
+function renderProfilePage(data) {
+  const profile = data?.profile || {};
+  const channel = data?.channel || {};
+  const provider = String(data?.provider || sessionProvider || "kick").toLowerCase();
+  const isTwitch = provider === "twitch";
+  const platformLabel = isTwitch ? "Twitch" : "Kick";
+
+  const platformEl = document.getElementById("sidebar-platform-name");
+  if (platformEl) platformEl.textContent = platformLabel;
+
+  document.body.classList.toggle("platform-twitch", isTwitch);
+  document.body.classList.toggle("platform-kick", !isTwitch);
+
+  const badge = document.getElementById("profile-platform-badge");
+  if (badge) badge.textContent = platformLabel;
+
+  const avatar = document.getElementById("profile-avatar");
+  if (avatar) {
+    if (profile.profileImage) {
+      avatar.src = profile.profileImage;
+      avatar.classList.remove("hidden");
+    } else {
+      avatar.removeAttribute("src");
+    }
+  }
+
+  const liveLink = document.getElementById("app-topbar-live");
+  if (liveLink) {
+    if (isTwitch) {
+      liveLink.href = profile.profileUrl || `https://twitch.tv/${profile.username || ""}`;
+      liveLink.textContent = `twitch.tv/${profile.username || ""}`;
+    } else {
+      const slug = channel.slug || profile.username || "na5ty";
+      liveLink.href = `https://kick.com/${slug}`;
+      liveLink.textContent = `kick.com/${slug}`;
+    }
+  }
+
+  const rows = document.getElementById("profile-rows");
+  if (rows) {
+    const items = [
+      { label: "Name", value: profile.displayName || profile.username || "—" },
+      { label: "Username", value: profile.username ? `@${profile.username}` : "—" },
+      { label: "Platform", value: platformLabel },
+      {
+        label: isTwitch ? "Broadcaster type" : "Language",
+        value: isTwitch
+          ? profile.broadcasterType || "Normal"
+          : channel.language || "—",
+      },
+    ];
+    rows.innerHTML = items
+      .map(
+        (item) =>
+          `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(String(item.value))}</dd></div>`
+      )
+      .join("");
+  }
+
+  const streamCard = document.getElementById("profile-stream-card");
+  const streamRows = document.getElementById("profile-stream-rows");
+  if (!streamCard || !streamRows) return;
+
+  if (isTwitch) {
+    streamRows.innerHTML = [
+      { label: "Status", value: "Twitch account linked" },
+      {
+        label: "Profile",
+        value: profile.profileUrl || `https://twitch.tv/${profile.username || ""}`,
+      },
+      {
+        label: "Note",
+        value: "Sign in with Kick for chat, rewards, and Discord sub tools.",
+      },
+    ]
+      .map(
+        (item) =>
+          `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(String(item.value))}</dd></div>`
+      )
+      .join("");
+    return;
+  }
+
+  if (!channel || (!channel.slug && !channel.title && channel.isLive == null)) {
+    streamRows.innerHTML = `<div><dt>Status</dt><dd>Channel details loading…</dd></div>`;
+    return;
+  }
+
+  streamRows.innerHTML = [
+    { label: "Live", value: channel.isLive ? "Yes" : "Offline" },
+    { label: "Title", value: channel.title || "—" },
+    { label: "Category", value: channel.category || "—" },
+    {
+      label: "Viewers",
+      value: channel.isLive ? String(channel.viewerCount ?? 0) : "—",
+    },
+    {
+      label: "Subs",
+      value: String(channel.activeSubscribers ?? "—"),
+    },
+  ]
+    .map(
+      (item) =>
+        `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(String(item.value))}</dd></div>`
+    )
+    .join("");
+}
+
 function renderDashboard(data) {
   dashboardData = data;
   const profile = data.profile;
   const isOwner = data.role === "owner" || dashboardRole === "owner";
+  sessionProvider = String(data.provider || sessionProvider || "kick").toLowerCase();
 
   applyNavAccess({
     role: data.role,
@@ -1842,6 +1957,7 @@ function renderDashboard(data) {
     webhookNotice.classList.add("hidden");
   }
 
+  renderProfilePage(data);
   renderStreamHero(data);
   renderStats(data);
   renderChannelDetails(data.channel);
@@ -1884,15 +2000,22 @@ function renderDashboard(data) {
 function showLogin() {
   sessionProfile = null;
   sessionRole = "player";
+  sessionProvider = "kick";
   onlyPixelsState.signedIn = false;
   onlyPixelsState.currentUsername = "";
   dashboardView.classList.add("hidden");
   loginView.classList.remove("hidden");
-  document.body.classList.remove("is-dashboard", "nav-open");
+  document.body.classList.remove(
+    "is-dashboard",
+    "nav-open",
+    "platform-twitch",
+    "platform-kick"
+  );
 }
 
 function showDashboardShell(me) {
   const profile = me?.profile || {};
+  sessionProvider = String(me?.provider || "kick").toLowerCase();
   document.getElementById("display-name").textContent =
     profile.displayName || profile.username || "Streamer";
   document.getElementById("channel-meta").textContent = profile.username
@@ -1900,6 +2023,11 @@ function showDashboardShell(me) {
     : "";
   const avatar = document.getElementById("avatar");
   if (avatar && profile.profileImage) avatar.src = profile.profileImage;
+  renderProfilePage({
+    provider: sessionProvider,
+    profile,
+    channel: null,
+  });
   loginView.classList.add("hidden");
   dashboardView.classList.remove("hidden");
   document.body.classList.add("is-dashboard");
@@ -1918,11 +2046,13 @@ async function loadDashboard() {
   applyNavAccess(me);
   sessionProfile = me.profile || null;
   sessionRole = me.role || (me.isOwner ? "owner" : "player");
+  sessionProvider = String(me.provider || "kick").toLowerCase();
   showDashboardShell(me);
 
   dashboardData = dashboardData || {};
   dashboardData.profile = me.profile;
   dashboardData.role = sessionRole;
+  dashboardData.provider = sessionProvider;
   if (me.kickRewards) dashboardData.kickRewards = me.kickRewards;
   refreshOnlyPixels(dashboardData);
   showPage(currentPage);
@@ -1972,7 +2102,7 @@ document.addEventListener("click", (event) => {
 
 mainNav.addEventListener("click", (event) => {
   const link = event.target.closest(".nav-link");
-  if (!link) return;
+  if (!link || link.id === "logout-btn" || !link.dataset.page) return;
   showPage(link.dataset.page);
   if (link.dataset.page === "slots") refreshSlots();
   if (link.dataset.page === "drinking") refreshDrinking();

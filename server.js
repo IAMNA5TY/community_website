@@ -82,6 +82,10 @@ function kickRedirectUri(req) {
   return `${publicBaseUrl(req)}/auth/kick/callback`;
 }
 
+function twitchRedirectUri(req) {
+  return `${publicBaseUrl(req)}/auth/twitch/callback`;
+}
+
 function getAllowedBroadcasterIds() {
   const raw = String(process.env.ALLOWED_BROADCASTER_IDS ?? "*").trim();
   if (!raw || raw === "*") return null;
@@ -107,6 +111,24 @@ function isAllowedBroadcaster(broadcasterId, username) {
   return allowedNames.includes(String(username || "").toLowerCase());
 }
 
+function isAllowedTwitchUser(twitchUserId, username) {
+  const allowedIds = String(process.env.ALLOWED_TWITCH_USER_IDS || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  if (allowedIds.length && allowedIds.includes(String(twitchUserId))) {
+    return true;
+  }
+
+  const allowedNames = String(process.env.ALLOWED_TWITCH_USERNAMES || "*")
+    .split(",")
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowedNames.length || allowedNames.includes("*")) return true;
+
+  return allowedNames.includes(String(username || "").toLowerCase());
+}
+
 const config = {
   kick: {
     clientId: process.env.KICK_CLIENT_ID,
@@ -116,6 +138,14 @@ const config = {
     userUrl: "https://api.kick.com/public/v1/users",
     scope:
       "user:read channel:read channel:rewards:read kicks:read events:subscribe chat:write",
+  },
+  twitch: {
+    clientId: process.env.TWITCH_CLIENT_ID,
+    clientSecret: process.env.TWITCH_CLIENT_SECRET,
+    authorizeUrl: "https://id.twitch.tv/oauth2/authorize",
+    tokenUrl: "https://id.twitch.tv/oauth2/token",
+    userUrl: "https://api.twitch.tv/helix/users",
+    scope: "user:read:email",
   },
 };
 
@@ -210,9 +240,9 @@ async function exchangeForm(url, body) {
   return data;
 }
 
-function saveUserSession(req, profile, tokens) {
+function saveUserSession(req, profile, tokens, provider = "kick") {
   req.session.user = {
-    provider: "kick",
+    provider,
     profile,
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token || null,
@@ -221,6 +251,9 @@ function saveUserSession(req, profile, tokens) {
       : null,
     scope: tokens.scope || null,
   };
+
+  // Kick broadcaster token store powers chat/webhooks — Twitch tokens stay session-only.
+  if (provider !== "kick") return;
 
   try {
     tokenStore.saveBroadcasterToken(profile.id, {
@@ -514,6 +547,14 @@ app.get("/api/auth/kick-info", (req, res) => {
   res.json({
     configured: Boolean(config.kick.clientId),
     redirectUri: kickRedirectUri(req),
+    baseUrl: publicBaseUrl(req),
+  });
+});
+
+app.get("/api/auth/twitch-info", (req, res) => {
+  res.json({
+    configured: Boolean(config.twitch.clientId && config.twitch.clientSecret),
+    redirectUri: twitchRedirectUri(req),
     baseUrl: publicBaseUrl(req),
   });
 });
@@ -1161,12 +1202,102 @@ app.get("/api/leaderboards", async (req, res) => {
 });
 
 app.get("/api/dashboard", async (req, res) => {
-  if (!req.session.user || req.session.user.provider !== "kick") {
-    return res.status(401).json({ error: "Not signed in with Kick" });
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Not signed in" });
   }
 
   const user = req.session.user;
+  const provider = String(user.provider || "kick").toLowerCase();
   const isOwner = dashboardAccess.isDashboardOwner(user);
+
+  if (provider === "twitch") {
+    return res.json({
+      provider: "twitch",
+      role: isOwner ? "owner" : "player",
+      allowedPages: dashboardAccess.getAllowedPages(user),
+      profile: user.profile,
+      channel: null,
+      livestreamStats: null,
+      chat: { messages: [], subscriptions: [], stats: {} },
+      kickRewards: null,
+      registration: null,
+      webhookReady: false,
+      webhookError: null,
+      webhookUrl: WEBHOOK_URL,
+      webhookNote:
+        "Signed in with Twitch. Kick chat, rewards, and Discord sub tools need Kick sign-in.",
+      widgetsUrls: {
+        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
+        streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
+        nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
+        camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=12`,
+        camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=12`,
+        camShadow: `${BASE_URL}/widgets/cam-drop-shadow.png`,
+      },
+      workout: isOwner ? workoutState.loadForDisplay() : null,
+      slots: isOwner ? slotsState.load() : null,
+      slotsTimer: isOwner ? slotsTimerState.load() : null,
+      drinking: isOwner ? drinkingState.load() : null,
+      slotsUrls: isOwner
+        ? {
+            widget: `${BASE_URL}/slots/slots-widget.html?obs=1&v=7`,
+            pickAlert: `${BASE_URL}/slots/slots-pick.html?obs=1&v=10`,
+            timer: `${BASE_URL}/slots/slots-timer.html?obs=1&v=7`,
+            controlPanel: `${BASE_URL}/slots/slots-control-panel.html`,
+            controlWidget: `${BASE_URL}/slots/slots-control-panel.html?embed=1`,
+          }
+        : null,
+      drinkingUrls: isOwner
+        ? {
+            beerCounter: `${BASE_URL}/drinking/beer-counter.html`,
+            shotgunCam: `${BASE_URL}/drinking/shotgun-cam.html?obs=1`,
+            shotgunAlert: `${BASE_URL}/drinking/shotgun-alert.html?obs=1`,
+            sceneWidget: `${BASE_URL}/drinking/widget-scene.html`,
+            controlPanel: `${BASE_URL}/drinking/control-panel.html`,
+            controlWidget: `${BASE_URL}/drinking/control-panel.html?embed=1`,
+          }
+        : null,
+      stakeUrls: isOwner
+        ? {
+            raceLeaderboard: `${BASE_URL}/stake/stake-race.html`,
+            affiliateLeaderboard: `${BASE_URL}/stake/stake-affiliate.html`,
+          }
+        : null,
+      obsUrls: isOwner
+        ? {
+            controlPanel: `${BASE_URL}/workout/control-panel.html`,
+            controlWidget: `${BASE_URL}/workout/control-panel.html?embed=1`,
+            sceneWidget: `${BASE_URL}/workout/widget-scene.html`,
+            startingSoon: `${BASE_URL}/workout/starting-soon.html?obs=1&v=4`,
+            startingSoonWidget: `${BASE_URL}/workout/starting-soon-widget.html`,
+            treadmill: `${BASE_URL}/workout/treadmill-tracker.html?obs=1&v=14`,
+            stats: `${BASE_URL}/workout/workout-stats.html?obs=1&v=14`,
+            rules: `${BASE_URL}/workout/rules-banner.html?obs=1&v=12`,
+            subAlert: `${BASE_URL}/workout/sub-alert.html?obs=1&v=14`,
+            scene: `${BASE_URL}/workout/just-chatting.html?obs=1&v=14`,
+          }
+        : null,
+      lighting: isOwner
+        ? {
+            hue: {
+              ...hue.getPublicStatus(DEFAULT_BROADCASTER_ID),
+              defaultBridgeIp: process.env.HUE_BRIDGE_IP || "192.168.1.177",
+            },
+            govee: govee.getPublicStatus(DEFAULT_BROADCASTER_ID),
+            layout: lightingLayout.getLayout(DEFAULT_BROADCASTER_ID),
+            sync: {
+              ...lightingSyncConfig.getSettings(DEFAULT_BROADCASTER_ID),
+              runtime: spotifyHueSync.getRuntimeStatus(),
+              ready: false,
+            },
+          }
+        : null,
+    });
+  }
+
+  if (provider !== "kick") {
+    return res.status(401).json({ error: "Not signed in with Kick" });
+  }
 
   try {
     if (!isOwner) {
@@ -1181,6 +1312,7 @@ app.get("/api/dashboard", async (req, res) => {
         : null;
 
       return res.json({
+        provider: "kick",
         role: "player",
         allowedPages: dashboardAccess.getAllowedPages(user),
         profile: dashboard.profile,
@@ -1216,6 +1348,7 @@ app.get("/api/dashboard", async (req, res) => {
 
     res.json({
       ...dashboard,
+      provider: "kick",
       role: "owner",
       kickRewards,
       registration,
@@ -2746,7 +2879,8 @@ app.get("/auth/kick/callback", async (req, res) => {
         profileImage: kickUser.profile_picture,
         profileUrl: `https://kick.com/${kickUser.name}`,
       },
-      tokens
+      tokens,
+      "kick"
     );
 
     const isOwner = dashboardAccess.isDashboardOwner({
@@ -2781,6 +2915,118 @@ app.get("/auth/kick/callback", async (req, res) => {
     }
 
     redirectWithSession(req, res, isOwner ? "/" : "/#only-pixels");
+  } catch (err) {
+    redirectWithSession(req, res, `/?error=${encodeURIComponent(err.message)}`);
+  }
+});
+
+app.get("/auth/twitch", (req, res) => {
+  if (!config.twitch.clientId || !config.twitch.clientSecret) {
+    return res.redirect("/?error=twitch_not_configured");
+  }
+
+  const state = randomState();
+  const redirectUri = twitchRedirectUri(req);
+  req.session.oauthState = {
+    provider: "twitch",
+    state,
+    redirectUri,
+  };
+
+  const params = new URLSearchParams({
+    client_id: config.twitch.clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: config.twitch.scope,
+    state,
+    force_verify: "true",
+  });
+
+  redirectWithSession(req, res, `${config.twitch.authorizeUrl}?${params}`);
+});
+
+app.get("/auth/twitch/callback", async (req, res) => {
+  const { code, state, error, error_description: errorDescription } = req.query;
+
+  if (error) {
+    return res.redirect(
+      `/?error=${encodeURIComponent(errorDescription || error)}`
+    );
+  }
+
+  const saved = req.session.oauthState;
+  if (!saved || saved.provider !== "twitch" || saved.state !== state) {
+    return res.redirect("/?error=invalid_state");
+  }
+
+  const redirectUri = saved.redirectUri || twitchRedirectUri(req);
+  delete req.session.oauthState;
+
+  try {
+    const tokens = await exchangeForm(config.twitch.tokenUrl, {
+      client_id: config.twitch.clientId,
+      client_secret: config.twitch.clientSecret,
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+    });
+
+    const userResponse = await fetch(config.twitch.userUrl, {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+        "Client-Id": config.twitch.clientId,
+      },
+    });
+
+    const userData = await userResponse.json();
+    if (!userResponse.ok || !userData.data?.[0]) {
+      throw new Error("Failed to load Twitch profile");
+    }
+
+    const twitchUser = userData.data[0];
+    const userId = String(twitchUser.id);
+    const username = twitchUser.login;
+    const displayName = twitchUser.display_name || username;
+    const signInEntry = {
+      broadcasterId: userId,
+      username,
+      displayName,
+      profileImage: twitchUser.profile_image_url,
+      ip: req.ip,
+      provider: "twitch",
+    };
+
+    if (!isAllowedTwitchUser(userId, username)) {
+      signInLog.recordSignIn({ ...signInEntry, allowed: false });
+      return res.redirect("/?error=access_denied");
+    }
+
+    await new Promise((resolve, reject) => {
+      req.session.regenerate((err) => (err ? reject(err) : resolve()));
+    });
+
+    saveUserSession(
+      req,
+      {
+        id: userId,
+        username,
+        displayName,
+        email: twitchUser.email || null,
+        profileImage: twitchUser.profile_image_url,
+        profileUrl: `https://twitch.tv/${username}`,
+        description: twitchUser.description || null,
+        broadcasterType: twitchUser.broadcaster_type || "",
+        viewCount: twitchUser.view_count ?? null,
+      },
+      tokens,
+      "twitch"
+    );
+
+    const isOwner = dashboardAccess.isDashboardOwner(req.session.user);
+    req.session.dashboardRole = isOwner ? "owner" : "player";
+    signInLog.recordSignIn({ ...signInEntry, allowed: true });
+
+    redirectWithSession(req, res, "/");
   } catch (err) {
     redirectWithSession(req, res, `/?error=${encodeURIComponent(err.message)}`);
   }
@@ -3148,5 +3394,8 @@ webhook.loadPublicKey().then(async () => {
     console.log(`Stream alerts: ${BASE_URL}/widgets/stream-alerts.html?obs=1`);
     console.log(`Cam overlay: ${BASE_URL}/widgets/cam-overlay.html?obs=1`);
     if (!config.kick.clientId) console.warn("KICK_CLIENT_ID is not set");
+    if (!config.twitch.clientId || !config.twitch.clientSecret) {
+      console.warn("TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET not set — Twitch login disabled");
+    }
   });
 });
