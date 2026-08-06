@@ -2307,11 +2307,16 @@ function renderSiteChatInteract() {
 
   const points = partnerStreamersState.points;
   if (points && typeof points.value === "number") {
+    const source = String(points.source || "");
+    const synced =
+      source === "balance" || source === "sync" || source === "game"
+        ? " · from balance"
+        : " · estimate — type balance to sync";
     const spent = Number(points.spent || 0);
-    const spentNote = spent > 0 ? ` · ${spent} spent on commands` : "";
+    const spentNote = spent > 0 && source === "computed" ? ` · ${spent} spent` : "";
     pointsEl.innerHTML = `
       <span class="site-chat__points-value">${escapeHtml(String(points.value))}</span>
-      <span class="site-chat__points-label">${escapeHtml(points.label || "Kick Points")} on this stream${escapeHtml(spentNote)}</span>
+      <span class="site-chat__points-label">${escapeHtml(points.label || "Kick Points")} on this stream${escapeHtml(synced)}${escapeHtml(spentNote)}</span>
     `;
   } else if (partnerStreamersState.canSend) {
     pointsEl.innerHTML = `<span class="site-chat__points-label">Kick Points load with chat…</span>`;
