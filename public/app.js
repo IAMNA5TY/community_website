@@ -1989,7 +1989,7 @@ function setSiteChatStatus(text, isError = false) {
 function renderSiteChatMessages() {
   const box = document.getElementById("site-chat-messages");
   if (!box) return;
-  const messages = partnerStreamersState.chatMessages || [];
+  const messages = (partnerStreamersState.chatMessages || []).slice(-20);
   if (!messages.length) {
     box.innerHTML = `<p class="site-chat__empty">Waiting for chat…</p>`;
     return;
@@ -2433,7 +2433,7 @@ document.getElementById("site-chat-form")?.addEventListener("submit", async (eve
       partnerStreamersState.chatMessages = [
         ...partnerStreamersState.chatMessages,
         data.message,
-      ];
+      ].slice(-20);
       renderSiteChatMessages();
     }
     setSiteChatStatus("");
