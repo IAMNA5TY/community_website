@@ -1976,9 +1976,18 @@ function kickPlayerEmbedUrl(slug) {
   return `https://player.kick.com/${encodeURIComponent(slug)}?autoplay=true`;
 }
 
-function kickChatEmbedUrl(slug) {
-  // Kick chatroom iframe — falls back to Kick if the host blocks framing.
-  return `https://kick.com/${encodeURIComponent(slug)}/chatroom`;
+function kickChatPopoutUrl(slug) {
+  return `https://kick.com/popout/${encodeURIComponent(slug)}/chat`;
+}
+
+function openKickChatWindow(slug) {
+  if (!slug) return null;
+  const url = kickChatPopoutUrl(slug);
+  return window.open(
+    url,
+    `kick-chat-${slug}`,
+    "popup=yes,width=420,height=740,resizable=yes,scrollbars=yes"
+  );
 }
 
 function openStreamerTheater(partnerOrSlug) {
@@ -2003,14 +2012,27 @@ function openStreamerTheater(partnerOrSlug) {
   const title = document.getElementById("streamers-theater-title");
   const slugEl = document.getElementById("streamers-theater-slug");
   const player = document.getElementById("streamers-player-frame");
-  const chat = document.getElementById("streamers-chat-frame");
+  const chatLink = document.getElementById("streamers-chat-link");
 
   empty?.classList.add("hidden");
   active?.classList.remove("hidden");
   if (title) title.textContent = partner.displayName || slug;
   if (slugEl) slugEl.textContent = `kick.com/${slug}`;
   if (player) player.src = kickPlayerEmbedUrl(slug);
-  if (chat) chat.src = kickChatEmbedUrl(slug);
+  if (chatLink) {
+    chatLink.href = `https://kick.com/${encodeURIComponent(slug)}`;
+    chatLink.textContent = `kick.com/${slug}`;
+  }
+
+  // Kick refuses chat iframes — open a real Kick chat window for typing.
+  const chatWin = openKickChatWindow(slug);
+  if (!chatWin) {
+    const note = document.querySelector(".streamers-chat-panel__note");
+    if (note) {
+      note.textContent =
+        "Popup blocked — click Open chat (and allow popups for na5ty.com).";
+    }
+  }
   renderPartnerStreamersList();
 }
 
@@ -2019,11 +2041,9 @@ function closeStreamerTheater() {
   const empty = document.getElementById("streamers-theater-empty");
   const active = document.getElementById("streamers-theater-active");
   const player = document.getElementById("streamers-player-frame");
-  const chat = document.getElementById("streamers-chat-frame");
   empty?.classList.remove("hidden");
   active?.classList.add("hidden");
   if (player) player.removeAttribute("src");
-  if (chat) chat.removeAttribute("src");
   renderPartnerStreamersList();
 }
 
@@ -2328,6 +2348,14 @@ document.getElementById("streamers-refresh-btn")?.addEventListener("click", () =
 });
 document.getElementById("streamers-close-btn")?.addEventListener("click", () => {
   closeStreamerTheater();
+});
+document.getElementById("streamers-open-chat-btn")?.addEventListener("click", () => {
+  const slug = partnerStreamersState.selectedSlug;
+  if (!slug) return;
+  const chatWin = openKickChatWindow(slug);
+  if (!chatWin) {
+    window.location.href = kickChatPopoutUrl(slug);
+  }
 });
 document.getElementById("profile-streamers-list")?.addEventListener("click", (event) => {
   const row = event.target.closest("[data-watch-slug]");

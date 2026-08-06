@@ -837,13 +837,51 @@ body.platform-twitch .profile-card__platform-badge {
   min-height: 420px;
 }
 
-.streamers-theater__player iframe,
-.streamers-theater__chat iframe {
+.streamers-theater__player iframe {
   width: 100%;
   height: 100%;
   min-height: 420px;
   border: 0;
   display: block;
+}
+
+.streamers-chat-panel {
+  height: 100%;
+  min-height: 420px;
+  padding: 20px 18px;
+  background: #121212;
+  display: grid;
+  align-content: center;
+  gap: 12px;
+}
+
+.streamers-chat-panel__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--kick);
+}
+
+.streamers-chat-panel__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.streamers-chat-panel .btn {
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.streamers-chat-panel__link {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.streamers-chat-panel__link:hover {
+  color: var(--kick);
 }
 
 @media (max-width: 980px) {

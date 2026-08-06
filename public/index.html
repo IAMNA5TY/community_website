@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=16" />
+    <link rel="stylesheet" href="/styles.css?v=17" />
   </head>
   <body>
     <main class="page">
@@ -231,13 +231,19 @@
                         loading="lazy"
                       ></iframe>
                     </div>
-                    <div class="streamers-theater__chat">
-                      <iframe
-                        id="streamers-chat-frame"
-                        title="Kick chat"
-                        allow="clipboard-write"
-                        loading="lazy"
-                      ></iframe>
+                    <div class="streamers-theater__chat" id="streamers-chat-panel">
+                      <div class="streamers-chat-panel">
+                        <p class="streamers-chat-panel__title">Kick chat</p>
+                        <p class="streamers-chat-panel__note">
+                          Kick blocks chat inside other sites, so it opens in a Kick window where you can sign in and send messages.
+                        </p>
+                        <button class="btn btn-kick" type="button" id="streamers-open-chat-btn">
+                          Open chat
+                        </button>
+                        <a class="streamers-chat-panel__link" id="streamers-chat-link" href="#" target="_blank" rel="noopener noreferrer">
+                          Open on kick.com
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1270,6 +1276,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=83"></script>
+    <script src="/app.js?v=84"></script>
   </body>
 </html>
