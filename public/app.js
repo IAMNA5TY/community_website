@@ -212,6 +212,10 @@ function showPage(page) {
   if (page === "discord") {
     refreshDiscordPanel(dashboardData);
   }
+  if (page === "profile") {
+    refreshPartnerStreamers();
+    ensurePartnerStreamersPolling();
+  }
 }
 
 function renderStreamHero(data) {
@@ -1957,6 +1961,109 @@ function renderProfilePage(data) {
   }
 
   renderProfileAccountActions(provider);
+  refreshPartnerStreamers();
+}
+
+let partnerStreamersState = {
+  partners: [],
+  filter: "live",
+  loading: false,
+  timer: null,
+};
+
+function renderPartnerStreamersList() {
+  const list = document.getElementById("profile-streamers-list");
+  const meta = document.getElementById("profile-streamers-meta");
+  if (!list || !meta) return;
+
+  const partners = partnerStreamersState.partners || [];
+  const liveCount = partners.filter((p) => p.isLive).length;
+  const shown =
+    partnerStreamersState.filter === "live"
+      ? partners.filter((p) => p.isLive)
+      : partners;
+
+  meta.textContent = `${liveCount} live · ${partners.length} approved`;
+
+  document.getElementById("streamers-filter-live")?.classList.toggle(
+    "active",
+    partnerStreamersState.filter === "live"
+  );
+  document.getElementById("streamers-filter-all")?.classList.toggle(
+    "active",
+    partnerStreamersState.filter === "all"
+  );
+
+  if (partnerStreamersState.loading && !partners.length) {
+    list.innerHTML = `<p class="streamer-row__empty">Loading partner streamers…</p>`;
+    return;
+  }
+
+  if (!shown.length) {
+    list.innerHTML = `<p class="streamer-row__empty">${
+      partnerStreamersState.filter === "live"
+        ? "Nobody is live right now — switch to All to browse partners."
+        : "No approved partners yet."
+    }</p>`;
+    return;
+  }
+
+  list.innerHTML = shown
+    .map((partner) => {
+      const liveClass = partner.isLive ? "is-live" : "";
+      const slug = escapeHtml(partner.slug);
+      const name = escapeHtml(partner.displayName || partner.slug);
+      const streamUrl = escapeHtml(partner.streamUrl || `https://kick.com/${partner.slug}`);
+      const chatUrl = escapeHtml(partner.chatUrl || `https://kick.com/${partner.slug}/chatroom`);
+      return `
+        <div class="streamer-row">
+          <span class="streamer-row__live ${liveClass}" title="${partner.isLive ? "Live" : "Offline"}"></span>
+          <div class="streamer-row__meta">
+            <span class="streamer-row__name">${name}</span>
+            <span class="streamer-row__slug">kick.com/${slug}</span>
+          </div>
+          <div class="streamer-row__actions">
+            <a href="${streamUrl}" target="_blank" rel="noopener noreferrer">Watch</a>
+            <a href="${chatUrl}" target="_blank" rel="noopener noreferrer">Chat</a>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function refreshPartnerStreamers(force = false) {
+  const list = document.getElementById("profile-streamers-list");
+  if (!list) return;
+  if (partnerStreamersState.loading) return;
+
+  partnerStreamersState.loading = true;
+  if (!partnerStreamersState.partners.length) renderPartnerStreamersList();
+
+  try {
+    const url = force
+      ? `/api/rewards/live-partners?t=${Date.now()}`
+      : "/api/rewards/live-partners";
+    const response = await fetch(url, { credentials: "same-origin" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to load partners");
+    }
+    partnerStreamersState.partners = Array.isArray(data.partners) ? data.partners : [];
+  } catch (error) {
+    const meta = document.getElementById("profile-streamers-meta");
+    if (meta) meta.textContent = error.message || "Failed to load";
+  } finally {
+    partnerStreamersState.loading = false;
+    renderPartnerStreamersList();
+  }
+}
+
+function ensurePartnerStreamersPolling() {
+  if (partnerStreamersState.timer) return;
+  partnerStreamersState.timer = setInterval(() => {
+    if (currentPage === "profile") refreshPartnerStreamers();
+  }, 60000);
 }
 
 function renderDashboard(data) {
@@ -2153,6 +2260,18 @@ hubSearchInput?.addEventListener("input", (event) => {
 logoutBtn.addEventListener("click", async () => {
   await fetch("/auth/logout", { method: "POST" });
   showLogin();
+});
+
+document.getElementById("streamers-filter-live")?.addEventListener("click", () => {
+  partnerStreamersState.filter = "live";
+  renderPartnerStreamersList();
+});
+document.getElementById("streamers-filter-all")?.addEventListener("click", () => {
+  partnerStreamersState.filter = "all";
+  renderPartnerStreamersList();
+});
+document.getElementById("streamers-refresh-btn")?.addEventListener("click", () => {
+  refreshPartnerStreamers(true);
 });
 
 leaderboardTabs.addEventListener("click", (event) => {

@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=14" />
+    <link rel="stylesheet" href="/styles.css?v=15" />
   </head>
   <body>
     <main class="page">
@@ -182,6 +182,18 @@
                 <h2 class="profile-card__title profile-card__title--sm">Account</h2>
                 <p class="profile-account__note" id="profile-account-note"></p>
                 <div class="profile-account__actions" id="profile-account-actions"></div>
+              </div>
+              <div class="card profile-card profile-card--wide" id="profile-streamers-card">
+                <div class="profile-streamers__head">
+                  <h2 class="profile-card__title profile-card__title--sm">Partner streamers</h2>
+                  <p class="profile-streamers__meta" id="profile-streamers-meta">Loading…</p>
+                </div>
+                <div class="profile-streamers__toolbar">
+                  <button class="btn btn-secondary btn-compact active" type="button" data-streamers-filter="live" id="streamers-filter-live">Live</button>
+                  <button class="btn btn-secondary btn-compact" type="button" data-streamers-filter="all" id="streamers-filter-all">All</button>
+                  <button class="btn btn-secondary btn-compact" type="button" id="streamers-refresh-btn">Refresh</button>
+                </div>
+                <div class="profile-streamers__list" id="profile-streamers-list"></div>
               </div>
             </div>
           </section>
@@ -1211,6 +1223,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=81"></script>
+    <script src="/app.js?v=82"></script>
   </body>
 </html>

@@ -551,7 +551,7 @@ body.platform-twitch .profile-card__platform-badge {
 }
 
 .profile-stack {
-  width: min(420px, 100%);
+  width: min(520px, 100%);
   display: grid;
   gap: 18px;
 }
@@ -665,6 +665,121 @@ body.platform-twitch .profile-card__platform-badge {
   justify-content: center;
   border-radius: 12px;
   text-decoration: none;
+}
+
+.profile-streamers__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-streamers__head .profile-card__title {
+  margin-bottom: 0;
+}
+
+.profile-streamers__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.profile-streamers__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.profile-streamers__toolbar .btn.active {
+  border-color: rgba(83, 252, 24, 0.45);
+  color: var(--kick);
+  background: rgba(83, 252, 24, 0.1);
+}
+
+.profile-streamers__list {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.streamer-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #242424;
+  background: #101010;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.streamer-row:hover {
+  border-color: rgba(83, 252, 24, 0.35);
+  background: #141814;
+}
+
+.streamer-row__live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3a3a3a;
+}
+
+.streamer-row__live.is-live {
+  background: #ff3b3b;
+  box-shadow: 0 0 0 4px rgba(255, 59, 59, 0.18);
+}
+
+.streamer-row__meta {
+  min-width: 0;
+}
+
+.streamer-row__name {
+  display: block;
+  font-weight: 650;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.streamer-row__slug {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.streamer-row__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.streamer-row__actions a {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--kick-soft, var(--kick));
+  text-decoration: none;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid #2a2a2a;
+}
+
+.streamer-row__actions a:hover {
+  border-color: rgba(83, 252, 24, 0.4);
+}
+
+.streamer-row__empty {
+  margin: 0;
+  padding: 18px 8px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.92rem;
 }
 
 .app-topbar {
