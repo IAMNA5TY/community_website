@@ -1987,7 +1987,21 @@ function setSiteChatStatus(text, isError = false) {
 }
 
 function renderSiteChatMessages() {
-  // Message list is hidden — keep video layout clean. Status/composer still work.
+  const box = document.getElementById("site-chat-messages");
+  if (!box) return;
+  const messages = partnerStreamersState.chatMessages || [];
+  if (!messages.length) {
+    box.innerHTML = `<p class="site-chat__empty">Waiting for chat…</p>`;
+    return;
+  }
+  box.innerHTML = messages
+    .map((msg) => {
+      const user = escapeHtml(msg.username || "user");
+      const content = escapeHtml(msg.content || "");
+      return `<div class="site-chat__row"><strong>${user}</strong><span>${content}</span></div>`;
+    })
+    .join("");
+  box.scrollTop = box.scrollHeight;
 }
 
 async function refreshSiteChat() {

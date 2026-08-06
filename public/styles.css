@@ -834,7 +834,7 @@ body.platform-twitch .profile-card__platform-badge {
 
 .streamers-theater__stage {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 0;
   min-height: 0;
   height: 100%;
@@ -854,28 +854,80 @@ body.platform-twitch .profile-card__platform-badge {
 .streamers-theater__player iframe {
   width: 100%;
   height: 100%;
-  min-height: min(72vh, 760px);
+  min-height: min(70vh, 720px);
   border: 0;
   display: block;
   background: #0a0a0a;
 }
 
-.streamers-theater__chatbar {
-  border-top: 1px solid #222;
-  background: #121212;
-  padding: 10px 12px 8px;
+.streamers-theater__chat {
+  border-left: 1px solid #222;
+  background: #0f0f0f;
+  min-height: 0;
+  display: grid;
 }
 
-.site-chat__composer--bar {
+.site-chat {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100%;
+  min-height: min(70vh, 720px);
+}
+
+.site-chat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #222;
+  font-weight: 700;
+}
+
+.site-chat__hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.site-chat__messages {
+  overflow: auto;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.site-chat__row {
+  display: grid;
+  gap: 2px;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.site-chat__row strong {
+  color: var(--kick);
+  font-size: 0.82rem;
+}
+
+.site-chat__empty {
+  margin: 24px 8px 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.site-chat__composer {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 10px;
+  border-top: 1px solid #222;
+  background: #121212;
 }
 
-.site-chat__composer--bar input {
+.site-chat__composer input {
   width: 100%;
   border: 1px solid #2a2a2a;
   border-radius: 10px;
@@ -885,14 +937,14 @@ body.platform-twitch .profile-card__platform-badge {
   font: inherit;
 }
 
-.site-chat__composer--bar input:disabled {
+.site-chat__composer input:disabled {
   opacity: 0.55;
 }
 
 .site-chat__status {
-  margin: 6px 0 0;
+  margin: 0;
   min-height: 1.1em;
-  padding: 0;
+  padding: 0 12px 8px;
   color: var(--muted);
   font-size: 0.78rem;
 }
@@ -915,8 +967,18 @@ body.platform-twitch .profile-card__platform-badge {
     min-height: auto;
   }
 
-  .streamers-theater__player iframe {
-    min-height: 52vh;
+  .streamers-theater__stage {
+    grid-template-columns: 1fr;
+  }
+
+  .streamers-theater__chat {
+    border-left: 0;
+    border-top: 1px solid #222;
+  }
+
+  .streamers-theater__player iframe,
+  .site-chat {
+    min-height: 360px;
   }
 }
 
