@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=24" />
+    <link rel="stylesheet" href="/styles.css?v=25" />
   </head>
   <body>
     <main class="page">
@@ -194,7 +194,7 @@
             <header class="page-header">
               <div>
                 <h1>Partner streamers</h1>
-                <p class="subtitle">Watch approved partners live — stream + chat together on this page</p>
+                <p class="subtitle">Click partners to add streams (up to 12) — chat follows the focused tile</p>
               </div>
               <p class="profile-streamers__meta" id="profile-streamers-meta">Loading…</p>
             </header>
@@ -211,7 +211,7 @@
 
               <div class="streamers-theater card" id="streamers-theater">
                 <div class="streamers-theater__empty" id="streamers-theater-empty">
-                  <p>Pick a live partner to watch here.</p>
+                  <p>Pick a partner to start watching. Click again to add more windows (max 12).</p>
                 </div>
                 <div class="streamers-theater__active hidden" id="streamers-theater-active">
                   <div class="streamers-theater__top">
@@ -219,19 +219,11 @@
                       <h2 id="streamers-theater-title">Streamer</h2>
                       <p class="subtitle" id="streamers-theater-slug"></p>
                     </div>
-                    <button class="btn btn-secondary btn-compact" type="button" id="streamers-close-btn">Close</button>
+                    <button class="btn btn-secondary btn-compact" type="button" id="streamers-close-btn">Close all</button>
                   </div>
                   <div class="streamers-theater__stage">
                     <div class="streamers-theater__main">
-                      <div class="streamers-theater__player">
-                        <iframe
-                          id="streamers-player-frame"
-                          title="Kick stream"
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          allowfullscreen
-                          loading="lazy"
-                        ></iframe>
-                      </div>
+                      <div class="streamers-player-grid" id="streamers-player-grid" data-count="0"></div>
                       <div class="site-chat__interact" id="site-chat-interact">
                         <div class="site-chat__points" id="site-chat-points"></div>
                         <div class="site-chat__cmds" id="site-chat-cmds"></div>
@@ -1290,6 +1282,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=92"></script>
+    <script src="/app.js?v=93"></script>
   </body>
 </html>

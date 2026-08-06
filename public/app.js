@@ -1970,6 +1970,8 @@ let partnerStreamersState = {
   loading: false,
   timer: null,
   chatTimer: null,
+  tiles: [],
+  focusedTileId: null,
   selectedSlug: null,
   canSend: false,
   chatMessages: [],
@@ -1977,8 +1979,225 @@ let partnerStreamersState = {
   points: null,
 };
 
+const MAX_STREAM_TILES = 12;
+let streamTileSeq = 0;
+
 function kickPlayerEmbedUrl(slug) {
   return `https://player.kick.com/${encodeURIComponent(slug)}?autoplay=true`;
+}
+
+function getFocusedStreamTile() {
+  const { tiles, focusedTileId } = partnerStreamersState;
+  return tiles.find((tile) => tile.id === focusedTileId) || tiles[tiles.length - 1] || null;
+}
+
+function updateStreamerTheaterHeader() {
+  const title = document.getElementById("streamers-theater-title");
+  const slugEl = document.getElementById("streamers-theater-slug");
+  const focused = getFocusedStreamTile();
+  const count = partnerStreamersState.tiles.length;
+  if (!focused) {
+    if (title) title.textContent = "Streamer";
+    if (slugEl) slugEl.textContent = "";
+    return;
+  }
+  if (title) {
+    title.textContent =
+      count > 1
+        ? `${focused.displayName || focused.slug} · ${count} windows`
+        : focused.displayName || focused.slug;
+  }
+  if (slugEl) {
+    slugEl.textContent =
+      count > 1
+        ? `Focused: kick.com/${focused.slug} · click a tile or Add to manage`
+        : `kick.com/${focused.slug}`;
+  }
+}
+
+function syncStreamerTheaterVisibility() {
+  const empty = document.getElementById("streamers-theater-empty");
+  const active = document.getElementById("streamers-theater-active");
+  const hasTiles = partnerStreamersState.tiles.length > 0;
+  empty?.classList.toggle("hidden", hasTiles);
+  active?.classList.toggle("hidden", !hasTiles);
+}
+
+function createStreamTileElement(tile) {
+  const el = document.createElement("div");
+  el.className = "stream-tile";
+  el.dataset.tileId = tile.id;
+  el.dataset.slug = tile.slug;
+
+  const bar = document.createElement("div");
+  bar.className = "stream-tile__bar";
+
+  const nameBtn = document.createElement("button");
+  nameBtn.type = "button";
+  nameBtn.className = "stream-tile__name";
+  nameBtn.dataset.focusTile = tile.id;
+  nameBtn.textContent = tile.displayName || tile.slug;
+  nameBtn.title = `Focus chat on ${tile.slug}`;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "stream-tile__close";
+  closeBtn.dataset.removeTile = tile.id;
+  closeBtn.setAttribute("aria-label", `Remove ${tile.slug}`);
+  closeBtn.textContent = "×";
+
+  bar.appendChild(nameBtn);
+  bar.appendChild(closeBtn);
+
+  const frame = document.createElement("iframe");
+  frame.title = `Kick stream ${tile.slug}`;
+  frame.allow = "autoplay; fullscreen; picture-in-picture";
+  frame.allowFullscreen = true;
+  frame.loading = "lazy";
+  frame.src = kickPlayerEmbedUrl(tile.slug);
+
+  el.appendChild(bar);
+  el.appendChild(frame);
+  return el;
+}
+
+function renderStreamerPlayerGrid() {
+  const grid = document.getElementById("streamers-player-grid");
+  if (!grid) return;
+
+  const tiles = partnerStreamersState.tiles;
+  grid.dataset.count = String(tiles.length);
+
+  const existing = new Map(
+    [...grid.querySelectorAll("[data-tile-id]")].map((node) => [node.dataset.tileId, node])
+  );
+  const keep = new Set(tiles.map((tile) => tile.id));
+
+  for (const [id, node] of existing) {
+    if (!keep.has(id)) node.remove();
+  }
+
+  for (const tile of tiles) {
+    let node = existing.get(tile.id);
+    if (!node) {
+      node = createStreamTileElement(tile);
+      grid.appendChild(node);
+    }
+    node.classList.toggle("is-focused", tile.id === partnerStreamersState.focusedTileId);
+  }
+
+  updateStreamerTheaterHeader();
+  syncStreamerTheaterVisibility();
+}
+
+function focusStreamTile(tileId, { refreshChat = true } = {}) {
+  const tile = partnerStreamersState.tiles.find((row) => row.id === tileId);
+  if (!tile) return;
+  const slugChanged = partnerStreamersState.selectedSlug !== tile.slug;
+  partnerStreamersState.focusedTileId = tile.id;
+  partnerStreamersState.selectedSlug = tile.slug;
+  renderStreamerPlayerGrid();
+  renderPartnerStreamersList();
+  if (refreshChat && slugChanged) {
+    partnerStreamersState.chatMessages = [];
+    partnerStreamersState.chatCommands = [];
+    partnerStreamersState.points = null;
+    setSiteChatStatus("");
+    renderSiteChatMessages();
+    renderSiteChatInteract();
+    refreshSiteChat();
+  } else {
+    updateStreamerTheaterHeader();
+  }
+}
+
+function removeStreamTile(tileId) {
+  const tiles = partnerStreamersState.tiles.filter((tile) => tile.id !== tileId);
+  partnerStreamersState.tiles = tiles;
+  if (!tiles.length) {
+    closeStreamerTheater();
+    return;
+  }
+  if (partnerStreamersState.focusedTileId === tileId) {
+    const next = tiles[tiles.length - 1];
+    partnerStreamersState.focusedTileId = next.id;
+    partnerStreamersState.selectedSlug = next.slug;
+    partnerStreamersState.chatMessages = [];
+    partnerStreamersState.chatCommands = [];
+    partnerStreamersState.points = null;
+    renderStreamerPlayerGrid();
+    renderPartnerStreamersList();
+    setSiteChatStatus("");
+    renderSiteChatMessages();
+    renderSiteChatInteract();
+    refreshSiteChat();
+    return;
+  }
+  renderStreamerPlayerGrid();
+  renderPartnerStreamersList();
+}
+
+function openStreamerTheater(partnerOrSlug) {
+  const slug =
+    typeof partnerOrSlug === "string"
+      ? partnerOrSlug
+      : partnerOrSlug?.slug;
+  if (!slug) return;
+
+  const partner =
+    (typeof partnerOrSlug === "object" && partnerOrSlug) ||
+    partnerStreamersState.partners.find((row) => row.slug === slug) || {
+      slug,
+      displayName: slug,
+    };
+
+  if (partnerStreamersState.tiles.length >= MAX_STREAM_TILES) {
+    setSiteChatStatus(`Max ${MAX_STREAM_TILES} stream windows — close one to add another`, true);
+    showPage("streamers");
+    return;
+  }
+
+  streamTileSeq += 1;
+  const tile = {
+    id: `tile-${streamTileSeq}`,
+    slug,
+    displayName: partner.displayName || slug,
+  };
+
+  partnerStreamersState.tiles.push(tile);
+  partnerStreamersState.focusedTileId = tile.id;
+  partnerStreamersState.selectedSlug = slug;
+  partnerStreamersState.chatMessages = [];
+  partnerStreamersState.chatCommands = [];
+  partnerStreamersState.points = null;
+  showPage("streamers");
+
+  setSiteChatStatus("");
+  renderStreamerPlayerGrid();
+  renderSiteChatMessages();
+  renderSiteChatInteract();
+  refreshSiteChat();
+  ensureSiteChatPolling();
+  renderPartnerStreamersList();
+}
+
+function closeStreamerTheater() {
+  partnerStreamersState.tiles = [];
+  partnerStreamersState.focusedTileId = null;
+  partnerStreamersState.selectedSlug = null;
+  partnerStreamersState.chatMessages = [];
+  partnerStreamersState.chatCommands = [];
+  partnerStreamersState.points = null;
+  const grid = document.getElementById("streamers-player-grid");
+  if (grid) {
+    grid.innerHTML = "";
+    grid.dataset.count = "0";
+  }
+  syncStreamerTheaterVisibility();
+  updateStreamerTheaterHeader();
+  renderSiteChatMessages();
+  renderSiteChatInteract();
+  renderPartnerStreamersList();
 }
 
 function setSiteChatStatus(text, isError = false) {
@@ -2147,62 +2366,6 @@ function ensureSiteChatPolling() {
   }, 2500);
 }
 
-function openStreamerTheater(partnerOrSlug) {
-  const slug =
-    typeof partnerOrSlug === "string"
-      ? partnerOrSlug
-      : partnerOrSlug?.slug;
-  if (!slug) return;
-
-  const partner =
-    (typeof partnerOrSlug === "object" && partnerOrSlug) ||
-    partnerStreamersState.partners.find((row) => row.slug === slug) || {
-      slug,
-      displayName: slug,
-    };
-
-  partnerStreamersState.selectedSlug = slug;
-  partnerStreamersState.chatMessages = [];
-  partnerStreamersState.chatCommands = [];
-  partnerStreamersState.points = null;
-  showPage("streamers");
-
-  const empty = document.getElementById("streamers-theater-empty");
-  const active = document.getElementById("streamers-theater-active");
-  const title = document.getElementById("streamers-theater-title");
-  const slugEl = document.getElementById("streamers-theater-slug");
-  const player = document.getElementById("streamers-player-frame");
-
-  empty?.classList.add("hidden");
-  active?.classList.remove("hidden");
-  if (title) title.textContent = partner.displayName || slug;
-  if (slugEl) slugEl.textContent = `kick.com/${slug}`;
-  if (player) player.src = kickPlayerEmbedUrl(slug);
-
-  setSiteChatStatus("");
-  renderSiteChatMessages();
-  renderSiteChatInteract();
-  refreshSiteChat();
-  ensureSiteChatPolling();
-  renderPartnerStreamersList();
-}
-
-function closeStreamerTheater() {
-  partnerStreamersState.selectedSlug = null;
-  partnerStreamersState.chatMessages = [];
-  partnerStreamersState.chatCommands = [];
-  partnerStreamersState.points = null;
-  const empty = document.getElementById("streamers-theater-empty");
-  const active = document.getElementById("streamers-theater-active");
-  const player = document.getElementById("streamers-player-frame");
-  empty?.classList.remove("hidden");
-  active?.classList.add("hidden");
-  if (player) player.removeAttribute("src");
-  renderSiteChatMessages();
-  renderSiteChatInteract();
-  renderPartnerStreamersList();
-}
-
 function renderPartnerStreamersList() {
   const list = document.getElementById("profile-streamers-list");
   const meta = document.getElementById("profile-streamers-meta");
@@ -2240,13 +2403,23 @@ function renderPartnerStreamersList() {
     return;
   }
 
+  const openSlugs = new Set(partnerStreamersState.tiles.map((tile) => tile.slug));
+  const tileCount = partnerStreamersState.tiles.length;
+
   list.innerHTML = shown
     .map((partner) => {
       const liveClass = partner.isLive ? "is-live" : "";
-      const selectedClass =
-        partner.slug === partnerStreamersState.selectedSlug ? "is-selected" : "";
+      const selectedClass = openSlugs.has(partner.slug) ? "is-selected" : "";
       const slug = escapeHtml(partner.slug);
       const name = escapeHtml(partner.displayName || partner.slug);
+      const action =
+        tileCount >= MAX_STREAM_TILES
+          ? "Full"
+          : tileCount > 0
+            ? "Add"
+            : partner.isLive
+              ? "Watch"
+              : "Open";
       return `
         <button class="streamer-row ${selectedClass}" type="button" data-watch-slug="${slug}">
           <span class="streamer-row__live ${liveClass}" title="${partner.isLive ? "Live" : "Offline"}"></span>
@@ -2254,7 +2427,7 @@ function renderPartnerStreamersList() {
             <span class="streamer-row__name">${name}</span>
             <span class="streamer-row__slug">kick.com/${slug}</span>
           </div>
-          <span class="streamer-row__watch">${partner.isLive ? "Watch" : "Open"}</span>
+          <span class="streamer-row__watch">${action}</span>
         </button>
       `;
     })
@@ -2504,6 +2677,22 @@ document.getElementById("streamers-refresh-btn")?.addEventListener("click", () =
 });
 document.getElementById("streamers-close-btn")?.addEventListener("click", () => {
   closeStreamerTheater();
+});
+document.getElementById("streamers-player-grid")?.addEventListener("click", (event) => {
+  const removeBtn = event.target.closest("[data-remove-tile]");
+  if (removeBtn) {
+    removeStreamTile(removeBtn.dataset.removeTile);
+    return;
+  }
+  const focusBtn = event.target.closest("[data-focus-tile]");
+  if (focusBtn) {
+    focusStreamTile(focusBtn.dataset.focusTile);
+    return;
+  }
+  const tile = event.target.closest("[data-tile-id]");
+  if (tile?.dataset.tileId) {
+    focusStreamTile(tile.dataset.tileId);
+  }
 });
 document.getElementById("site-chat-form")?.addEventListener("submit", async (event) => {
   event.preventDefault();
