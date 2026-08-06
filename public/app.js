@@ -2307,9 +2307,11 @@ function renderSiteChatInteract() {
 
   const points = partnerStreamersState.points;
   if (points && typeof points.value === "number") {
+    const spent = Number(points.spent || 0);
+    const spentNote = spent > 0 ? ` · ${spent} spent on commands` : "";
     pointsEl.innerHTML = `
       <span class="site-chat__points-value">${escapeHtml(String(points.value))}</span>
-      <span class="site-chat__points-label">${escapeHtml(points.label || "Kick Points (24h)")} on this stream</span>
+      <span class="site-chat__points-label">${escapeHtml(points.label || "Kick Points")} on this stream${escapeHtml(spentNote)}</span>
     `;
   } else if (partnerStreamersState.canSend) {
     pointsEl.innerHTML = `<span class="site-chat__points-label">Kick Points load with chat…</span>`;
@@ -2336,8 +2338,10 @@ function renderSiteChatInteract() {
     .map((group) => {
       const chips = group.items
         .map((cmd) => {
-          const cost = cmd.needsPoints ? " · costs points" : "";
-          const title = `${cmd.description || cmd.chat}${cost}`;
+          const cost = Number(cmd.pointCost || 0);
+          const costLabel = cost > 0 ? ` · ${cost} pt${cost === 1 ? "" : "s"}` : "";
+          const title = `${cmd.description || cmd.chat}${costLabel}`;
+          const desc = `${cmd.description || ""}${costLabel}`;
           return `
             <button
               type="button"
@@ -2346,7 +2350,7 @@ function renderSiteChatInteract() {
               title="${escapeHtml(title)}"
             >
               <code>${escapeHtml(cmd.chat)}</code>
-              <span>${escapeHtml(cmd.description || "")}</span>
+              <span>${escapeHtml(desc)}</span>
             </button>`;
         })
         .join("");
@@ -4076,14 +4080,18 @@ function renderOnlyPixelsPointsHero(summary, { signedInUsername } = {}) {
     return;
   }
 
-  const total = Number(summary.total_messages_24h || 0);
+  const total = Number(
+    summary.total_points_24h ?? summary.total_messages_24h ?? 0
+  );
+  const spent = Number(summary.total_spent_24h || 0);
   const channels = Number(summary.active_channels || 0);
   const username = summary.kickUsername || onlyPixelsState.currentUsername || "";
   hero.innerHTML = `
     <div class="only-pixels-points-total">${escapeHtml(String(total))}</div>
     <div class="only-pixels-points-label">
-      Kick Points (24h) for <strong>@${escapeHtml(username)}</strong>
-      ${channels > 0 ? ` · ${channels} channel${channels === 1 ? "" : "s"} with points` : " · chat on a partnered streamer to earn"}
+      Kick Points for <strong>@${escapeHtml(username)}</strong>
+      ${channels > 0 ? ` · ${channels} channel${channels === 1 ? "" : "s"}` : " · chat on a partnered streamer to earn"}
+      ${spent > 0 ? ` · ${spent} spent on movement` : ""}
     </div>`;
 }
 
@@ -4149,15 +4157,17 @@ function renderOnlyPixelsStats(streamers) {
   panel.innerHTML = entries
     .map(([slug, row]) => {
       const msgs = Number(row.message_count_24h || 0);
+      const pts = Number(row.points ?? msgs);
+      const spent = Number(row.spent || 0);
       const gifts = Number(row.gift_kicks_all_time || 0);
       return `
         <article class="only-pixels-streamer-card">
           <div class="only-pixels-stat-head">
             <div>
               <strong class="only-pixels-streamer-name">@${escapeHtml(slug)}</strong>
-              <div class="only-pixels-stat-meta">${escapeHtml(String(msgs))} Kick Points (24h)${gifts > 0 ? ` · ${gifts} KICKS gifted` : ""}</div>
+              <div class="only-pixels-stat-meta">${escapeHtml(String(pts))} Kick Points${spent > 0 ? ` · ${spent} spent` : ""}${msgs !== pts ? ` · ${msgs} chats` : ""}${gifts > 0 ? ` · ${gifts} KICKS gifted` : ""}</div>
             </div>
-            <div class="only-pixels-pts-badge">${escapeHtml(String(msgs))}</div>
+            <div class="only-pixels-pts-badge">${escapeHtml(String(pts))}</div>
           </div>
           <div class="only-pixels-used-row">
             <span class="only-pixels-used-label">Used today</span>
