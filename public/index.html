@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=19" />
+    <link rel="stylesheet" href="/styles.css?v=20" />
   </head>
   <body>
     <main class="page">
@@ -231,27 +231,22 @@
                         loading="lazy"
                       ></iframe>
                     </div>
-                    <div class="streamers-theater__chat" id="streamers-chat-panel">
-                      <div class="site-chat">
-                        <div class="site-chat__head">
-                          <span>Chat</span>
-                          <span class="site-chat__hint" id="site-chat-hint"></span>
-                        </div>
-                        <div class="site-chat__messages" id="site-chat-messages"></div>
-                        <form class="site-chat__composer" id="site-chat-form">
-                          <input
-                            id="site-chat-input"
-                            type="text"
-                            maxlength="500"
-                            placeholder="Send a message…"
-                            autocomplete="off"
-                          />
-                          <button class="btn btn-kick btn-compact" type="submit" id="site-chat-send">
-                            Chat
-                          </button>
-                        </form>
-                        <p class="site-chat__status" id="site-chat-status"></p>
-                      </div>
+                    <div class="streamers-theater__chatbar" id="streamers-chat-panel">
+                      <form class="site-chat__composer site-chat__composer--bar" id="site-chat-form">
+                        <input
+                          id="site-chat-input"
+                          type="text"
+                          maxlength="500"
+                          placeholder="Send a message as you…"
+                          autocomplete="off"
+                        />
+                        <button class="btn btn-kick btn-compact" type="submit" id="site-chat-send">
+                          Chat
+                        </button>
+                      </form>
+                      <p class="site-chat__status" id="site-chat-status"></p>
+                      <span class="hidden" id="site-chat-hint"></span>
+                      <div class="hidden" id="site-chat-messages" aria-hidden="true"></div>
                     </div>
                   </div>
                 </div>
@@ -1284,6 +1279,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=86"></script>
+    <script src="/app.js?v=87"></script>
   </body>
 </html>
