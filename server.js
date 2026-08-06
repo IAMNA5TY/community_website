@@ -3099,6 +3099,7 @@ app.post("/webhooks/kick", (req, res) => {
         username: payload.sender.username,
         content: payload.content || "",
         createdAt: payload.created_at || new Date().toISOString(),
+        messageId: payload.message_id || payload.id || null,
       });
     } else if (payload.sender?.username) {
       console.warn(

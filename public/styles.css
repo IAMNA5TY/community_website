@@ -918,6 +918,16 @@ body.platform-twitch .profile-card__platform-badge {
   font-size: 0.82rem;
 }
 
+.site-chat__emote {
+  height: 1.45em;
+  width: auto;
+  max-width: 4.5em;
+  vertical-align: -0.25em;
+  display: inline-block;
+  margin: 0 1px;
+  object-fit: contain;
+}
+
 .site-chat__empty {
   margin: 24px 8px 0;
   color: var(--muted);

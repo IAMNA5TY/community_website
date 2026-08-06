@@ -2057,6 +2057,27 @@ function renderSiteChatInteract() {
     .join("");
 }
 
+function formatSiteChatContent(content) {
+  const text = String(content || "");
+  const emoteToken = /\[emote:(\d+):([^\]]+)\]/g;
+  let html = "";
+  let lastIndex = 0;
+  let match;
+  while ((match = emoteToken.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      html += escapeHtml(text.slice(lastIndex, match.index));
+    }
+    const id = escapeHtml(match[1]);
+    const name = escapeHtml(match[2]);
+    html += `<img class="site-chat__emote" src="https://files.kick.com/emotes/${id}/fullsize" alt=":${name}:" title=":${name}:" loading="lazy" />`;
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    html += escapeHtml(text.slice(lastIndex));
+  }
+  return html || escapeHtml(text);
+}
+
 function renderSiteChatMessages() {
   const box = document.getElementById("site-chat-messages");
   if (!box) return;
@@ -2068,7 +2089,7 @@ function renderSiteChatMessages() {
   box.innerHTML = messages
     .map((msg) => {
       const user = escapeHtml(msg.username || "user");
-      const content = escapeHtml(msg.content || "");
+      const content = formatSiteChatContent(msg.content || "");
       return `<div class="site-chat__row"><strong>${user}</strong><span>${content}</span></div>`;
     })
     .join("");
