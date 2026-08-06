@@ -844,9 +844,16 @@ body.platform-twitch .profile-card__platform-badge {
   background: #000;
 }
 
+.streamers-theater__main {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  background: #000;
+}
+
 .streamers-theater__player {
   min-height: 0;
-  height: 100%;
   background: #000;
   display: grid;
 }
@@ -854,7 +861,7 @@ body.platform-twitch .profile-card__platform-badge {
 .streamers-theater__player iframe {
   width: 100%;
   height: 100%;
-  min-height: min(70vh, 720px);
+  min-height: min(55vh, 640px);
   border: 0;
   display: block;
   background: #0a0a0a;
@@ -869,9 +876,9 @@ body.platform-twitch .profile-card__platform-badge {
 
 .site-chat {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   height: 100%;
-  min-height: min(70vh, 720px);
+  min-height: min(55vh, 640px);
 }
 
 .site-chat__head {
@@ -920,11 +927,9 @@ body.platform-twitch .profile-card__platform-badge {
 
 .site-chat__interact {
   border-top: 1px solid #222;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: grid;
   gap: 8px;
-  max-height: 42%;
-  overflow: auto;
   background: #0c0c0c;
 }
 
@@ -936,7 +941,7 @@ body.platform-twitch .profile-card__platform-badge {
 }
 
 .site-chat__points-value {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #fff;
   line-height: 1;
@@ -948,8 +953,10 @@ body.platform-twitch .profile-card__platform-badge {
 }
 
 .site-chat__cmds {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: flex-start;
 }
 
 .site-chat__cmds-empty {
@@ -961,10 +968,11 @@ body.platform-twitch .profile-card__platform-badge {
 .site-chat__cmd-group {
   display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
 .site-chat__cmd-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
@@ -1006,9 +1014,6 @@ body.platform-twitch .profile-card__platform-badge {
   color: var(--muted);
   font-size: 0.72rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
 }
 
 .site-chat__composer {
@@ -1071,7 +1076,11 @@ body.platform-twitch .profile-card__platform-badge {
 
   .streamers-theater__player iframe,
   .site-chat {
-    min-height: 360px;
+    min-height: 320px;
+  }
+
+  .streamers-theater__main {
+    grid-template-rows: auto auto;
   }
 }
 
