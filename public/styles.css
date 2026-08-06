@@ -869,7 +869,7 @@ body.platform-twitch .profile-card__platform-badge {
 
 .site-chat {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
   height: 100%;
   min-height: min(70vh, 720px);
 }
@@ -916,6 +916,99 @@ body.platform-twitch .profile-card__platform-badge {
   color: var(--muted);
   text-align: center;
   font-size: 0.88rem;
+}
+
+.site-chat__interact {
+  border-top: 1px solid #222;
+  padding: 8px 10px;
+  display: grid;
+  gap: 8px;
+  max-height: 42%;
+  overflow: auto;
+  background: #0c0c0c;
+}
+
+.site-chat__points {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.site-chat__points-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.site-chat__points-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.site-chat__cmds {
+  display: grid;
+  gap: 8px;
+}
+
+.site-chat__cmds-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.site-chat__cmd-group {
+  display: grid;
+  gap: 4px;
+}
+
+.site-chat__cmd-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.site-chat__cmd-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.site-chat__cmd {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(83, 252, 24, 0.06);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.site-chat__cmd:hover {
+  border-color: rgba(83, 252, 24, 0.35);
+  background: rgba(83, 252, 24, 0.12);
+}
+
+.site-chat__cmd code {
+  color: var(--kick);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.site-chat__cmd span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .site-chat__composer {

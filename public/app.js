@@ -1973,6 +1973,8 @@ let partnerStreamersState = {
   selectedSlug: null,
   canSend: false,
   chatMessages: [],
+  chatCommands: [],
+  points: null,
 };
 
 function kickPlayerEmbedUrl(slug) {
@@ -1984,6 +1986,75 @@ function setSiteChatStatus(text, isError = false) {
   if (!el) return;
   el.textContent = text || "";
   el.classList.toggle("is-error", Boolean(isError && text));
+}
+
+function insertSiteChatCommand(chatWord) {
+  const word = String(chatWord || "").trim();
+  if (!word) return;
+  const input = document.getElementById("site-chat-input");
+  if (!input || input.disabled) return;
+  input.value = word;
+  input.focus();
+  input.setSelectionRange(word.length, word.length);
+}
+
+function renderSiteChatInteract() {
+  const pointsEl = document.getElementById("site-chat-points");
+  const cmdsEl = document.getElementById("site-chat-cmds");
+  if (!pointsEl || !cmdsEl) return;
+
+  const points = partnerStreamersState.points;
+  if (points && typeof points.value === "number") {
+    pointsEl.innerHTML = `
+      <span class="site-chat__points-value">${escapeHtml(String(points.value))}</span>
+      <span class="site-chat__points-label">${escapeHtml(points.label || "Kick Points (24h)")} on this stream</span>
+    `;
+  } else if (partnerStreamersState.canSend) {
+    pointsEl.innerHTML = `<span class="site-chat__points-label">Kick Points load with chat…</span>`;
+  } else {
+    pointsEl.innerHTML = `<span class="site-chat__points-label">Sign in with Kick to see your points here</span>`;
+  }
+
+  const commands = partnerStreamersState.chatCommands || [];
+  if (!commands.length) {
+    cmdsEl.innerHTML = `<p class="site-chat__cmds-empty">No chat commands for this streamer.</p>`;
+    return;
+  }
+
+  const groups = new Map();
+  for (const cmd of commands) {
+    const key = cmd.group || "other";
+    if (!groups.has(key)) {
+      groups.set(key, { label: cmd.groupLabel || key, items: [] });
+    }
+    groups.get(key).items.push(cmd);
+  }
+
+  cmdsEl.innerHTML = [...groups.values()]
+    .map((group) => {
+      const chips = group.items
+        .map((cmd) => {
+          const cost = cmd.needsPoints ? " · costs points" : "";
+          const title = `${cmd.description || cmd.chat}${cost}`;
+          return `
+            <button
+              type="button"
+              class="site-chat__cmd"
+              data-chat-cmd="${escapeHtml(cmd.chat)}"
+              title="${escapeHtml(title)}"
+            >
+              <code>${escapeHtml(cmd.chat)}</code>
+              <span>${escapeHtml(cmd.description || "")}</span>
+            </button>`;
+        })
+        .join("");
+      return `
+        <div class="site-chat__cmd-group">
+          <div class="site-chat__cmd-label">${escapeHtml(group.label)}</div>
+          <div class="site-chat__cmd-list">${chips}</div>
+        </div>`;
+    })
+    .join("");
 }
 
 function renderSiteChatMessages() {
@@ -2019,7 +2090,12 @@ async function refreshSiteChat() {
     partnerStreamersState.chatMessages = Array.isArray(data.messages)
       ? data.messages
       : [];
+    partnerStreamersState.chatCommands = Array.isArray(data.chat_commands)
+      ? data.chat_commands
+      : [];
+    partnerStreamersState.points = data.points || null;
     renderSiteChatMessages();
+    renderSiteChatInteract();
 
     const hint = document.getElementById("site-chat-hint");
     const input = document.getElementById("site-chat-input");
@@ -2066,6 +2142,8 @@ function openStreamerTheater(partnerOrSlug) {
 
   partnerStreamersState.selectedSlug = slug;
   partnerStreamersState.chatMessages = [];
+  partnerStreamersState.chatCommands = [];
+  partnerStreamersState.points = null;
   showPage("streamers");
 
   const empty = document.getElementById("streamers-theater-empty");
@@ -2082,6 +2160,7 @@ function openStreamerTheater(partnerOrSlug) {
 
   setSiteChatStatus("");
   renderSiteChatMessages();
+  renderSiteChatInteract();
   refreshSiteChat();
   ensureSiteChatPolling();
   renderPartnerStreamersList();
@@ -2090,6 +2169,8 @@ function openStreamerTheater(partnerOrSlug) {
 function closeStreamerTheater() {
   partnerStreamersState.selectedSlug = null;
   partnerStreamersState.chatMessages = [];
+  partnerStreamersState.chatCommands = [];
+  partnerStreamersState.points = null;
   const empty = document.getElementById("streamers-theater-empty");
   const active = document.getElementById("streamers-theater-active");
   const player = document.getElementById("streamers-player-frame");
@@ -2097,6 +2178,7 @@ function closeStreamerTheater() {
   active?.classList.add("hidden");
   if (player) player.removeAttribute("src");
   renderSiteChatMessages();
+  renderSiteChatInteract();
   renderPartnerStreamersList();
 }
 
@@ -2443,6 +2525,11 @@ document.getElementById("site-chat-form")?.addEventListener("submit", async (eve
   } finally {
     if (sendBtn) sendBtn.disabled = !partnerStreamersState.canSend;
   }
+});
+document.getElementById("site-chat-cmds")?.addEventListener("click", (event) => {
+  const btn = event.target.closest("[data-chat-cmd]");
+  if (!btn) return;
+  insertSiteChatCommand(btn.dataset.chatCmd);
 });
 document.getElementById("profile-streamers-list")?.addEventListener("click", (event) => {
   const row = event.target.closest("[data-watch-slug]");
