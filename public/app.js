@@ -118,6 +118,11 @@ function applyNavAccess(me = {}) {
 
   document.querySelectorAll(".nav-link").forEach((link) => {
     const page = link.dataset.page;
+    // Keep Log Out (and any non-page controls) always visible.
+    if (!page || link.id === "logout-btn") {
+      link.classList.remove("hidden");
+      return;
+    }
     link.classList.toggle("hidden", !allowedPages.includes(page));
   });
 
@@ -1822,6 +1827,33 @@ async function refreshStake() {
   await refreshStakeAffiliate();
 }
 
+function renderProfileAccountActions(provider) {
+  const isTwitch = String(provider || "").toLowerCase() === "twitch";
+  const note = document.getElementById("profile-account-note");
+  const actions = document.getElementById("profile-account-actions");
+  if (!note || !actions) return;
+
+  if (isTwitch) {
+    note.textContent =
+      "Rewards, Discord sub role, and Only Pixels need Kick. Switch platforms anytime.";
+    actions.innerHTML = `
+      <a class="btn btn-kick" href="/auth/kick">Switch to Kick</a>
+      <button class="btn btn-secondary" type="button" id="profile-sign-out-btn">Sign out</button>
+    `;
+  } else {
+    note.textContent = "Signed in with Kick. You can switch to Twitch or sign out below.";
+    actions.innerHTML = `
+      <a class="btn btn-twitch" href="/auth/twitch">Switch to Twitch</a>
+      <button class="btn btn-secondary" type="button" id="profile-sign-out-btn">Sign out</button>
+    `;
+  }
+
+  document.getElementById("profile-sign-out-btn")?.addEventListener("click", async () => {
+    await fetch("/auth/logout", { method: "POST" });
+    showLogin();
+  });
+}
+
 function renderProfilePage(data) {
   const profile = data?.profile || {};
   const channel = data?.channel || {};
@@ -1881,53 +1913,50 @@ function renderProfilePage(data) {
       .join("");
   }
 
-  const streamCard = document.getElementById("profile-stream-card");
   const streamRows = document.getElementById("profile-stream-rows");
-  if (!streamCard || !streamRows) return;
-
-  if (isTwitch) {
-    streamRows.innerHTML = [
-      { label: "Status", value: "Twitch account linked" },
-      {
-        label: "Profile",
-        value: profile.profileUrl || `https://twitch.tv/${profile.username || ""}`,
-      },
-      {
-        label: "Note",
-        value: "Sign in with Kick for chat, rewards, and Discord sub tools.",
-      },
-    ]
-      .map(
-        (item) =>
-          `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(String(item.value))}</dd></div>`
-      )
-      .join("");
-    return;
+  if (streamRows) {
+    if (isTwitch) {
+      streamRows.innerHTML = [
+        { label: "Status", value: "Twitch account linked" },
+        {
+          label: "Profile",
+          value: profile.profileUrl || `https://twitch.tv/${profile.username || ""}`,
+        },
+        {
+          label: "Note",
+          value: "Use Switch to Kick below for rewards and Discord tools.",
+        },
+      ]
+        .map(
+          (item) =>
+            `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(String(item.value))}</dd></div>`
+        )
+        .join("");
+    } else if (!channel || (!channel.slug && !channel.title && channel.isLive == null)) {
+      streamRows.innerHTML = `<div><dt>Status</dt><dd>Channel details loading…</dd></div>`;
+    } else {
+      streamRows.innerHTML = [
+        { label: "Live", value: channel.isLive ? "Yes" : "Offline" },
+        { label: "Title", value: channel.title || "—" },
+        { label: "Category", value: channel.category || "—" },
+        {
+          label: "Viewers",
+          value: channel.isLive ? String(channel.viewerCount ?? 0) : "—",
+        },
+        {
+          label: "Subs",
+          value: String(channel.activeSubscribers ?? "—"),
+        },
+      ]
+        .map(
+          (item) =>
+            `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(String(item.value))}</dd></div>`
+        )
+        .join("");
+    }
   }
 
-  if (!channel || (!channel.slug && !channel.title && channel.isLive == null)) {
-    streamRows.innerHTML = `<div><dt>Status</dt><dd>Channel details loading…</dd></div>`;
-    return;
-  }
-
-  streamRows.innerHTML = [
-    { label: "Live", value: channel.isLive ? "Yes" : "Offline" },
-    { label: "Title", value: channel.title || "—" },
-    { label: "Category", value: channel.category || "—" },
-    {
-      label: "Viewers",
-      value: channel.isLive ? String(channel.viewerCount ?? 0) : "—",
-    },
-    {
-      label: "Subs",
-      value: String(channel.activeSubscribers ?? "—"),
-    },
-  ]
-    .map(
-      (item) =>
-        `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(String(item.value))}</dd></div>`
-    )
-    .join("");
+  renderProfileAccountActions(provider);
 }
 
 function renderDashboard(data) {
