@@ -296,6 +296,7 @@ function renderOverviewQuickLinks(data) {
   const links = [
     ["Chat box", data.widgetsUrls?.chatBox],
     ["Stream alerts", data.widgetsUrls?.streamAlerts],
+    ["Sub goal (0/50 stream)", data.widgetsUrls?.subGoal],
     ["Slots timer", data.slotsUrls?.timer],
     ["Slots widget", data.slotsUrls?.widget],
     ["Now playing", data.widgetsUrls?.nowPlaying],
@@ -866,12 +867,53 @@ async function refreshWidgetsChatStatus(chatStatusEl, webhook = {}) {
   }
 }
 
+function renderSubGoalControls(subGoal) {
+  const statusEl = document.getElementById("subgoal-status");
+  const goalInput = document.getElementById("subgoal-goal-input");
+  if (!statusEl) return;
+
+  if (!subGoal) {
+    statusEl.textContent = "Sub goal loads after you sign in as owner.";
+    return;
+  }
+
+  const count = subGoal.count || 0;
+  const goal = subGoal.goal || 50;
+  const label = subGoal.label || "12 Hour Stream";
+  statusEl.textContent = `${count}/${goal} — ${label}`;
+  if (goalInput && document.activeElement !== goalInput) {
+    goalInput.value = String(goal);
+  }
+}
+
+async function subGoalAction(action, extra = {}) {
+  const statusEl = document.getElementById("subgoal-status");
+  try {
+    const res = await fetch("/api/sub-goal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    if (dashboardData) dashboardData.subGoal = data;
+    renderSubGoalControls(data);
+    const frame = document.querySelector('iframe[title="Stream sub goal preview"]');
+    if (frame) frame.src = frame.src;
+    return data;
+  } catch (error) {
+    if (statusEl) statusEl.textContent = error.message;
+    return null;
+  }
+}
+
 function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
   const urlsTable = document.getElementById("widgets-urls-table");
   if (urlsTable && widgetsUrls) {
     renderObsUrlTable(urlsTable, [
       ["Kick chat box (OBS)", widgetsUrls.chatBox],
       ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
+      ["Stream sub goal — 0/50 (OBS)", widgetsUrls.subGoal],
       ["Now playing — Spotify (OBS)", widgetsUrls.nowPlaying],
       ["Cam overlay — shadow + B&W rim light (OBS)", widgetsUrls.camOverlay],
       ["Cam B&W rim light (OBS)", widgetsUrls.camSmoke],
@@ -920,6 +962,8 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
     connectBtn.classList.toggle("hidden", !showConnect);
     disconnectBtn.classList.toggle("hidden", !spotify.connected);
   }
+
+  renderSubGoalControls(dashboardData?.subGoal);
 }
 
 function renderLighting(lighting = {}) {
@@ -2612,6 +2656,7 @@ function renderDashboard(data) {
     webhookError: data.webhookError,
     webhookNote: data.webhookNote,
   });
+  renderSubGoalControls(data.subGoal);
   renderLighting(data.lighting);
   renderStakeUrls(data.stakeUrls);
   renderCommandsTable(data.bot?.commands || []);
@@ -3754,6 +3799,20 @@ wireWidgetsAlertTest("widgets-test-follow-btn", "follow");
 wireWidgetsAlertTest("widgets-test-sub-btn", "sub");
 wireWidgetsAlertTest("widgets-test-gift-btn", "gift");
 wireWidgetsAlertTest("widgets-test-kicks-btn", "kicks");
+
+document.getElementById("subgoal-add-btn")?.addEventListener("click", async () => {
+  await subGoalAction("add", { count: 1, by: "dashboard" });
+});
+
+document.getElementById("subgoal-reset-btn")?.addEventListener("click", async () => {
+  await subGoalAction("reset");
+});
+
+document.getElementById("subgoal-goal-btn")?.addEventListener("click", async () => {
+  const goalInput = document.getElementById("subgoal-goal-input");
+  const goal = parseInt(goalInput?.value, 10) || 50;
+  await subGoalAction("setGoal", { goal });
+});
 
 document.getElementById("slots-set-hour-btn")?.addEventListener("click", async () => {
   try {

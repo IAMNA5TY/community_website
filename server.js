@@ -23,6 +23,8 @@ const slotsTimerState = require("./lib/slots-timer-state");
 const slotsTimerEvents = require("./lib/slots-timer-events");
 const drinkingState = require("./lib/drinking-state");
 const drinkingEvents = require("./lib/drinking-events");
+const streamSubGoalState = require("./lib/stream-sub-goal-state");
+const streamSubGoalEvents = require("./lib/stream-sub-goal-events");
 const workoutEvents = require("./lib/workout-events");
 const subscriptionUtils = require("./lib/subscription-utils");
 const { extractWebhookPayload } = require("./lib/webhook-payload");
@@ -1229,6 +1231,7 @@ app.get("/api/dashboard", async (req, res) => {
         chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
+        subGoal: `${BASE_URL}/widgets/sub-goal.html?obs=1&v=1`,
         camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=12`,
         camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=12`,
         camShadow: `${BASE_URL}/widgets/cam-drop-shadow.png`,
@@ -1237,6 +1240,7 @@ app.get("/api/dashboard", async (req, res) => {
       slots: isOwner ? slotsState.load() : null,
       slotsTimer: isOwner ? slotsTimerState.load() : null,
       drinking: isOwner ? drinkingState.load() : null,
+      subGoal: isOwner ? streamSubGoalState.load() : null,
       slotsUrls: isOwner
         ? {
             widget: `${BASE_URL}/slots/slots-widget.html?obs=1&v=7`,
@@ -1385,6 +1389,7 @@ app.get("/api/dashboard", async (req, res) => {
       slots: slotsState.load(),
       slotsTimer: slotsTimerState.load(),
       drinking: drinkingState.load(),
+      subGoal: streamSubGoalState.load(),
       slotsUrls: {
         widget: `${BASE_URL}/slots/slots-widget.html?obs=1&v=7`,
         pickAlert: `${BASE_URL}/slots/slots-pick.html?obs=1&v=10`,
@@ -1396,6 +1401,7 @@ app.get("/api/dashboard", async (req, res) => {
         chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
+        subGoal: `${BASE_URL}/widgets/sub-goal.html?obs=1&v=1`,
         camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=12`,
         camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=12`,
         camShadow: `${BASE_URL}/widgets/cam-drop-shadow.png`,
@@ -2055,6 +2061,33 @@ app.post("/api/drinking", (req, res) => {
       drinkingEvents.broadcastCheers(result.state);
     }
 
+    return res.json(result.state);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get("/api/sub-goal", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(streamSubGoalState.load());
+});
+
+app.get("/api/sub-goal/events", (req, res) => {
+  streamSubGoalEvents.subscribe(res);
+});
+
+app.post("/api/sub-goal", (req, res) => {
+  try {
+    const { action, count, goal, label, by } = req.body || {};
+    if (!action) {
+      const state = streamSubGoalState.save(req.body || {});
+      streamSubGoalEvents.broadcast(state);
+      return res.json(state);
+    }
+
+    const result = streamSubGoalState.applyAction({ action, count, goal, label, by });
+    if (result.error) return res.status(400).json({ error: result.error });
+    streamSubGoalEvents.broadcast(result.state);
     return res.json(result.state);
   } catch (error) {
     res.status(400).json({ error: error.message });

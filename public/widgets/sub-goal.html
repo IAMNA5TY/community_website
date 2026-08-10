@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stream Sub Goal</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+  <style>
+    body {
+      background: transparent !important;
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .sub-goal-wrap {
+      width: min(420px, 100%);
+    }
+
+    .sub-goal-body {
+      text-align: center;
+      padding: 22px 20px 20px;
+    }
+
+    .sub-goal-count {
+      font-family: var(--font-display);
+      font-size: 3.4rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--white);
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 24px rgba(255, 87, 34, 0.35);
+    }
+
+    .sub-goal-count .slash {
+      color: var(--text-muted);
+      font-weight: 700;
+      margin: 0 0.08em;
+    }
+
+    .sub-goal-count .goal {
+      color: var(--orange-bright);
+    }
+
+    .sub-goal-label {
+      margin-top: 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+    }
+
+    .sub-goal-progress {
+      margin-top: 16px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+    }
+
+    .sub-goal-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--orange), var(--blue));
+      box-shadow: 0 0 16px var(--orange-glow);
+      transition: width 0.35s ease;
+    }
+
+    .sub-goal-meta {
+      margin-top: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .sub-goal-wrap.goal-hit .sub-goal-count {
+      color: var(--orange-bright);
+      text-shadow: 0 0 28px var(--orange-glow);
+    }
+
+    .sub-goal-wrap.goal-hit .sub-goal-label {
+      color: var(--orange-bright);
+    }
+  </style>
+</head>
+<body>
+  <div class="sub-goal-wrap panel orange-accent stream-bg" id="subGoalRoot">
+    <div class="panel-header orange"><span class="icon">⭐</span> Sub Goal</div>
+    <div class="panel-body sub-goal-body">
+      <div class="sub-goal-count">
+        <span data-sub-count>0</span><span class="slash">/</span><span class="goal" data-sub-goal>50</span>
+      </div>
+      <div class="sub-goal-label" data-sub-label>12 Hour Stream</div>
+      <div class="sub-goal-progress" aria-hidden="true">
+        <div class="sub-goal-progress-fill" data-sub-fill></div>
+      </div>
+      <div class="sub-goal-meta"><span data-sub-pct>0%</span> · resets each stream</div>
+    </div>
+  </div>
+
+  <script src="js/sub-goal.js?v=1"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const width = parseInt(params.get("width"), 10);
+    if (width > 0) {
+      document.querySelector(".sub-goal-wrap").style.width = `${width}px`;
+    }
+    initSubGoalWidget({ root: document.getElementById("subGoalRoot") });
+  </script>
+</body>
+</html>
