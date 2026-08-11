@@ -111,11 +111,25 @@ function renderTable(container, columns, rows, emptyText) {
   `;
 }
 
+function isLocalDashboardHost() {
+  const host = String(location.hostname || "").toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+}
+
 function applyNavAccess(me = {}) {
   dashboardRole = me.role || (me.isOwner ? "owner" : "player");
   if (Array.isArray(me.allowedPages) && me.allowedPages.length) {
     allowedPages = me.allowedPages.slice();
   }
+
+  // Lighting (Hue/Govee) only on the stream PC — hide on the public site.
+  if (!isLocalDashboardHost()) {
+    allowedPages = allowedPages.filter((page) => page !== "lighting");
+  }
+
+  document.querySelectorAll("[data-local-lighting-only]").forEach((el) => {
+    el.classList.toggle("hidden", !isLocalDashboardHost());
+  });
 
   document.querySelectorAll(".nav-link").forEach((link) => {
     const page = link.dataset.page;

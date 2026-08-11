@@ -316,10 +316,10 @@
                   <strong>Drinking</strong>
                   <span>Shotgun counter, cheers tracking, and cam scene for OBS.</span>
                 </button>
-                <button class="hub-card" type="button" data-goto-page="lighting" data-page="lighting" data-hub-filter="lighting hue govee spotify beat">
+                <button class="hub-card" type="button" data-goto-page="lighting" data-page="lighting" data-hub-filter="lighting hue govee beat local">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.6.5 1 1.2 1 2h4c0-.8.4-1.5 1-2a6 6 0 00-3-11z"/></svg></span>
                   <strong>Lighting</strong>
-                  <span>Hue + Govee control with Spotify beat sync for the stream room.</span>
+                  <span>Local only on your stream PC — Hue / Govee beat sync (not on na5ty.com).</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="stake" data-page="stake" data-hub-filter="stake race affiliate">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9 9.5c1-.8 5-.8 6 0M9 14.5c1 .8 5 .8 6 0"/></svg></span>
@@ -934,17 +934,20 @@
                   <tr><td><code>!pause</code></td><td>Mods / streamer</td><td>Pause or resume playback</td></tr>
                   <tr><td><code>!replaysong</code> or <code>/replaysong</code></td><td>Mods / streamer</td><td>Restart the current song from the beginning</td></tr>
                   <tr><td><code>!vol 0-100</code></td><td>Mods / streamer</td><td>Set Spotify volume percent</td></tr>
-                  <tr><td><code>!lightsoff</code></td><td>Mods / streamer</td><td>Turn all lights off and pause beat sync (music only)</td></tr>
-                  <tr><td><code>!lightson</code></td><td>Mods / streamer</td><td>Resume beat sync with lights</td></tr>
+                  <tr data-local-lighting-only><td><code>!lightsoff</code></td><td>Mods / streamer</td><td>Turn all lights off and pause beat sync (music only)</td></tr>
+                  <tr data-local-lighting-only><td><code>!lightson</code></td><td>Mods / streamer</td><td>Resume beat sync with lights</td></tr>
                 </tbody>
               </table>
+              <p class="subtitle" data-local-lighting-only style="margin-top:12px;">
+                Light beat sync runs on this PC only — open <code>http://127.0.0.1:3000</code> for the Lighting tab.
+              </p>
             </div>
           </section>
 
           <section class="page-view" data-page="lighting">
             <header class="page-header">
               <h1>Lighting</h1>
-              <p class="subtitle">Connect Philips Hue and Govee — Lumia Stream-style control for your stream room</p>
+              <p class="subtitle">Local only — Hue / Govee on this PC. Spotify still connects from Widgets on the public site.</p>
             </header>
 
             <div class="card panel">

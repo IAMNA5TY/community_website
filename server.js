@@ -533,7 +533,7 @@ app.get("/api/me", (req, res) => {
     profile,
     scope,
     role,
-    allowedPages: dashboardAccess.getAllowedPages(req.session.user),
+    allowedPages: dashboardAccess.getAllowedPages(req.session.user, { req }),
     isOwner: role === "owner",
     kickRewards,
     discord: kickSubscriberStore.getPublicStatusForKickUser(
@@ -1216,7 +1216,7 @@ app.get("/api/dashboard", async (req, res) => {
     return res.json({
       provider: "twitch",
       role: isOwner ? "owner" : "player",
-      allowedPages: dashboardAccess.getAllowedPages(user),
+      allowedPages: dashboardAccess.getAllowedPages(user, { req }),
       profile: user.profile,
       channel: null,
       livestreamStats: null,
@@ -1317,7 +1317,7 @@ app.get("/api/dashboard", async (req, res) => {
       return res.json({
         provider: "kick",
         role: "player",
-        allowedPages: dashboardAccess.getAllowedPages(user),
+        allowedPages: dashboardAccess.getAllowedPages(user, { req }),
         profile: dashboard.profile,
         channel: dashboard.channel,
         livestreamStats: dashboard.livestreamStats,
@@ -1359,7 +1359,7 @@ app.get("/api/dashboard", async (req, res) => {
         req.session.user.profile.id,
         kickUsername
       ),
-      allowedPages: dashboardAccess.getAllowedPages(user),
+      allowedPages: dashboardAccess.getAllowedPages(user, { req }),
       giftedSubLeaderboard,
       spotify: {
         configured: spotify.isConfigured(),
