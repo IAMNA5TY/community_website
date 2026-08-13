@@ -16,6 +16,7 @@ const SubGoalStore = {
       baseSeconds: 4 * 3600,
       maxSeconds: 12 * 3600,
       secondsPerSub: 576,
+      pausedRemaining: 4 * 3600,
       bankSeconds: 4 * 3600,
       remainingSeconds: 4 * 3600,
       displayTime: "4:00:00",
@@ -70,13 +71,10 @@ function renderSubGoal(root, state) {
   if (!root || !state) return;
   const remaining = liveRemaining(state);
   const maxSeconds = state.maxSeconds || 12 * 3600;
-  const baseSeconds = state.baseSeconds || 4 * 3600;
   const count = state.count || 0;
   const goal = state.goal || 50;
   const label = state.label || "12 Hour Stream";
-  const bank = Math.min(maxSeconds, Math.max(remaining, state.bankSeconds || remaining));
-  const progress = (bank - baseSeconds) / (maxSeconds - baseSeconds);
-  const pct = Math.min(100, Math.max(0, Math.round(progress * 100)));
+  const pct = Math.min(100, Math.max(0, Math.round((remaining / maxSeconds) * 100)));
   const atMax = remaining >= maxSeconds - 1 || state.atMax;
 
   const timeEl = root.querySelector("[data-sub-time]");
@@ -91,10 +89,12 @@ function renderSubGoal(root, state) {
   if (labelEl) labelEl.textContent = label;
   if (fillEl) fillEl.style.width = `${pct}%`;
   if (metaEl) {
-    metaEl.textContent = `${count}/${goal} subs · +${state.minutesPerSub || 9.6} min each`;
+    metaEl.textContent = `${count} subs · +${state.minutesPerSub || 9.6} min each`;
   }
   if (statusEl) {
-    statusEl.textContent = state.isRunning ? "counting down" : "paused";
+    statusEl.textContent = state.isRunning
+      ? "counting down"
+      : "paused — start to count down";
   }
   root.classList.toggle("goal-hit", atMax);
   root.classList.toggle("is-running", Boolean(state.isRunning));

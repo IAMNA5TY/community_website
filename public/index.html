@@ -847,19 +847,22 @@
             <div class="card panel widgets-preview-card" style="margin-top:16px;">
               <div class="panel-header">
                 <h2>Stream Timer</h2>
-                <p class="subtitle">Starts at <strong>4:00:00</strong>, each sub adds <strong>9.6 min</strong>, hard cap <strong>12:00:00</strong> (50 subs).</p>
+                <p class="subtitle">
+                  Left side = time left (counts down). Right = max <strong>12:00:00</strong>.
+                  Start at <strong>4:00:00</strong> — each sub adds <strong>9.6 min</strong> (50 gifts = full 12h).
+                </p>
               </div>
               <iframe
                 class="widgets-embed-frame"
-                src="/widgets/sub-goal.html?obs=1&embed=1&v=2"
+                src="/widgets/sub-goal.html?obs=1&embed=1&v=3"
                 title="Stream sub goal preview"
                 style="min-height:280px;"
               ></iframe>
               <div class="btn-row slots-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;align-items:center;">
-                <button class="btn btn-kick btn-compact" id="subgoal-add-btn" type="button">+1 sub (+9.6m)</button>
-                <button class="btn btn-secondary btn-compact" id="subgoal-start-btn" type="button">Start</button>
+                <button class="btn btn-kick btn-compact" id="subgoal-start-btn" type="button">Start countdown</button>
                 <button class="btn btn-secondary btn-compact" id="subgoal-stop-btn" type="button">Pause</button>
-                <button class="btn btn-secondary btn-compact" id="subgoal-reset-btn" type="button">Reset to 4:00</button>
+                <button class="btn btn-secondary btn-compact" id="subgoal-reset-btn" type="button">Reset 4:00 + start</button>
+                <button class="btn btn-secondary btn-compact" id="subgoal-add-btn" type="button">+1 sub (+9.6m)</button>
               </div>
               <p class="subtitle" id="subgoal-status" style="margin-top:12px;"></p>
               <div class="card panel" style="margin-top:12px;">
