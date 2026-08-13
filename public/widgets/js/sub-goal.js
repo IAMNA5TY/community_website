@@ -74,6 +74,7 @@ function renderSubGoal(root, state) {
   const count = state.count || 0;
   const goal = state.goal || 50;
   const label = state.label || "12 Hour Stream";
+  // Bar = how much of the 12h bank is still on the clock (only the left clock ticks).
   const pct = Math.min(100, Math.max(0, Math.round((remaining / maxSeconds) * 100)));
   const atMax = remaining >= maxSeconds - 1 || state.atMax;
 
@@ -89,12 +90,10 @@ function renderSubGoal(root, state) {
   if (labelEl) labelEl.textContent = label;
   if (fillEl) fillEl.style.width = `${pct}%`;
   if (metaEl) {
-    metaEl.textContent = `${count} subs · +${state.minutesPerSub || 9.6} min each`;
+    metaEl.textContent = `${count} / ${goal} subs · +${state.minutesPerSub || 9.6} min`;
   }
   if (statusEl) {
-    statusEl.textContent = state.isRunning
-      ? "counting down"
-      : "paused — start countdown";
+    statusEl.textContent = state.isRunning ? "counting down" : "paused";
   }
   root.classList.toggle("goal-hit", atMax);
   root.classList.toggle("is-running", Boolean(state.isRunning));

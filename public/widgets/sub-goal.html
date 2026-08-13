@@ -18,17 +18,26 @@
     }
 
     .sub-goal-wrap {
-      width: min(440px, 100%);
+      width: min(420px, 100%);
     }
 
     .sub-goal-body {
       text-align: center;
-      padding: 22px 20px 20px;
+      padding: 20px 22px 18px;
     }
 
-    .sub-goal-count {
+    .sub-goal-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+      margin-bottom: 8px;
+    }
+
+    .sub-goal-time {
       font-family: var(--font-display);
-      font-size: 3.1rem;
+      font-size: 3.4rem;
       font-weight: 900;
       line-height: 1;
       color: var(--white);
@@ -37,30 +46,23 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .sub-goal-count .slash {
-      color: var(--text-muted);
+    .sub-goal-cap {
+      margin-top: 8px;
+      font-size: 0.8rem;
       font-weight: 700;
-      margin: 0 0.12em;
-      font-size: 0.7em;
-    }
-
-    .sub-goal-count .goal {
-      color: var(--orange-bright);
-      font-size: 0.72em;
-    }
-
-    .sub-goal-label {
-      margin-top: 10px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--blue-bright);
+      color: var(--text-muted);
+    }
+
+    .sub-goal-cap strong {
+      color: var(--orange-bright);
+      font-weight: 800;
     }
 
     .sub-goal-progress {
       margin-top: 16px;
-      height: 10px;
+      height: 8px;
       border-radius: 999px;
       background: var(--bg-card);
       border: 1px solid var(--border-light);
@@ -77,21 +79,34 @@
     }
 
     .sub-goal-meta {
-      margin-top: 10px;
-      font-size: 0.75rem;
+      margin-top: 12px;
+      font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      justify-content: center;
+      align-items: center;
     }
 
-    .sub-goal-wrap.goal-hit .sub-goal-count {
+    .sub-goal-meta [data-sub-status] {
+      color: var(--blue-bright);
+    }
+
+    .sub-goal-wrap.is-running [data-sub-status] {
+      color: var(--orange-bright);
+    }
+
+    .sub-goal-wrap.goal-hit .sub-goal-time {
       color: var(--orange-bright);
       text-shadow: 0 0 28px var(--orange-glow);
     }
 
-    .sub-goal-wrap.goal-hit .sub-goal-label {
-      color: var(--orange-bright);
+    .sub-goal-wrap.goal-hit .sub-goal-cap strong {
+      color: var(--white);
     }
   </style>
 </head>
@@ -99,21 +114,21 @@
   <div class="sub-goal-wrap panel orange-accent stream-bg" id="subGoalRoot">
     <div class="panel-header orange"><span class="icon">⏱️</span> Stream Timer</div>
     <div class="panel-body sub-goal-body">
-      <div class="sub-goal-count">
-        <span data-sub-time>4:00:00</span><span class="slash">/</span><span class="goal" data-sub-max>12:00:00</span>
-      </div>
-      <div class="sub-goal-label" data-sub-label>12 Hour Stream</div>
+      <div class="sub-goal-eyebrow" data-sub-label>12 Hour Stream</div>
+      <div class="sub-goal-time" data-sub-time>4:00:00</div>
+      <div class="sub-goal-cap">time left · max <strong data-sub-max>12:00:00</strong></div>
       <div class="sub-goal-progress" aria-hidden="true">
         <div class="sub-goal-progress-fill" data-sub-fill></div>
       </div>
       <div class="sub-goal-meta">
-        <span data-sub-meta>0 subs · +9.6 min each</span>
-        · <span data-sub-status>paused — start countdown</span>
+        <span data-sub-meta>0 / 50 subs · +9.6 min</span>
+        <span aria-hidden="true">·</span>
+        <span data-sub-status>paused</span>
       </div>
     </div>
   </div>
 
-  <script src="js/sub-goal.js?v=4"></script>
+  <script src="js/sub-goal.js?v=5"></script>
   <script>
     const params = new URLSearchParams(location.search);
     const width = parseInt(params.get("width"), 10);
