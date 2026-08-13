@@ -310,7 +310,7 @@ function renderOverviewQuickLinks(data) {
   const links = [
     ["Chat box", data.widgetsUrls?.chatBox],
     ["Stream alerts", data.widgetsUrls?.streamAlerts],
-    ["Sub goal (0/50 stream)", data.widgetsUrls?.subGoal],
+    ["Stream timer (4h→12h)", data.widgetsUrls?.subGoal],
     ["Slots timer", data.slotsUrls?.timer],
     ["Slots widget", data.slotsUrls?.widget],
     ["Now playing", data.widgetsUrls?.nowPlaying],
@@ -883,21 +883,20 @@ async function refreshWidgetsChatStatus(chatStatusEl, webhook = {}) {
 
 function renderSubGoalControls(subGoal) {
   const statusEl = document.getElementById("subgoal-status");
-  const goalInput = document.getElementById("subgoal-goal-input");
   if (!statusEl) return;
 
   if (!subGoal) {
-    statusEl.textContent = "Sub goal loads after you sign in as owner.";
+    statusEl.textContent = "Stream timer loads after you sign in as owner.";
     return;
   }
 
+  const time = subGoal.displayTime || "4:00:00";
+  const max = subGoal.maxDisplayTime || "12:00:00";
   const count = subGoal.count || 0;
   const goal = subGoal.goal || 50;
   const label = subGoal.label || "12 Hour Stream";
-  statusEl.textContent = `${count}/${goal} — ${label}`;
-  if (goalInput && document.activeElement !== goalInput) {
-    goalInput.value = String(goal);
-  }
+  const running = subGoal.isRunning ? "running" : "paused";
+  statusEl.textContent = `${time} / ${max} · ${count}/${goal} subs · ${running} · ${label}`;
 }
 
 async function subGoalAction(action, extra = {}) {
@@ -927,7 +926,7 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
     renderObsUrlTable(urlsTable, [
       ["Kick chat box (OBS)", widgetsUrls.chatBox],
       ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
-      ["Stream sub goal — 0/50 (OBS)", widgetsUrls.subGoal],
+      ["Stream timer — 4h→12h (OBS)", widgetsUrls.subGoal],
       ["Now playing — Spotify (OBS)", widgetsUrls.nowPlaying],
       ["Cam overlay — shadow + B&W rim light (OBS)", widgetsUrls.camOverlay],
       ["Cam B&W rim light (OBS)", widgetsUrls.camSmoke],
@@ -3822,10 +3821,12 @@ document.getElementById("subgoal-reset-btn")?.addEventListener("click", async ()
   await subGoalAction("reset");
 });
 
-document.getElementById("subgoal-goal-btn")?.addEventListener("click", async () => {
-  const goalInput = document.getElementById("subgoal-goal-input");
-  const goal = parseInt(goalInput?.value, 10) || 50;
-  await subGoalAction("setGoal", { goal });
+document.getElementById("subgoal-start-btn")?.addEventListener("click", async () => {
+  await subGoalAction("start");
+});
+
+document.getElementById("subgoal-stop-btn")?.addEventListener("click", async () => {
+  await subGoalAction("stop");
 });
 
 document.getElementById("slots-set-hour-btn")?.addEventListener("click", async () => {

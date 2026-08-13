@@ -846,35 +846,34 @@
 
             <div class="card panel widgets-preview-card" style="margin-top:16px;">
               <div class="panel-header">
-                <h2>Stream Sub Goal</h2>
-                <p class="subtitle">Session counter for long streams — defaults to 0/50 · 12 Hour Stream. Resets each stream.</p>
+                <h2>Stream Timer</h2>
+                <p class="subtitle">Starts at <strong>4:00:00</strong>, each sub adds <strong>9.6 min</strong>, hard cap <strong>12:00:00</strong> (50 subs).</p>
               </div>
               <iframe
                 class="widgets-embed-frame"
-                src="/widgets/sub-goal.html?obs=1&embed=1&v=1"
+                src="/widgets/sub-goal.html?obs=1&embed=1&v=2"
                 title="Stream sub goal preview"
                 style="min-height:280px;"
               ></iframe>
               <div class="btn-row slots-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;align-items:center;">
-                <button class="btn btn-kick btn-compact" id="subgoal-add-btn" type="button">+1 sub</button>
-                <button class="btn btn-secondary btn-compact" id="subgoal-reset-btn" type="button">Reset stream</button>
-                <label class="subtitle" for="subgoal-goal-input">Goal</label>
-                <input id="subgoal-goal-input" type="number" min="1" max="9999" value="50" style="width:72px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);" />
-                <button class="btn btn-secondary btn-compact" id="subgoal-goal-btn" type="button">Set goal</button>
+                <button class="btn btn-kick btn-compact" id="subgoal-add-btn" type="button">+1 sub (+9.6m)</button>
+                <button class="btn btn-secondary btn-compact" id="subgoal-start-btn" type="button">Start</button>
+                <button class="btn btn-secondary btn-compact" id="subgoal-stop-btn" type="button">Pause</button>
+                <button class="btn btn-secondary btn-compact" id="subgoal-reset-btn" type="button">Reset to 4:00</button>
               </div>
               <p class="subtitle" id="subgoal-status" style="margin-top:12px;"></p>
               <div class="card panel" style="margin-top:12px;">
                 <h3 style="margin:0 0 8px;font-size:1rem;">Chat commands</h3>
                 <table class="data-table">
                   <tbody>
-                    <tr><td><code>!subgoal</code> / <code>!subs</code></td><td>Anyone</td><td>Show current count</td></tr>
-                    <tr><td><code>!subgoal reset</code></td><td>Mods</td><td>Reset counter for a new stream</td></tr>
-                    <tr><td><code>!subgoal 5</code></td><td>Mods</td><td>Add subs manually</td></tr>
-                    <tr><td><code>!subgoal goal 50</code></td><td>Mods</td><td>Change the goal</td></tr>
+                    <tr><td><code>!subgoal</code> / <code>!subs</code></td><td>Anyone</td><td>Show timer + sub count</td></tr>
+                    <tr><td><code>!subgoal reset</code></td><td>Mods</td><td>Reset to 4:00 and start countdown</td></tr>
+                    <tr><td><code>!subgoal start</code> / <code>stop</code></td><td>Mods</td><td>Start or pause countdown</td></tr>
+                    <tr><td><code>!subgoal 5</code></td><td>Mods</td><td>Add subs manually (+9.6 min each)</td></tr>
                     <tr><td><code>!subgoal label 12 Hour Stream</code></td><td>Mods</td><td>Change the label</td></tr>
                   </tbody>
                 </table>
-                <p class="subtitle" style="margin-top:10px;">Kick subs / gift subs auto-count toward this goal (same webhooks as workout).</p>
+                <p class="subtitle" style="margin-top:10px;">Kick subs / gift subs auto-add 9.6 minutes (same webhooks as workout). Max 12 hours.</p>
               </div>
             </div>
 

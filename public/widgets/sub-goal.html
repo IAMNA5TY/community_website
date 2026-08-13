@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Stream Sub Goal</title>
+  <title>Stream Sub Timer</title>
   <link rel="stylesheet" href="../workout/css/workout-theme.css">
   <link rel="stylesheet" href="/css/stream-bg.css">
   <style>
@@ -18,7 +18,7 @@
     }
 
     .sub-goal-wrap {
-      width: min(420px, 100%);
+      width: min(440px, 100%);
     }
 
     .sub-goal-body {
@@ -28,22 +28,25 @@
 
     .sub-goal-count {
       font-family: var(--font-display);
-      font-size: 3.4rem;
+      font-size: 3.1rem;
       font-weight: 900;
       line-height: 1;
       color: var(--white);
       letter-spacing: 0.02em;
       text-shadow: 0 0 24px rgba(255, 87, 34, 0.35);
+      font-variant-numeric: tabular-nums;
     }
 
     .sub-goal-count .slash {
       color: var(--text-muted);
       font-weight: 700;
-      margin: 0 0.08em;
+      margin: 0 0.12em;
+      font-size: 0.7em;
     }
 
     .sub-goal-count .goal {
       color: var(--orange-bright);
+      font-size: 0.72em;
     }
 
     .sub-goal-label {
@@ -94,20 +97,23 @@
 </head>
 <body>
   <div class="sub-goal-wrap panel orange-accent stream-bg" id="subGoalRoot">
-    <div class="panel-header orange"><span class="icon">⭐</span> Sub Goal</div>
+    <div class="panel-header orange"><span class="icon">⏱️</span> Stream Timer</div>
     <div class="panel-body sub-goal-body">
       <div class="sub-goal-count">
-        <span data-sub-count>0</span><span class="slash">/</span><span class="goal" data-sub-goal>50</span>
+        <span data-sub-time>4:00:00</span><span class="slash">/</span><span class="goal" data-sub-max>12:00:00</span>
       </div>
       <div class="sub-goal-label" data-sub-label>12 Hour Stream</div>
       <div class="sub-goal-progress" aria-hidden="true">
         <div class="sub-goal-progress-fill" data-sub-fill></div>
       </div>
-      <div class="sub-goal-meta"><span data-sub-pct>0%</span> · resets each stream</div>
+      <div class="sub-goal-meta">
+        <span data-sub-meta>0/50 subs · +9.6 min each</span>
+        · <span data-sub-status>counting down</span>
+      </div>
     </div>
   </div>
 
-  <script src="js/sub-goal.js?v=1"></script>
+  <script src="js/sub-goal.js?v=2"></script>
   <script>
     const params = new URLSearchParams(location.search);
     const width = parseInt(params.get("width"), 10);
