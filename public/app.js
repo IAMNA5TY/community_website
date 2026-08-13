@@ -897,8 +897,8 @@ function renderSubGoalControls(subGoal) {
   const label = subGoal.label || "12 Hour Stream";
   const running = subGoal.isRunning
     ? "counting down"
-    : "paused — hit Start countdown or !subgoal start";
-  statusEl.textContent = `${time} left / ${max} max · ${count}/${goal} subs · ${running} · ${label}`;
+    : "paused — Start countdown or !subgoal start";
+  statusEl.textContent = `${time} left (max ${max} total) · ${count}/${goal} subs · ${running} · ${label}`;
 }
 
 async function subGoalAction(action, extra = {}) {
