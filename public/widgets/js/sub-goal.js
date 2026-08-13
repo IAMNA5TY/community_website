@@ -94,7 +94,7 @@ function renderSubGoal(root, state) {
   if (statusEl) {
     statusEl.textContent = state.isRunning
       ? "counting down"
-      : "paused — start to count down";
+      : "paused — start countdown";
   }
   root.classList.toggle("goal-hit", atMax);
   root.classList.toggle("is-running", Boolean(state.isRunning));

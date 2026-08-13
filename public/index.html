@@ -848,13 +848,15 @@
               <div class="panel-header">
                 <h2>Stream Timer</h2>
                 <p class="subtitle">
-                  Left side = time left (counts down). Right = max <strong>12:00:00</strong>.
-                  Start at <strong>4:00:00</strong> — each sub adds <strong>9.6 min</strong> (50 gifts = full 12h).
+                  Go live → <strong>Start countdown</strong> (or <code>!subgoal start</code>).
+                  Clock starts at <strong>4:00:00</strong> and ticks down.
+                  Each sub/gift adds <strong>9.6 min</strong> up to <strong>12:00:00</strong> max
+                  (50 gifts from 4h = full 12h). Gift while paused also starts the timer.
                 </p>
               </div>
               <iframe
                 class="widgets-embed-frame"
-                src="/widgets/sub-goal.html?obs=1&embed=1&v=3"
+                src="/widgets/sub-goal.html?obs=1&embed=1&v=4"
                 title="Stream sub goal preview"
                 style="min-height:280px;"
               ></iframe>
@@ -869,14 +871,15 @@
                 <h3 style="margin:0 0 8px;font-size:1rem;">Chat commands</h3>
                 <table class="data-table">
                   <tbody>
-                    <tr><td><code>!subgoal</code> / <code>!subs</code></td><td>Anyone</td><td>Show timer + sub count</td></tr>
-                    <tr><td><code>!subgoal reset</code></td><td>Mods</td><td>Reset to 4:00 and start countdown</td></tr>
-                    <tr><td><code>!subgoal start</code> / <code>stop</code></td><td>Mods</td><td>Start or pause countdown</td></tr>
+                    <tr><td><code>!subgoal</code> / <code>!subs</code></td><td>Anyone</td><td>Show time left + sub count</td></tr>
+                    <tr><td><code>!subgoal start</code></td><td>Mods</td><td>Start countdown from current time left</td></tr>
+                    <tr><td><code>!subgoal stop</code></td><td>Mods</td><td>Pause (time left freezes)</td></tr>
+                    <tr><td><code>!subgoal reset</code></td><td>Mods</td><td>New stream: 4:00 left + start counting</td></tr>
                     <tr><td><code>!subgoal 5</code></td><td>Mods</td><td>Add subs manually (+9.6 min each)</td></tr>
                     <tr><td><code>!subgoal label 12 Hour Stream</code></td><td>Mods</td><td>Change the label</td></tr>
                   </tbody>
                 </table>
-                <p class="subtitle" style="margin-top:10px;">Kick subs / gift subs auto-add 9.6 minutes (same webhooks as workout). Max 12 hours.</p>
+                <p class="subtitle" style="margin-top:10px;">Kick subs / gift subs auto-add 9.6 minutes and start the countdown if it was paused. Cap is 12 hours.</p>
               </div>
             </div>
 
