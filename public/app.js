@@ -20,9 +20,15 @@ let sessionProfile = null;
 let sessionRole = "player";
 let leaderboardPeriod = "week";
 let stakeAffiliatePeriod = "month";
-let currentPage = "profile";
+let currentPage = "city";
+if (location.hash === "#only-pixels") currentPage = "only-pixels";
+else if (location.hash === "#discord" || location.hash.startsWith("#discord?")) currentPage = "discord";
+else if (location.hash === "#profile") currentPage = "profile";
+else if (location.hash === "#streamers") currentPage = "streamers";
+else if (location.hash === "#overview") currentPage = "overview";
 let dashboardRole = "owner";
 let allowedPages = [
+  "city",
   "profile",
   "streamers",
   "overview",
@@ -162,11 +168,13 @@ function applyNavAccess(me = {}) {
   }
 
   if (!allowedPages.includes(currentPage)) {
-    currentPage = allowedPages.includes("profile")
-      ? "profile"
-      : allowedPages.includes("only-pixels")
-        ? "only-pixels"
-        : allowedPages[0] || "profile";
+    currentPage = allowedPages.includes("city")
+      ? "city"
+      : allowedPages.includes("profile")
+        ? "profile"
+        : allowedPages.includes("only-pixels")
+          ? "only-pixels"
+          : allowedPages[0] || "profile";
   }
 }
 
@@ -194,11 +202,13 @@ function filterHubCards(query = "") {
 
 function showPage(page) {
   if (allowedPages.length && !allowedPages.includes(page)) {
-    page = allowedPages.includes("profile")
-      ? "profile"
-      : allowedPages.includes("only-pixels")
-        ? "only-pixels"
-        : allowedPages[0] || "profile";
+    page = allowedPages.includes("city")
+      ? "city"
+      : allowedPages.includes("profile")
+        ? "profile"
+        : allowedPages.includes("only-pixels")
+          ? "only-pixels"
+          : allowedPages[0] || "profile";
   }
   currentPage = page;
   document.querySelectorAll(".page-view").forEach((section) => {
@@ -230,6 +240,9 @@ function showPage(page) {
   if (page === "streamers") {
     refreshPartnerStreamers();
     ensurePartnerStreamersPolling();
+  }
+  if (page === "city") {
+    refreshCity();
   }
 }
 
@@ -2799,6 +2812,7 @@ mainNav.addEventListener("click", (event) => {
   if (link.dataset.page === "slots") refreshSlots();
   if (link.dataset.page === "drinking") refreshDrinking();
   if (link.dataset.page === "stake") refreshStake();
+  if (link.dataset.page === "city") refreshCity();
 });
 
 const menuToggle = document.getElementById("menu-toggle");
@@ -4056,6 +4070,11 @@ if (error) {
 loadDashboard();
 setInterval(loadDashboard, 15000);
 setInterval(() => {
+  if (sessionProfile && currentPage === "city") {
+    refreshCity();
+  }
+}, 12000);
+setInterval(() => {
   if (currentPage === "leaderboard" && allowedPages.includes("leaderboard")) {
     refreshLeaderboards(true);
   }
@@ -4576,9 +4595,10 @@ function bindOnlyPixelsPartnerEvents() {
 
 if (location.hash === "#only-pixels") {
   currentPage = "only-pixels";
-}
-if (location.hash === "#discord" || location.hash.startsWith("#discord?")) {
+} else if (location.hash === "#discord" || location.hash.startsWith("#discord?")) {
   currentPage = "discord";
+} else if (location.hash === "#city" || !location.hash) {
+  currentPage = "city";
 }
 
 function setDiscordStatus(message, type = "") {
@@ -5175,4 +5195,132 @@ document.getElementById("discord-unlink-btn")?.addEventListener("click", async (
     setDiscordStatus(error.message, "err");
   }
 });
+
+let cityState = { data: null, search: "", bound: false };
+
+function cityKickName() {
+  return String(sessionProfile?.username || sessionProfile?.name || "")
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase();
+}
+
+function formatCityAge(updatedAt) {
+  if (!updatedAt) return "never";
+  const ageMs = Date.now() - Number(updatedAt);
+  if (!Number.isFinite(ageMs) || ageMs < 0) return "just now";
+  const seconds = Math.floor(ageMs / 1000);
+  if (seconds < 10) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ago`;
+}
+
+function renderCityPlayer(player, { showJob = false } = {}) {
+  const live = player.live
+    ? '<span class="city-pill city-pill--live">Live</span>'
+    : "";
+  const kick = player.kickUsername
+    ? `<a class="city-kick" href="https://kick.com/${encodeURIComponent(player.kickUsername)}" target="_blank" rel="noopener noreferrer">@${escapeHtml(player.kickUsername)}</a>`
+    : '<span class="subtitle">Kick not linked</span>';
+  const job = showJob && player.job
+    ? `<span class="city-job">${escapeHtml(player.job)}</span>`
+    : "";
+  return `
+    <article class="city-row">
+      <div>
+        <strong>${escapeHtml(player.name || "Unknown")}</strong>
+        ${job}
+      </div>
+      <div class="city-row__meta">${kick}${live}</div>
+    </article>
+  `;
+}
+
+function renderCityView(data) {
+  cityState.data = data;
+  const status = document.getElementById("city-status");
+  const stats = document.getElementById("city-stats");
+  const meBox = document.getElementById("city-me");
+  const liveBox = document.getElementById("city-live");
+  const rosterCard = document.getElementById("city-roster-card");
+  const roster = document.getElementById("city-roster");
+  if (!status || !stats || !meBox || !liveBox) return;
+
+  const connected = Boolean(data?.connected);
+  const serverName = data?.serverName || "Only Pixels";
+  status.innerHTML = connected
+    ? `<p class="city-status__ok">Connected to <strong>${escapeHtml(serverName)}</strong> · updated ${escapeHtml(formatCityAge(data.updatedAt))}</p>`
+    : `<p class="city-status__wait">City feed is idle — FiveM script work comes next. Last update: ${escapeHtml(formatCityAge(data?.updatedAt))}.</p>`;
+
+  const count = `${data?.playerCount || 0}${data?.maxPlayers ? ` / ${data.maxPlayers}` : ""}`;
+  stats.innerHTML = `
+    <article class="stat-card"><div class="stat-label">In city</div><div class="stat-value">${escapeHtml(count)}</div></article>
+    <article class="stat-card"><div class="stat-label">Kick linked</div><div class="stat-value">${escapeHtml(String(data?.linkedCount || 0))}</div></article>
+    <article class="stat-card"><div class="stat-label">Live streamers</div><div class="stat-value">${escapeHtml(String(data?.liveCount || 0))}</div></article>
+  `;
+
+  if (data?.me) {
+    meBox.innerHTML = `
+      ${renderCityPlayer(data.me, { showJob: true })}
+      <p class="subtitle">Linked to the Kick account you signed in with.</p>
+    `;
+  } else {
+    meBox.innerHTML = `
+      <p class="subtitle">No in-city character found for <strong>@${escapeHtml(cityKickName() || "you")}</strong>.</p>
+      <p class="subtitle">In FiveM open <code>/kickmenu</code> and register/link this same Kick username. The city list fills in after the game server starts sending snapshots.</p>
+    `;
+  }
+
+  const liveStreamers = data?.liveStreamers || [];
+  liveBox.innerHTML = liveStreamers.length
+    ? liveStreamers.map((player) => renderCityPlayer(player)).join("")
+    : '<p class="subtitle">Nobody partnered is in the city right now.</p>';
+
+  const players = Array.isArray(data?.players) ? data.players : null;
+  if (rosterCard && roster && players) {
+    rosterCard.classList.remove("hidden");
+    const q = cityState.search.trim().toLowerCase();
+    const filtered = players.filter((player) => {
+      if (!q) return true;
+      const haystack = `${player.name || ""} ${player.job || ""} ${player.kickUsername || ""}`.toLowerCase();
+      return haystack.includes(q);
+    });
+    roster.innerHTML = filtered.length
+      ? filtered.map((player) => renderCityPlayer(player, { showJob: true })).join("")
+      : '<p class="subtitle">No players match that search.</p>';
+  } else if (rosterCard) {
+    rosterCard.classList.add("hidden");
+  }
+}
+
+async function refreshCity() {
+  try {
+    const response = await fetch("/api/city", { credentials: "same-origin" });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || "Could not load city");
+    }
+    renderCityView(data);
+  } catch (error) {
+    const status = document.getElementById("city-status");
+    if (status) {
+      status.innerHTML = `<p class="city-status__wait">${escapeHtml(error.message)}</p>`;
+    }
+  }
+}
+
+function bindCityControls() {
+  if (cityState.bound) return;
+  cityState.bound = true;
+  document.getElementById("city-refresh")?.addEventListener("click", () => {
+    refreshCity();
+  });
+  document.getElementById("city-search-input")?.addEventListener("input", (event) => {
+    cityState.search = event.target.value || "";
+    if (cityState.data) renderCityView(cityState.data);
+  });
+}
+
+bindCityControls();
 

@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=26" />
+    <link rel="stylesheet" href="/styles.css?v=27" />
   </head>
   <body>
     <main class="page">
@@ -25,7 +25,7 @@
           <h1 class="login-brand">NA5TY</h1>
           <p class="login-headline">Hey — glad you’re here.</p>
           <p class="login-tagline">
-            Jump in with Kick or Twitch to claim rewards, link up, and hang with the crew.
+            Jump in with Kick or Twitch to claim rewards, see your Only Pixels character, and hang with the crew.
           </p>
 
           <div class="login-cta">
@@ -40,7 +40,7 @@
           </div>
 
           <p class="login-note">
-            Prefer Kick if you chat on stream — that unlocks Only Pixels rewards and your link code.
+            Prefer Kick if you chat on stream — that unlocks City, Only Pixels rewards, and your link code.
           </p>
 
           <p class="login-live">
@@ -70,7 +70,11 @@
 
           <nav class="nav" id="main-nav">
             <div class="nav-group">
-              <button class="nav-link active" data-page="profile" type="button">
+              <button class="nav-link active" data-page="city" type="button">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10l8-6 8 6v10H4z"/><path d="M10 20v-6h4v6"/></svg></span>
+                <span class="nav-label">City</span>
+              </button>
+              <button class="nav-link" data-page="profile" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19c1.8-3 4.2-4.5 7-4.5S16.2 16 18 19"/></svg></span>
                 <span class="nav-label">Profile</span>
               </button>
@@ -166,7 +170,55 @@
 
           <p class="notice hidden" id="webhook-notice"></p>
 
-          <section class="page-view active" data-page="profile">
+          <section class="page-view active" data-page="city">
+            <header class="page-header overview-header">
+              <div>
+                <h1>Only Pixels</h1>
+                <p class="subtitle">FiveM city linked to Kick — your character, live streamers, and who’s online</p>
+              </div>
+              <button class="btn btn-secondary btn-compact" type="button" id="city-refresh">Refresh</button>
+            </header>
+
+            <div class="city-status" id="city-status">
+              <p class="subtitle">Connecting to the city…</p>
+            </div>
+
+            <div class="stats-grid" id="city-stats"></div>
+
+            <div class="city-layout">
+              <div class="card panel" id="city-me-card">
+                <h2>Your character</h2>
+                <div id="city-me">
+                  <p class="subtitle">Sign in with the same Kick username you linked in <code>/kickmenu</code>.</p>
+                </div>
+              </div>
+              <div class="card panel">
+                <h2>Live in city</h2>
+                <p class="subtitle">Partnered Kick streamers who are in Only Pixels right now.</p>
+                <div id="city-live" class="city-list">
+                  <p class="subtitle">Loading…</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card panel hidden" id="city-roster-card">
+              <div class="only-pixels-points-head">
+                <div>
+                  <h2>Who’s in the city</h2>
+                  <p class="subtitle">Staff view — character names, jobs, and Kick links. Viewers only see their own character and live streamers (no metagame list).</p>
+                </div>
+                <label class="hub-search" for="city-search-input">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                  <input id="city-search-input" type="search" placeholder="Search players…" autocomplete="off" />
+                </label>
+              </div>
+              <div id="city-roster" class="city-list">
+                <p class="subtitle">Loading roster…</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="page-view" data-page="profile">
             <div class="profile-stack" id="profile-stack">
               <div class="card profile-card" id="profile-card">
                 <div class="profile-card__hero">
@@ -276,6 +328,11 @@
                 </label>
               </div>
               <div class="hub-grid" id="hub-grid">
+                <button class="hub-card" type="button" data-goto-page="city" data-page="city" data-hub-filter="city fivem only pixels character live">
+                  <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10l8-6 8 6v10H4z"/><path d="M10 20v-6h4v6"/></svg></span>
+                  <strong>City</strong>
+                  <span>Your FiveM character, live Kick streamers, and who’s in Only Pixels.</span>
+                </button>
                 <button class="hub-card" type="button" data-goto-page="channel" data-page="channel" data-hub-filter="channel profile description category">
                   <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19c1.8-3 4.2-4.5 7-4.5S16.2 16 18 19"/></svg></span>
                   <strong>Channel</strong>
@@ -284,7 +341,7 @@
                 <button class="hub-card" type="button" data-goto-page="only-pixels" data-page="only-pixels" data-hub-filter="only pixels kick city fivem">
                   <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
                   <strong>Only Pixels</strong>
-                  <span>Register for Streamer Rewards and track your Kick points.</span>
+                  <span>Kick points and streamer partnership for in-city rewards.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="discord" data-page="discord" data-hub-filter="discord sub role subscriber">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 10h.01M16 10h.01M7 16c1.5 1 3.2 1.5 5 1.5s3.5-.5 5-1.5"/></svg></span>
@@ -345,8 +402,8 @@
 
           <section class="page-view" data-page="only-pixels">
             <header class="page-header">
-              <h1>Only Pixels</h1>
-              <p class="subtitle">Streamer Rewards registration, partnered streamers, and FiveM rewards</p>
+                <h1>Only Pixels</h1>
+                <p class="subtitle">Kick points, streamer partnership, and chat rewards for in-city</p>
             </header>
 
             <div class="card panel only-pixels-register">
@@ -1323,6 +1380,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=96"></script>
+    <script src="/app.js?v=97"></script>
   </body>
 </html>
