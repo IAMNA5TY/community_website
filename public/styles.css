@@ -2750,6 +2750,12 @@ body.platform-twitch .profile-card__platform-badge {
   background: var(--kick);
 }
 
+.city-pill--points {
+  color: #041204;
+  background: rgba(83, 252, 24, 0.85);
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 900px) {
   .city-layout { grid-template-columns: 1fr; }
   .city-row { flex-direction: column; }
