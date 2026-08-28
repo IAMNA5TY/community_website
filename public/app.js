@@ -5502,8 +5502,12 @@ function renderCityView(data) {
     : cityLiveEmptyHtml();
 
   const players = Array.isArray(data?.players) ? data.players : null;
+  const rosterCount = document.getElementById("city-roster-count");
   if (rosterCard && roster && players) {
     rosterCard.classList.remove("hidden");
+    if (rosterCount) {
+      rosterCount.textContent = `${players.length} in city`;
+    }
     const q = cityState.search.trim().toLowerCase();
     const filtered = players.filter((player) => {
       if (!q) return true;

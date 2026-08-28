@@ -3114,8 +3114,66 @@ body.is-guest .city-layout {
   font-variant-numeric: tabular-nums;
 }
 
+.city-roster {
+  margin: 0;
+}
+
+.city-roster__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.city-roster__summary::-webkit-details-marker {
+  display: none;
+}
+
+.city-roster__summary::after {
+  content: "";
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  margin-left: 4px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.city-roster[open] .city-roster__summary::after {
+  transform: rotate(-135deg);
+  margin-top: 8px;
+}
+
+.city-roster__summary h2 {
+  margin: 0 0 4px;
+}
+
+.city-roster__count {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.city-roster__body {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 @media (max-width: 900px) {
   .city-layout { grid-template-columns: 1fr; }
   .city-row { flex-direction: column; }
   .city-row__meta { justify-content: flex-start; text-align: left; }
+  .city-roster__summary { flex-wrap: wrap; }
 }

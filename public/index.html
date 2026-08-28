@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=37" />
+    <link rel="stylesheet" href="/styles.css?v=38" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -290,19 +290,24 @@
             </div>
 
             <div class="card panel hidden" id="city-roster-card">
-              <div class="only-pixels-points-head">
-                <div>
-                  <h2>Who’s in the city</h2>
-                  <p class="subtitle">Staff view — names, jobs, and Kick links. Viewers only see their own character and live partners (no roster). Points only appear on approved partner channels you’ve chatted in — never on your own row.</p>
+              <details class="city-roster" id="city-roster-details">
+                <summary class="city-roster__summary">
+                  <div>
+                    <h2>Who’s in the city</h2>
+                    <p class="subtitle">Staff only. Closed by default so names stay off the page until you open it.</p>
+                  </div>
+                  <span class="city-roster__count" id="city-roster-count"></span>
+                </summary>
+                <div class="city-roster__body">
+                  <label class="hub-search" for="city-search-input">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                    <input id="city-search-input" type="search" placeholder="Search players…" autocomplete="off" />
+                  </label>
+                  <div id="city-roster" class="city-list">
+                    <p class="subtitle">Loading roster…</p>
+                  </div>
                 </div>
-                <label class="hub-search" for="city-search-input">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-                  <input id="city-search-input" type="search" placeholder="Search players…" autocomplete="off" />
-                </label>
-              </div>
-              <div id="city-roster" class="city-list">
-                <p class="subtitle">Loading roster…</p>
-              </div>
+              </details>
             </div>
           </section>
 
@@ -1435,6 +1440,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=107"></script>
+    <script src="/app.js?v=108"></script>
   </body>
 </html>
