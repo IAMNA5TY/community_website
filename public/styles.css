@@ -492,6 +492,10 @@ body.platform-twitch .profile-card__platform-badge {
   margin-bottom: 0;
 }
 
+#public-tabs-banner .public-tabs-panel__btn {
+  margin-top: 12px;
+}
+
 .public-tabs-banner h2 {
   margin: 0 0 6px;
   font-size: 1.15rem;
