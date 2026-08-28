@@ -26,7 +26,7 @@ else if (location.hash === "#discord" || location.hash.startsWith("#discord?")) 
 else if (location.hash === "#profile") currentPage = "profile";
 else if (location.hash === "#streamers") currentPage = "city";
 else if (location.hash === "#overview" || location.hash === "#channel") currentPage = "overview";
-let dashboardRole = "owner";
+let dashboardRole = "player";
 let publicPreview = false;
 let publicPages = ["city", "profile", "overview", "only-pixels", "discord"];
 let guestPages = ["city", "profile", "only-pixels", "discord"];
@@ -2676,26 +2676,17 @@ function renderPartnerStreamersList() {
     return;
   }
 
-  const openSlugs = new Set(partnerStreamersState.tiles.map((tile) => tile.slug));
-  const tileCount = partnerStreamersState.tiles.length;
-
   list.innerHTML = shown
     .map((partner) => {
       const liveClass = partner.isLive ? "is-live" : "";
-      const selectedClass = openSlugs.has(partner.slug) ? "is-selected" : "";
+      const selected = partner.slug === partnerStreamersState.selectedSlug;
+      const selectedClass = selected ? "is-selected" : "";
       const slug = escapeHtml(partner.slug);
       const name = escapeHtml(partner.displayName || partner.slug);
-      const action =
-        tileCount >= MAX_STREAM_TILES
-          ? "Full"
-          : tileCount > 0
-            ? "Add"
-            : partner.isLive
-              ? "Watch"
-              : "Open";
+      const action = selected ? "Watching" : partner.isLive ? "Watch" : "Open";
       return `
         <button class="streamer-row ${selectedClass}" type="button" data-watch-slug="${slug}">
-          <span class="streamer-row__live ${liveClass}" title="${partner.isLive ? "Live" : "Offline"}"></span>
+          <span class="streamer-row__live ${liveClass}" title="${partner.isLive ? "Live on Kick" : "Offline on Kick"}"></span>
           <div class="streamer-row__meta">
             <span class="streamer-row__name">${name}</span>
             <span class="streamer-row__slug">kick.com/${slug}</span>
@@ -4857,9 +4848,11 @@ async function refreshDiscordPanel(dashboard) {
   }
 
   const ownerPanel = document.getElementById("discord-owner-subs-panel");
-  if (ownerPanel && (dashboardRole === "owner" || dashboardData?.role === "owner")) {
-    ownerPanel.classList.remove("hidden");
-    refreshDiscordOwnerSubs();
+  if (ownerPanel) {
+    const isOwner = dashboardRole === "owner" || dashboardData?.role === "owner";
+    ownerPanel.classList.toggle("hidden", !isOwner);
+    ownerPanel.hidden = !isOwner;
+    if (isOwner) refreshDiscordOwnerSubs();
   }
 }
 
@@ -5385,7 +5378,7 @@ function formatCityAge(updatedAt) {
 }
 
 function cityLiveEmptyHtml() {
-  return '<p class="subtitle">No partnered streamers in the city right now.</p>';
+  return '<p class="subtitle">No approved partners streaming from the city right now.</p>';
 }
 
 async function ensureCityHouseWatch() {
@@ -5459,9 +5452,16 @@ function renderCityView(data) {
     if (status) {
       status.innerHTML = "";
     }
-    if (stats) stats.innerHTML = "";
+    if (stats) {
+      stats.innerHTML = "";
+      stats.classList.add("hidden");
+    }
     if (meBox) meBox.innerHTML = "";
     const liveStreamers = data?.liveStreamers || [];
+    const liveCountEl = document.getElementById("city-live-count");
+    if (liveCountEl) {
+      liveCountEl.textContent = `${liveStreamers.length} live in city`;
+    }
     liveBox.innerHTML = liveStreamers.length
       ? liveStreamers.map((player) => renderCityPlayer(player)).join("")
       : cityLiveEmptyHtml();
@@ -5477,12 +5477,19 @@ function renderCityView(data) {
     ? `<p class="city-status__ok">Connected to <strong>${escapeHtml(serverName)}</strong> · updated ${escapeHtml(formatCityAge(data.updatedAt))}</p>`
     : `<p class="city-status__wait">City feed is idle — FiveM script work comes next. Last update: ${escapeHtml(formatCityAge(data?.updatedAt))}.</p>`;
 
-  const count = `${data?.playerCount || 0}${data?.maxPlayers ? ` / ${data.maxPlayers}` : ""}`;
-  stats.innerHTML = `
-    <article class="stat-card"><div class="stat-label">In city</div><div class="stat-value">${escapeHtml(count)}</div></article>
-    <article class="stat-card"><div class="stat-label">Kick linked</div><div class="stat-value">${escapeHtml(String(data?.linkedCount || 0))}</div></article>
-    <article class="stat-card"><div class="stat-label">Live streamers</div><div class="stat-value">${escapeHtml(String(data?.liveCount || 0))}</div></article>
-  `;
+  const isStaff = Array.isArray(data?.players);
+  if (isStaff) {
+    stats.classList.remove("hidden");
+    const count = `${data?.playerCount || 0}${data?.maxPlayers ? ` / ${data.maxPlayers}` : ""}`;
+    stats.innerHTML = `
+      <article class="stat-card"><div class="stat-label">In city</div><div class="stat-value">${escapeHtml(count)}</div></article>
+      <article class="stat-card"><div class="stat-label">Kick linked</div><div class="stat-value">${escapeHtml(String(data?.linkedCount || 0))}</div></article>
+      <article class="stat-card"><div class="stat-label">Live in city</div><div class="stat-value">${escapeHtml(String(data?.liveCount || 0))}</div></article>
+    `;
+  } else {
+    stats.innerHTML = "";
+    stats.classList.add("hidden");
+  }
 
   if (data?.me) {
     meBox.innerHTML = `
@@ -5497,6 +5504,10 @@ function renderCityView(data) {
   }
 
   const liveStreamers = data?.liveStreamers || [];
+  const liveCountEl = document.getElementById("city-live-count");
+  if (liveCountEl) {
+    liveCountEl.textContent = `${liveStreamers.length} live in city`;
+  }
   liveBox.innerHTML = liveStreamers.length
     ? liveStreamers.map((player) => renderCityPlayer(player)).join("")
     : cityLiveEmptyHtml();

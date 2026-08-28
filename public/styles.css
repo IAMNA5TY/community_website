@@ -1558,8 +1558,48 @@ body:not(.is-guest) .guest-only {
 }
 
 .city-stage__chat .site-chat__interact {
-  max-height: 96px;
+  max-height: 140px;
   overflow: auto;
+  border-top: 0;
+}
+
+.site-chat__tools {
+  margin: 0;
+  border-bottom: 1px solid #222;
+  background: #0c0c0c;
+}
+
+.site-chat__tools-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  padding: 9px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.site-chat__tools-summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-chat__tools-summary::after {
+  content: "";
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+}
+
+.site-chat__tools[open] .site-chat__tools-summary::after {
+  transform: rotate(-135deg);
 }
 
 .city-stage__chat .site-chat__messages {
