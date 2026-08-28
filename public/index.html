@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=27" />
+    <link rel="stylesheet" href="/styles.css?v=28" />
   </head>
   <body>
     <main class="page">
@@ -66,6 +66,15 @@
 
           <div class="sidebar-platform" id="sidebar-platform">
             Platform: <strong id="sidebar-platform-name">Kick</strong>
+          </div>
+
+          <div class="public-tabs-panel hidden" id="public-tabs-panel">
+            <p class="public-tabs-panel__kicker">na5ty only</p>
+            <p class="public-tabs-panel__title">Tabs the public can see</p>
+            <ol class="public-tabs-panel__list" id="public-tabs-list"></ol>
+            <button class="public-tabs-panel__btn" id="public-preview-btn" type="button">
+              Preview public sidebar
+            </button>
           </div>
 
           <nav class="nav" id="main-nav">
@@ -178,6 +187,15 @@
               </div>
               <button class="btn btn-secondary btn-compact" type="button" id="city-refresh">Refresh</button>
             </header>
+
+            <div class="public-tabs-banner hidden" id="public-tabs-banner">
+              <p class="public-tabs-banner__kicker">na5ty only</p>
+              <h2>Tabs the public can see</h2>
+              <p class="subtitle">
+                Viewers never get owner tools in the sidebar. This is the exact list they see.
+              </p>
+              <ol class="public-tabs-panel__list" id="public-tabs-banner-list"></ol>
+            </div>
 
             <div class="city-status" id="city-status">
               <p class="subtitle">Connecting to the city…</p>
@@ -1380,6 +1398,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=97"></script>
+    <script src="/app.js?v=98"></script>
   </body>
 </html>
