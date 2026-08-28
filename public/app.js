@@ -2115,7 +2115,7 @@ function renderProfilePage(data) {
 
 let partnerStreamersState = {
   partners: [],
-  filter: "all",
+  filter: "live",
   loading: false,
   timer: null,
   chatTimer: null,
@@ -2651,7 +2651,9 @@ function renderPartnerStreamersList() {
     );
   });
 
-  meta.textContent = `${liveCount} live · ${partners.length} approved`;
+  meta.textContent = document.body.classList.contains("is-guest")
+    ? `${liveCount} live`
+    : `${liveCount} live · ${partners.length} approved`;
 
   document.getElementById("streamers-filter-live")?.classList.toggle(
     "active",
@@ -2817,6 +2819,7 @@ function showGuestShell() {
   dashboardView.classList.remove("hidden");
   document.body.classList.add("is-dashboard", "is-guest", "platform-kick");
   document.body.classList.remove("nav-open", "platform-twitch");
+  partnerStreamersState.filter = "live";
   applyNavAccess({
     role: "player",
     allowedPages: guestPages,
@@ -2850,6 +2853,9 @@ function showDashboardShell(me) {
   dashboardView.classList.remove("hidden");
   document.body.classList.add("is-dashboard");
   document.body.classList.remove("is-guest");
+  if (partnerStreamersState.filter === "live") {
+    partnerStreamersState.filter = "all";
+  }
   const platformLabel = document.getElementById("sidebar-platform-label");
   if (platformLabel) platformLabel.textContent = "Platform:";
   closeMobileNav();
