@@ -18,12 +18,12 @@ const playerAllowed = access.getAllowedPages({
 const guestNav = access.getGuestPages();
 assert(guestPublic.join() === kickPublic.join(), "logged-out public tabs match Kick viewers");
 assert(guestNav.includes("city"), "City is a guest tab");
-assert(guestNav.includes("streamers"), "Streamers is a guest tab");
+assert(!guestNav.includes("streamers"), "Streamers is folded into City");
 assert(!guestNav.includes("overview"), "Dashboard is not a guest tab");
 assert(!guestNav.includes("channel"), "Channel is not a guest tab");
 assert(kickPublic.includes("city"), "City is public");
 assert(kickPublic.includes("profile"), "Profile is public");
-assert(kickPublic.includes("streamers"), "Streamers is public");
+assert(!kickPublic.includes("streamers"), "Streamers is folded into City");
 assert(kickPublic.includes("overview"), "Dashboard is public");
 assert(kickPublic.includes("channel"), "Channel is public");
 assert(kickPublic.includes("only-pixels"), "Only Pixels is public");
