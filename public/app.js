@@ -30,6 +30,7 @@ let dashboardRole = "owner";
 let publicPreview = false;
 let publicPages = ["city", "profile", "overview", "channel", "only-pixels", "discord"];
 let guestPages = ["city", "profile", "only-pixels", "discord"];
+const HOUSE_KICK_SLUG = "na5ty";
 let allowedPages = [
   "city",
   "profile",
@@ -315,7 +316,7 @@ function showPage(page) {
     refreshCity();
     refreshPartnerStreamers();
     ensurePartnerStreamersPolling();
-    autoOpenLiveWatch();
+    ensureCityHouseWatch();
   }
   syncNavMoreTools();
 }
@@ -2148,26 +2149,28 @@ function getFocusedStreamTile() {
 }
 
 function updateStreamerTheaterHeader() {
-  const title = document.getElementById("streamers-theater-title");
-  const slugEl = document.getElementById("streamers-theater-slug");
   const focused = getFocusedStreamTile();
-  const count = partnerStreamersState.tiles.length;
-  if (!focused) {
-    if (title) title.textContent = "Streamer";
-    if (slugEl) slugEl.textContent = "";
-    return;
+  const slug = focused?.slug || partnerStreamersState.selectedSlug || HOUSE_KICK_SLUG;
+  const partner =
+    partnerStreamersState.partners.find((row) => row.slug === slug) || focused || {
+      slug,
+      displayName: slug === HOUSE_KICK_SLUG ? "NA5TY" : slug,
+    };
+  const title = document.getElementById("city-stage-title");
+  const kicker = document.getElementById("city-stage-kicker");
+  const status = document.getElementById("city-stage-status");
+  const open = document.getElementById("city-stage-open");
+  if (title) title.textContent = partner.displayName || slug;
+  if (kicker) kicker.textContent = `kick.com/${slug}`;
+  if (status) {
+    status.textContent = partner.isLive
+      ? "Live on Kick"
+      : slug === HOUSE_KICK_SLUG
+        ? "Offline — pick a live partner on the right"
+        : "Offline";
   }
-  if (title) {
-    title.textContent =
-      count > 1
-        ? `${focused.displayName || focused.slug} · ${count} windows`
-        : focused.displayName || focused.slug;
-  }
-  if (slugEl) {
-    slugEl.textContent =
-      count > 1
-        ? `Chat focused: kick.com/${focused.slug} · click another window to switch`
-        : `kick.com/${focused.slug}`;
+  if (open) {
+    open.href = `https://kick.com/${encodeURIComponent(slug)}`;
   }
 }
 
@@ -2360,7 +2363,7 @@ function removeStreamTile(tileId) {
   renderPartnerStreamersList();
 }
 
-function openStreamerTheater(partnerOrSlug) {
+function focusCityWatch(partnerOrSlug) {
   const slug =
     typeof partnerOrSlug === "string"
       ? partnerOrSlug
@@ -2371,43 +2374,53 @@ function openStreamerTheater(partnerOrSlug) {
     (typeof partnerOrSlug === "object" && partnerOrSlug) ||
     partnerStreamersState.partners.find((row) => row.slug === slug) || {
       slug,
-      displayName: slug,
+      displayName: slug === HOUSE_KICK_SLUG ? "NA5TY" : slug,
     };
 
-  if (partnerStreamersState.tiles.length >= MAX_STREAM_TILES) {
-    setSiteChatStatus(`Max ${MAX_STREAM_TILES} stream windows — close one to add another`, true);
-    showPage("city");
-    return;
-  }
-
-  streamTileSeq += 1;
-  const tile = {
-    id: `tile-${streamTileSeq}`,
-    slug,
-    displayName: partner.displayName || slug,
-    userMuted: false,
-  };
-
-  // Mute every existing window so only the newly focused one has sound.
-  for (const existing of partnerStreamersState.tiles) {
-    existing.userMuted = false;
-  }
-
-  partnerStreamersState.tiles.push(tile);
-  partnerStreamersState.focusedTileId = tile.id;
+  const same = partnerStreamersState.selectedSlug === slug;
+  partnerStreamersState.tiles = [
+    {
+      id: "city-tile",
+      slug,
+      displayName: partner.displayName || slug,
+      userMuted: false,
+    },
+  ];
+  partnerStreamersState.focusedTileId = "city-tile";
   partnerStreamersState.selectedSlug = slug;
-  partnerStreamersState.chatMessages = [];
-  partnerStreamersState.chatCommands = [];
-  partnerStreamersState.points = null;
-  if (currentPage !== "city") showPage("city");
+  if (!same) {
+    partnerStreamersState.chatMessages = [];
+    partnerStreamersState.chatCommands = [];
+    partnerStreamersState.points = null;
+  }
 
+  const player = document.getElementById("city-stage-player");
+  if (player) {
+    let frame = player.querySelector("iframe");
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.title = "Kick stream";
+      frame.allow = "autoplay; fullscreen; picture-in-picture";
+      frame.allowFullscreen = true;
+      player.appendChild(frame);
+    }
+    if (frame.dataset.slug !== slug) {
+      frame.dataset.slug = slug;
+      frame.src = kickPlayerEmbedUrl(slug, { muted: true });
+    }
+  }
+
+  updateStreamerTheaterHeader();
   setSiteChatStatus("");
-  renderStreamerPlayerGrid();
   renderSiteChatMessages();
   renderSiteChatInteract();
   refreshSiteChat();
   ensureSiteChatPolling();
   renderPartnerStreamersList();
+}
+
+function openStreamerTheater(partnerOrSlug) {
+  focusCityWatch(partnerOrSlug);
 }
 
 function closeStreamerTheater() {
@@ -2621,10 +2634,20 @@ function renderPartnerStreamersList() {
 
   const partners = partnerStreamersState.partners || [];
   const liveCount = partners.filter((p) => p.isLive).length;
-  const shown =
+  const shown = (
     partnerStreamersState.filter === "live"
-      ? partners.filter((p) => p.isLive)
-      : partners;
+      ? partners.filter((p) => p.isLive || p.slug === HOUSE_KICK_SLUG)
+      : partners.slice()
+  ).sort((a, b) => {
+    if (a.slug === HOUSE_KICK_SLUG) return -1;
+    if (b.slug === HOUSE_KICK_SLUG) return 1;
+    return (
+      Number(b.isLive) - Number(a.isLive) ||
+      String(a.displayName || a.slug).localeCompare(String(b.displayName || b.slug), undefined, {
+        sensitivity: "base",
+      })
+    );
+  });
 
   meta.textContent = `${liveCount} live · ${partners.length} approved`;
 
@@ -5361,20 +5384,21 @@ function cityLiveEmptyHtml() {
   return '<p class="subtitle">No partnered streamers in the city right now.</p>';
 }
 
-let autoOpenedLiveWatch = false;
-
-async function autoOpenLiveWatch() {
-  if (autoOpenedLiveWatch || partnerStreamersState.tiles.length) return;
+async function ensureCityHouseWatch() {
   if (!partnerStreamersState.partners.length) {
     await refreshPartnerStreamers();
   }
-  if (autoOpenedLiveWatch || partnerStreamersState.tiles.length) {
-    autoOpenedLiveWatch = true;
+  if (partnerStreamersState.selectedSlug) {
+    updateStreamerTheaterHeader();
     return;
   }
-  const live = partnerStreamersState.partners.find((row) => row.isLive);
-  autoOpenedLiveWatch = true;
-  if (live) openStreamerTheater(live);
+  const house =
+    partnerStreamersState.partners.find((row) => row.slug === HOUSE_KICK_SLUG) || {
+      slug: HOUSE_KICK_SLUG,
+      displayName: "NA5TY",
+      isLive: false,
+    };
+  focusCityWatch(house);
 }
 
 async function refreshCityInCityLine() {
