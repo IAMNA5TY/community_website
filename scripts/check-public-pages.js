@@ -20,12 +20,12 @@ assert(guestPublic.join() === kickPublic.join(), "logged-out public tabs match K
 assert(guestNav.includes("city"), "City is a guest tab");
 assert(!guestNav.includes("streamers"), "Streamers is folded into City");
 assert(!guestNav.includes("overview"), "Dashboard is not a guest tab");
-assert(!guestNav.includes("channel"), "Channel is not a guest tab");
+assert(!guestNav.includes("channel"), "Channel is folded into Dashboard");
 assert(kickPublic.includes("city"), "City is public");
 assert(kickPublic.includes("profile"), "Profile is public");
 assert(!kickPublic.includes("streamers"), "Streamers is folded into City");
 assert(kickPublic.includes("overview"), "Dashboard is public");
-assert(kickPublic.includes("channel"), "Channel is public");
+assert(!kickPublic.includes("channel"), "Channel is folded into Dashboard");
 assert(kickPublic.includes("only-pixels"), "Only Pixels is public");
 assert(kickPublic.includes("discord"), "Discord Sub is public");
 assert(!kickPublic.includes("widgets"), "Widgets is not public");

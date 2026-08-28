@@ -25,10 +25,10 @@ if (location.hash === "#only-pixels") currentPage = "only-pixels";
 else if (location.hash === "#discord" || location.hash.startsWith("#discord?")) currentPage = "discord";
 else if (location.hash === "#profile") currentPage = "profile";
 else if (location.hash === "#streamers") currentPage = "city";
-else if (location.hash === "#overview") currentPage = "overview";
+else if (location.hash === "#overview" || location.hash === "#channel") currentPage = "overview";
 let dashboardRole = "owner";
 let publicPreview = false;
-let publicPages = ["city", "profile", "overview", "channel", "only-pixels", "discord"];
+let publicPages = ["city", "profile", "overview", "only-pixels", "discord"];
 let guestPages = ["city", "profile", "only-pixels", "discord"];
 const HOUSE_KICK_SLUG = "na5ty";
 let allowedPages = [
@@ -275,6 +275,7 @@ function syncNavMoreTools() {
 
 function showPage(page) {
   if (page === "streamers") page = "city";
+  if (page === "channel") page = "overview";
   const navPages = visibleNavPages();
   if (navPages.length && !navPages.includes(page)) {
     page = navPages.includes("city")
@@ -409,6 +410,7 @@ function renderOverviewQuickLinks(data) {
 }
 
 function renderChannelDetails(channel) {
+  if (!channelDetails) return;
   if (!channel) {
     channelDetails.innerHTML = `<div class="empty-state">Channel details unavailable.</div>`;
     return;
@@ -4760,6 +4762,8 @@ if (location.hash === "#only-pixels") {
   currentPage = "only-pixels";
 } else if (location.hash === "#discord" || location.hash.startsWith("#discord?")) {
   currentPage = "discord";
+} else if (location.hash === "#overview" || location.hash === "#channel") {
+  currentPage = "overview";
 } else if (location.hash === "#city" || !location.hash) {
   currentPage = "city";
 }
