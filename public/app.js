@@ -179,9 +179,17 @@ function applyNavAccess(me = {}) {
 
   const pagesToShow = visibleNavPages();
 
+  const isGuest = document.body.classList.contains("is-guest");
   document.querySelectorAll(".nav-link").forEach((link) => {
     const page = link.dataset.page;
-    // Keep Log Out (and any non-page controls) always visible.
+    if (link.classList.contains("guest-only")) {
+      link.classList.toggle("hidden", !isGuest);
+      return;
+    }
+    if (link.classList.contains("signed-in-only") && (!page || link.id === "logout-btn")) {
+      link.classList.toggle("hidden", isGuest);
+      return;
+    }
     if (!page || link.id === "logout-btn") {
       link.classList.remove("hidden");
       return;
@@ -1973,7 +1981,7 @@ function renderProfileAccountActions(provider) {
 
   document.getElementById("profile-sign-out-btn")?.addEventListener("click", async () => {
     await fetch("/auth/logout", { method: "POST" });
-    showLogin();
+    showGuestShell();
   });
 }
 
@@ -2528,6 +2536,14 @@ function renderSiteChatMessages() {
 async function refreshSiteChat() {
   const slug = partnerStreamersState.selectedSlug;
   if (!slug) return;
+  if (document.body.classList.contains("is-guest")) {
+    partnerStreamersState.canSend = false;
+    partnerStreamersState.points = null;
+    partnerStreamersState.chatCommands = [];
+    const hint = document.getElementById("site-chat-hint");
+    if (hint) hint.textContent = `${slug} · sign in to chat`;
+    return;
+  }
   try {
     const response = await fetch(
       `/api/rewards/live-partners/${encodeURIComponent(slug)}/chat`,
@@ -2750,20 +2766,36 @@ function renderDashboard(data) {
 }
 
 function showLogin() {
+  showGuestShell();
+}
+
+function showGuestShell() {
   sessionProfile = null;
   sessionRole = "player";
   publicPreview = false;
   sessionProvider = "kick";
+  dashboardData = null;
   onlyPixelsState.signedIn = false;
   onlyPixelsState.currentUsername = "";
-  dashboardView.classList.add("hidden");
-  loginView.classList.remove("hidden");
-  document.body.classList.remove(
-    "is-dashboard",
-    "nav-open",
-    "platform-twitch",
-    "platform-kick"
-  );
+  loginView.classList.add("hidden");
+  dashboardView.classList.remove("hidden");
+  document.body.classList.add("is-dashboard", "is-guest", "platform-kick");
+  document.body.classList.remove("nav-open", "platform-twitch");
+  applyNavAccess({
+    role: "player",
+    allowedPages: publicPages,
+    publicPages,
+    isOwner: false,
+  });
+  const platformLabel = document.getElementById("sidebar-platform-label");
+  const platformName = document.getElementById("sidebar-platform-name");
+  if (platformLabel) platformLabel.textContent = "";
+  if (platformName) platformName.textContent = "Not signed in";
+  const displayName = document.getElementById("display-name");
+  if (displayName) displayName.textContent = "Guest";
+  const channelMeta = document.getElementById("channel-meta");
+  if (channelMeta) channelMeta.textContent = "";
+  showPage(currentPage);
 }
 
 function showDashboardShell(me) {
@@ -2784,6 +2816,9 @@ function showDashboardShell(me) {
   loginView.classList.add("hidden");
   dashboardView.classList.remove("hidden");
   document.body.classList.add("is-dashboard");
+  document.body.classList.remove("is-guest");
+  const platformLabel = document.getElementById("sidebar-platform-label");
+  if (platformLabel) platformLabel.textContent = "Platform:";
   closeMobileNav();
 }
 
@@ -2792,7 +2827,10 @@ async function loadDashboard() {
   const me = await meResponse.json().catch(() => ({ loggedIn: false }));
 
   if (!me.loggedIn) {
-    showLogin();
+    if (Array.isArray(me.publicPages) && me.publicPages.length) {
+      publicPages = me.publicPages.slice();
+    }
+    showGuestShell();
     return;
   }
 
@@ -2812,7 +2850,7 @@ async function loadDashboard() {
 
   const response = await fetch("/api/dashboard", { credentials: "same-origin" });
   if (response.status === 401) {
-    showLogin();
+    showGuestShell();
     return;
   }
 
@@ -2889,7 +2927,7 @@ hubSearchInput?.addEventListener("input", (event) => {
 
 logoutBtn.addEventListener("click", async () => {
   await fetch("/auth/logout", { method: "POST" });
-  showLogin();
+  showGuestShell();
 });
 
 document.getElementById("streamers-filter-live")?.addEventListener("click", () => {
@@ -4468,6 +4506,7 @@ function bindOnlyPixelsEvents() {
 }
 
 function refreshOnlyPixels(dashboard) {
+  if (document.body.classList.contains("is-guest")) return;
   bindOnlyPixelsEvents();
   const profile = dashboard?.profile || sessionProfile;
   const role = dashboard?.role || sessionRole || dashboardRole || "player";
@@ -4738,6 +4777,7 @@ function renderDiscordPanel(status = {}) {
 }
 
 async function refreshDiscordPanel(dashboard) {
+  if (document.body.classList.contains("is-guest")) return;
   try {
     const response = await fetch("/api/discord/status");
     const data = await response.json().catch(() => ({}));
@@ -5309,7 +5349,23 @@ function renderCityView(data) {
   const liveBox = document.getElementById("city-live");
   const rosterCard = document.getElementById("city-roster-card");
   const roster = document.getElementById("city-roster");
-  if (!status || !stats || !meBox || !liveBox) return;
+  if (!liveBox) return;
+
+  if (data?.public) {
+    if (status) {
+      status.innerHTML = "";
+    }
+    if (stats) stats.innerHTML = "";
+    if (meBox) meBox.innerHTML = "";
+    const liveStreamers = data?.liveStreamers || [];
+    liveBox.innerHTML = liveStreamers.length
+      ? liveStreamers.map((player) => renderCityPlayer(player)).join("")
+      : '<p class="subtitle">Nobody partnered is in the city right now.</p>';
+    rosterCard?.classList.add("hidden");
+    return;
+  }
+
+  if (!status || !stats || !meBox) return;
 
   const connected = Boolean(data?.connected);
   const serverName = data?.serverName || "Only Pixels";

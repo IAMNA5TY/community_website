@@ -518,7 +518,10 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/me", (req, res) => {
   if (!req.session.user) {
-    return res.json({ loggedIn: false });
+    return res.json({
+      loggedIn: false,
+      publicPages: dashboardAccess.getPublicPages(null, { req }),
+    });
   }
 
   const { provider, profile, scope } = req.session.user;

@@ -5,6 +5,7 @@ function assert(cond, label) {
 }
 
 const kickPublic = access.getPublicPages({ provider: "kick", profile: { username: "viewer" } });
+const guestPublic = access.getPublicPages(null);
 const ownerAllowed = access.getAllowedPages({
   provider: "kick",
   profile: { username: "na5ty", id: "1183030" },
@@ -14,6 +15,7 @@ const playerAllowed = access.getAllowedPages({
   profile: { username: "pinkyuwu" },
 });
 
+assert(guestPublic.join() === kickPublic.join(), "logged-out public tabs match Kick viewers");
 assert(kickPublic.includes("city"), "City is public");
 assert(kickPublic.includes("profile"), "Profile is public");
 assert(kickPublic.includes("streamers"), "Streamers is public");
