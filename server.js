@@ -3135,13 +3135,20 @@ app.post("/webhooks/kick", (req, res) => {
       if (resolved.broadcasterId) {
         kickRewardsStore.upsertMonitoredStreamer(resolved.slug, resolved.broadcasterId);
       }
-      kickRewardsStore.recordChatMessage({
+      const recorded = kickRewardsStore.recordChatMessage({
         streamer: resolved.slug,
         username: payload.sender.username,
         content: payload.content || "",
         createdAt: payload.created_at || new Date().toISOString(),
         messageId: payload.message_id || payload.id || null,
       });
+      if (recorded?.controlEvent?.action === "balance") {
+        require("./lib/kick-balance-reply")
+          .maybeReplyBalance(resolved.slug, payload.sender.username, recorded.controlEvent)
+          .catch((error) => {
+            console.warn(`[kick-rewards] balance reply failed: ${error.message}`);
+          });
+      }
     } else if (payload.sender?.username) {
       console.warn(
         `[kick-rewards] chat ignored — unknown monitored streamer for channel ${channelId}`
