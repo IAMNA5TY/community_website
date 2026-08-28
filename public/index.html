@@ -10,11 +10,11 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=29" />
+    <link rel="stylesheet" href="/styles.css?v=30" />
   </head>
-  <body>
+  <body class="is-dashboard is-guest">
     <main class="page">
-      <section class="login-shell" id="login-view">
+      <section class="login-shell hidden" id="login-view">
         <div class="login-atmosphere" aria-hidden="true">
           <span class="login-glow login-glow--a"></span>
           <span class="login-glow login-glow--b"></span>
@@ -51,7 +51,7 @@
         </div>
       </section>
 
-      <section class="app-shell hidden" id="dashboard-view">
+      <section class="app-shell" id="dashboard-view">
         <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Close menu"></button>
 
         <aside class="sidebar" id="sidebar">
@@ -64,8 +64,8 @@
             </button>
           </div>
 
-          <div class="sidebar-platform" id="sidebar-platform">
-            Platform: <strong id="sidebar-platform-name">Kick</strong>
+            <div class="sidebar-platform" id="sidebar-platform">
+            <span id="sidebar-platform-label">Platform:</span> <strong id="sidebar-platform-name">Guest</strong>
           </div>
 
           <div class="public-tabs-panel hidden" id="public-tabs-panel">
@@ -157,11 +157,19 @@
 
             <div class="nav-group nav-group--other">
               <p class="nav-group__label">Account</p>
-              <button class="nav-link" data-page="settings" type="button">
+              <a class="nav-link guest-only" href="/auth/kick">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                <span class="nav-label">Sign in with Kick</span>
+              </a>
+              <a class="nav-link guest-only" href="/auth/twitch">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                <span class="nav-label">Sign in with Twitch</span>
+              </a>
+              <button class="nav-link signed-in-only hidden" data-page="settings" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M4.9 6.5l1.4 1.4M17.7 16.1l1.4 1.4M3 12h2M19 12h2M4.9 17.5l1.4-1.4M17.7 7.9l1.4-1.4"/></svg></span>
                 <span class="nav-label">Settings</span>
               </button>
-              <button class="nav-link nav-link--logout" id="logout-btn" type="button">
+              <button class="nav-link nav-link--logout signed-in-only hidden" id="logout-btn" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H5v14h4M12 12h8M16 8l4 4-4 4"/></svg></span>
                 <span class="nav-label">Log Out</span>
               </button>
@@ -176,6 +184,10 @@
             </button>
             <div class="app-topbar__brand">NA5TY</div>
             <a class="app-topbar__live" id="app-topbar-live" href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">kick.com/na5ty</a>
+            <div class="topbar-auth guest-only" id="topbar-auth">
+              <a class="btn btn-kick btn-compact" href="/auth/kick">Sign in with Kick</a>
+              <a class="btn btn-twitch btn-compact" href="/auth/twitch">Twitch</a>
+            </div>
           </header>
 
           <!-- Kept for JS that still updates these nodes -->
@@ -205,14 +217,26 @@
               <ol class="public-tabs-panel__list" id="public-tabs-banner-list"></ol>
             </div>
 
-            <div class="city-status" id="city-status">
+            <div class="guest-lock guest-only">
+              <p class="guest-lock__kicker">Look around</p>
+              <h2>Only Pixels, live with the crew</h2>
+              <p class="subtitle">
+                See which partnered Kick streamers are in the city right now. Sign in to unlock your character, Kick points, and the online roster.
+              </p>
+              <div class="guest-lock__cta">
+                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
+                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
+              </div>
+            </div>
+
+            <div class="city-status signed-in-only" id="city-status">
               <p class="subtitle">Connecting to the city…</p>
             </div>
 
-            <div class="stats-grid" id="city-stats"></div>
+            <div class="stats-grid signed-in-only" id="city-stats"></div>
 
             <div class="city-layout">
-              <div class="card panel" id="city-me-card">
+              <div class="card panel signed-in-only" id="city-me-card">
                 <h2>Your character</h2>
                 <div id="city-me">
                   <p class="subtitle">Sign in with the same Kick username you linked in <code>/kickmenu</code>.</p>
@@ -220,7 +244,7 @@
               </div>
               <div class="card panel">
                 <h2>Live in city</h2>
-                <p class="subtitle">Partnered Kick streamers who are in Only Pixels right now. The points pill is <strong>your</strong> Kick points on that streamer.</p>
+                <p class="subtitle">Partnered Kick streamers who are in Only Pixels right now.<span class="signed-in-only"> The points pill is <strong>your</strong> Kick points on that streamer.</span></p>
                 <div id="city-live" class="city-list">
                   <p class="subtitle">Loading…</p>
                 </div>
@@ -245,7 +269,18 @@
           </section>
 
           <section class="page-view" data-page="profile">
-            <div class="profile-stack" id="profile-stack">
+            <div class="guest-lock guest-only">
+              <p class="guest-lock__kicker">Your account</p>
+              <h2>Sign in to see your profile</h2>
+              <p class="subtitle">
+                Kick or Twitch unlocks your avatar, channel link, and account switches. Until then you can still browse City and Streamers.
+              </p>
+              <div class="guest-lock__cta">
+                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
+                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
+              </div>
+            </div>
+            <div class="profile-stack signed-in-only" id="profile-stack">
               <div class="card profile-card" id="profile-card">
                 <div class="profile-card__hero">
                   <div class="profile-card__avatar-wrap">
@@ -277,6 +312,16 @@
               <p class="profile-streamers__meta" id="profile-streamers-meta">Loading…</p>
             </header>
 
+            <div class="guest-lock guest-lock--inline guest-only">
+              <p class="subtitle">
+                Watch the crew below. Sign in to send chat and see <strong>your</strong> Kick points on each partner.
+              </p>
+              <div class="guest-lock__cta">
+                <a class="btn btn-kick btn-compact" href="/auth/kick">Sign in with Kick</a>
+                <a class="btn btn-twitch btn-compact" href="/auth/twitch">Twitch</a>
+              </div>
+            </div>
+
             <div class="streamers-layout">
               <aside class="streamers-sidebar card">
                 <div class="profile-streamers__toolbar">
@@ -302,7 +347,7 @@
                   <div class="streamers-theater__stage">
                     <div class="streamers-theater__main">
                       <div class="streamers-player-grid" id="streamers-player-grid" data-count="0"></div>
-                      <div class="site-chat__interact" id="site-chat-interact">
+                      <div class="site-chat__interact signed-in-only" id="site-chat-interact">
                         <div class="site-chat__points" id="site-chat-points"></div>
                         <div class="site-chat__cmds" id="site-chat-cmds"></div>
                       </div>
@@ -314,7 +359,7 @@
                           <span class="site-chat__hint" id="site-chat-hint"></span>
                         </div>
                         <div class="site-chat__messages" id="site-chat-messages"></div>
-                        <form class="site-chat__composer" id="site-chat-form">
+                        <form class="site-chat__composer signed-in-only" id="site-chat-form">
                           <input
                             id="site-chat-input"
                             type="text"
@@ -326,6 +371,7 @@
                             Chat
                           </button>
                         </form>
+                        <p class="site-chat__guest guest-only">Sign in to chat and see your points.</p>
                         <p class="site-chat__status" id="site-chat-status"></p>
                       </div>
                     </div>
@@ -343,8 +389,20 @@
               </div>
             </header>
 
-            <div class="stream-hero card" id="stream-hero"></div>
-            <div class="stats-grid" id="stats-grid"></div>
+            <div class="guest-lock guest-only">
+              <p class="guest-lock__kicker">Dashboard</p>
+              <h2>Live numbers after you sign in</h2>
+              <p class="subtitle">
+                This is the community hub for NA5TY — City, partner streams, Only Pixels rewards, and Discord subs. Sign in to load your channel stats and shortcuts.
+              </p>
+              <div class="guest-lock__cta">
+                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
+                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
+              </div>
+            </div>
+
+            <div class="stream-hero card signed-in-only" id="stream-hero"></div>
+            <div class="stats-grid signed-in-only" id="stats-grid"></div>
 
             <div class="hub-section">
               <div class="hub-toolbar">
@@ -420,7 +478,18 @@
                 <p class="subtitle">Your Kick channel profile details from the API</p>
               </div>
             </header>
-            <div class="card panel">
+            <div class="guest-lock guest-only">
+              <p class="guest-lock__kicker">Channel</p>
+              <h2>Your Kick channel stays private until sign-in</h2>
+              <p class="subtitle">
+                Description, category, tags, and live status load from the Kick account you sign in with.
+              </p>
+              <div class="guest-lock__cta">
+                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
+                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
+              </div>
+            </div>
+            <div class="card panel signed-in-only">
               <h2>Channel info</h2>
               <div class="detail-card" id="channel-details"></div>
             </div>
@@ -432,7 +501,19 @@
                 <p class="subtitle">Kick points, streamer partnership, and chat rewards for in-city</p>
             </header>
 
-            <div class="card panel only-pixels-register">
+            <div class="guest-lock guest-only">
+              <p class="guest-lock__kicker">Only Pixels</p>
+              <h2>Points and partnership after Kick sign-in</h2>
+              <p class="subtitle">
+                Link the same Kick username you use in <code>/kickmenu</code> to apply as a streamer and see your chat points.
+              </p>
+              <div class="guest-lock__cta">
+                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
+                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
+              </div>
+            </div>
+
+            <div class="card panel only-pixels-register signed-in-only">
               <h2>Apply for Streamer Rewards Partnership</h2>
               <p class="subtitle">
                 First register as a <strong>Streamer</strong> in the in-city Kick menu. Then sign in
@@ -482,7 +563,7 @@
               </div>
             </div>
 
-            <div class="card panel only-pixels-points">
+            <div class="card panel only-pixels-points signed-in-only">
               <div class="only-pixels-points-head">
                 <div>
                   <h2>Your Kick Points</h2>
@@ -510,7 +591,19 @@
               <p class="subtitle">Link Discord and claim the na5ty subscriber role — verified from Kick sub events on this site</p>
             </header>
 
-            <div class="card panel">
+            <div class="guest-lock guest-only">
+              <p class="guest-lock__kicker">Discord</p>
+              <h2>Claim the subscriber role after you sign in</h2>
+              <p class="subtitle">
+                We match the Kick username you sign in with, then give that account the na5ty Discord sub role. Browse the rest of the hub until you’re ready.
+              </p>
+              <div class="guest-lock__cta">
+                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
+                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
+              </div>
+            </div>
+
+            <div class="card panel signed-in-only">
               <h2>Subscriber role for na5ty</h2>
               <p class="subtitle">
                 We check the <strong>Kick username you signed in with</strong> (example: <code>na5ty</code>),
@@ -1406,6 +1499,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=100"></script>
+    <script src="/app.js?v=101"></script>
   </body>
 </html>
