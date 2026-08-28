@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=32" />
+    <link rel="stylesheet" href="/styles.css?v=33" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -211,20 +211,38 @@
             <header class="page-header overview-header">
               <div>
                 <h1>City</h1>
-                <p class="subtitle">Who’s in the FiveM city — your character, live partners, and (staff) the roster</p>
+                <p class="subtitle guest-only">Only Pixels is live with the NA5TY crew. Sign in with Kick to see your character.</p>
+                <p class="subtitle signed-in-only">Who’s in the FiveM city — your character and live partners.</p>
               </div>
-              <button class="btn btn-secondary btn-compact" type="button" id="city-refresh">Refresh</button>
+              <button class="btn btn-secondary btn-compact signed-in-only" type="button" id="city-refresh">Refresh</button>
             </header>
 
-            <div class="guest-lock guest-only">
-              <p class="guest-lock__kicker">Look around</p>
-              <h2>The city, live with the crew</h2>
-              <p class="subtitle">
-                See which partnered Kick streamers are in the city right now. Sign in to unlock your character and the online roster. Points live on Only Pixels.
-              </p>
-              <div class="guest-lock__cta">
-                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
-                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
+            <div class="city-landing guest-only">
+              <div class="city-stage card">
+                <div class="city-stage__top">
+                  <div>
+                    <p class="city-stage__kicker">kick.com/na5ty</p>
+                    <h2>NA5TY</h2>
+                    <p class="subtitle" id="city-stage-status">Loading stream…</p>
+                  </div>
+                  <a class="btn btn-secondary btn-compact" href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">Open on Kick</a>
+                </div>
+                <div class="city-stage__player" id="city-stage-player"></div>
+              </div>
+              <div class="city-landing__aside">
+                <div class="guest-lock guest-lock--strip">
+                  <p class="guest-lock__kicker">After Kick sign-in</p>
+                  <h2>Your character, points, and Discord</h2>
+                  <p class="subtitle">Use Sign in with Kick in the top right. Twitch is there if you only want to watch.</p>
+                </div>
+                <div class="card panel">
+                  <h2>Crew on Kick</h2>
+                  <p class="subtitle">Live partners first. Click one to watch on Streamers.</p>
+                  <div id="city-landing-partners" class="city-partner-grid">
+                    <p class="subtitle">Loading partners…</p>
+                  </div>
+                </div>
+                <p class="city-in-city-line" id="city-in-city-line"></p>
               </div>
             </div>
 
@@ -234,8 +252,8 @@
 
             <div class="stats-grid signed-in-only" id="city-stats"></div>
 
-            <div class="city-layout">
-              <div class="card panel signed-in-only" id="city-me-card">
+            <div class="city-layout signed-in-only">
+              <div class="card panel" id="city-me-card">
                 <h2>Your character</h2>
                 <div id="city-me">
                   <p class="subtitle">Sign in with the same Kick username you linked in <code>/kickmenu</code>.</p>
@@ -243,7 +261,7 @@
               </div>
               <div class="card panel">
                 <h2>Live in city</h2>
-                <p class="subtitle">Partnered Kick streamers in the city right now.<span class="signed-in-only"> A points pill only shows on approved partners you’ve actually chatted on.</span></p>
+                <p class="subtitle">Partnered Kick streamers in the city right now. A points pill only shows on approved partners you’ve actually chatted on.</p>
                 <div id="city-live" class="city-list">
                   <p class="subtitle">Loading…</p>
                 </div>
@@ -272,12 +290,8 @@
               <p class="guest-lock__kicker">Your account</p>
               <h2>Sign in to see your profile</h2>
               <p class="subtitle">
-                Kick or Twitch unlocks your avatar, channel link, and account switches. Until then you can still browse City and Streamers.
+                Kick in the top right unlocks your avatar and account. Until then you can still browse City and Streamers.
               </p>
-              <div class="guest-lock__cta">
-                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
-                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
-              </div>
             </div>
             <div class="profile-stack signed-in-only" id="profile-stack">
               <div class="card profile-card" id="profile-card">
@@ -313,12 +327,8 @@
 
             <div class="guest-lock guest-lock--inline guest-only">
               <p class="subtitle">
-                Watch the crew below. Sign in to send chat and see <strong>your</strong> Kick points on each partner.
+                Watch the crew below. Sign in with Kick in the top right to send chat and see your points.
               </p>
-              <div class="guest-lock__cta">
-                <a class="btn btn-kick btn-compact" href="/auth/kick">Sign in with Kick</a>
-                <a class="btn btn-twitch btn-compact" href="/auth/twitch">Twitch</a>
-              </div>
             </div>
 
             <div class="streamers-layout">
@@ -504,12 +514,8 @@
               <p class="guest-lock__kicker">Only Pixels</p>
               <h2>Points and partnership after Kick sign-in</h2>
               <p class="subtitle">
-                Link the same Kick username you use in <code>/kickmenu</code> to apply as a streamer and see your chat points.
+                Sign in with Kick in the top right — same username as <code>/kickmenu</code> — to apply as a streamer and see your chat points.
               </p>
-              <div class="guest-lock__cta">
-                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
-                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
-              </div>
             </div>
 
             <div class="card panel only-pixels-register signed-in-only">
@@ -594,12 +600,8 @@
               <p class="guest-lock__kicker">Discord</p>
               <h2>Claim the subscriber role after you sign in</h2>
               <p class="subtitle">
-                We match the Kick username you sign in with, then give that account the na5ty Discord sub role. Browse the rest of the hub until you’re ready.
+                Sign in with Kick in the top right. We match that username, then give the na5ty Discord sub role.
               </p>
-              <div class="guest-lock__cta">
-                <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
-                <a class="btn btn-twitch" href="/auth/twitch">Twitch</a>
-              </div>
             </div>
 
             <div class="card panel signed-in-only">
@@ -1509,6 +1511,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=102"></script>
+    <script src="/app.js?v=103"></script>
   </body>
 </html>

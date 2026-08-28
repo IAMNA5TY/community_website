@@ -29,6 +29,8 @@ else if (location.hash === "#overview") currentPage = "overview";
 let dashboardRole = "owner";
 let publicPreview = false;
 let publicPages = ["city", "profile", "streamers", "overview", "channel", "only-pixels", "discord"];
+let guestPages = ["city", "profile", "streamers", "only-pixels", "discord"];
+const HOUSE_KICK_SLUG = "na5ty";
 let allowedPages = [
   "city",
   "profile",
@@ -164,6 +166,9 @@ function applyNavAccess(me = {}) {
   }
   if (Array.isArray(me.publicPages) && me.publicPages.length) {
     publicPages = me.publicPages.slice();
+  }
+  if (Array.isArray(me.guestPages) && me.guestPages.length) {
+    guestPages = me.guestPages.slice();
   }
 
   // Lighting (Hue/Govee) only on the stream PC — hide on the public site.
@@ -2800,14 +2805,11 @@ function showGuestShell() {
   document.body.classList.remove("nav-open", "platform-twitch");
   applyNavAccess({
     role: "player",
-    allowedPages: publicPages,
+    allowedPages: guestPages,
     publicPages,
+    guestPages,
     isOwner: false,
   });
-  const platformLabel = document.getElementById("sidebar-platform-label");
-  const platformName = document.getElementById("sidebar-platform-name");
-  if (platformLabel) platformLabel.textContent = "";
-  if (platformName) platformName.textContent = "Not signed in";
   const displayName = document.getElementById("display-name");
   if (displayName) displayName.textContent = "Guest";
   const channelMeta = document.getElementById("channel-meta");
@@ -2847,6 +2849,9 @@ async function loadDashboard() {
     if (Array.isArray(me.publicPages) && me.publicPages.length) {
       publicPages = me.publicPages.slice();
     }
+    if (Array.isArray(me.guestPages) && me.guestPages.length) {
+      guestPages = me.guestPages.slice();
+    }
     showGuestShell();
     return;
   }
@@ -2881,6 +2886,15 @@ async function loadDashboard() {
 }
 
 document.addEventListener("click", (event) => {
+  const landingWatch = event.target.closest("[data-watch-landing]");
+  if (landingWatch) {
+    event.preventDefault();
+    const slug = landingWatch.dataset.watchLanding;
+    showPage("streamers");
+    if (slug) openStreamerTheater(slug);
+    return;
+  }
+
   const gotoLink = event.target.closest("[data-goto-page]");
   if (gotoLink) {
     event.preventDefault();
@@ -5349,6 +5363,95 @@ function cityLiveEmptyHtml() {
   return '<p class="subtitle">No partnered streamers in the city right now. Watch the crew on Streamers.</p>';
 }
 
+function ensureCityLandingPlayer() {
+  const stage = document.getElementById("city-stage-player");
+  if (!stage || stage.querySelector("iframe")) return;
+  const frame = document.createElement("iframe");
+  frame.title = "NA5TY on Kick";
+  frame.src = kickPlayerEmbedUrl(HOUSE_KICK_SLUG, { muted: true });
+  frame.allow = "autoplay; fullscreen; picture-in-picture";
+  frame.allowFullscreen = true;
+  stage.appendChild(frame);
+}
+
+function renderCityLandingPartners(partners) {
+  const list = document.getElementById("city-landing-partners");
+  if (!list) return;
+  const tiles = (partners || [])
+    .filter((row) => row.slug && row.slug !== HOUSE_KICK_SLUG)
+    .sort(
+      (a, b) =>
+        Number(b.isLive) - Number(a.isLive) ||
+        String(a.displayName || a.slug).localeCompare(String(b.displayName || b.slug), undefined, {
+          sensitivity: "base",
+        })
+    )
+    .slice(0, 6);
+
+  if (!tiles.length) {
+    list.innerHTML =
+      '<p class="subtitle">Partners go live here. Open Streamers to browse the full crew.</p>';
+    return;
+  }
+
+  list.innerHTML = tiles
+    .map((partner) => {
+      const slug = escapeHtml(partner.slug);
+      const name = escapeHtml(partner.displayName || partner.slug);
+      const liveClass = partner.isLive ? "is-live" : "";
+      return `
+        <button class="city-partner" type="button" data-watch-landing="${slug}">
+          <span class="city-partner__live ${liveClass}" title="${partner.isLive ? "Live" : "Offline"}"></span>
+          <span>
+            <strong>${name}</strong>
+            <span class="subtitle">kick.com/${slug}</span>
+          </span>
+          <span class="city-partner__watch">${partner.isLive ? "Watch" : "Open"}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+async function refreshCityLanding() {
+  if (!document.body.classList.contains("is-guest")) return;
+  ensureCityLandingPlayer();
+  const status = document.getElementById("city-stage-status");
+  const inCity = document.getElementById("city-in-city-line");
+
+  try {
+    const response = await fetch("/api/rewards/live-partners", {
+      credentials: "same-origin",
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Could not load partners");
+    const partners = Array.isArray(data.partners) ? data.partners : [];
+    const house = partners.find((row) => row.slug === HOUSE_KICK_SLUG);
+    if (status) {
+      status.textContent = house?.isLive
+        ? "Live on Kick"
+        : "Offline — the player stays up for the next stream";
+    }
+    renderCityLandingPartners(partners);
+  } catch (error) {
+    if (status) status.textContent = error.message || "Could not load Kick status";
+    renderCityLandingPartners([]);
+  }
+
+  try {
+    const response = await fetch("/api/city", { credentials: "same-origin" });
+    const data = await response.json().catch(() => ({}));
+    const liveInCity = Array.isArray(data.liveStreamers) ? data.liveStreamers : [];
+    if (inCity) {
+      inCity.textContent = liveInCity.length
+        ? `${liveInCity.length} partnered streamer${liveInCity.length === 1 ? "" : "s"} in Only Pixels right now.`
+        : "No partnered streamers in Only Pixels right now.";
+    }
+  } catch {
+    if (inCity) inCity.textContent = "";
+  }
+}
+
 function renderCityPlayer(player, { showJob = false } = {}) {
   const live = player.live
     ? '<span class="city-pill city-pill--live">Live</span>'
@@ -5448,6 +5551,10 @@ function renderCityView(data) {
 }
 
 async function refreshCity() {
+  if (document.body.classList.contains("is-guest")) {
+    await refreshCityLanding();
+    return;
+  }
   try {
     const response = await fetch("/api/city", { credentials: "same-origin" });
     const data = await response.json().catch(() => ({}));
