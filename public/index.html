@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=38" />
+    <link rel="stylesheet" href="/styles.css?v=39" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -204,7 +204,7 @@
               <div>
                 <h1>City</h1>
                 <p class="subtitle guest-only">Watch the crew. Sign in with Kick to see your character.</p>
-                <p class="subtitle signed-in-only">Who’s in the FiveM city — your character and live partners.</p>
+                <p class="subtitle signed-in-only">Watch the crew. Your character is below.</p>
               </div>
               <button class="btn btn-secondary btn-compact signed-in-only" type="button" id="city-refresh">Refresh</button>
             </header>
@@ -223,10 +223,13 @@
               </div>
               <div class="city-landing__aside">
                 <div class="city-stage__chat card site-chat">
-                  <div class="site-chat__interact signed-in-only" id="site-chat-interact">
-                    <div class="site-chat__points" id="site-chat-points"></div>
-                    <div class="site-chat__cmds" id="site-chat-cmds"></div>
-                  </div>
+                  <details class="site-chat__tools signed-in-only">
+                    <summary class="site-chat__tools-summary">Points &amp; moves</summary>
+                    <div class="site-chat__interact" id="site-chat-interact">
+                      <div class="site-chat__points" id="site-chat-points"></div>
+                      <div class="site-chat__cmds" id="site-chat-cmds"></div>
+                    </div>
+                  </details>
                   <div class="site-chat__head">
                     <span>Chat</span>
                     <span class="site-chat__hint" id="site-chat-hint"></span>
@@ -280,12 +283,21 @@
                   <p class="subtitle">Sign in with the same Kick username you linked in <code>/kickmenu</code>.</p>
                 </div>
               </div>
-              <div class="card panel">
-                <h2>Live in city</h2>
-                <p class="subtitle">Partnered Kick streamers in the city right now. A points pill only shows on approved partners you’ve actually chatted on.</p>
-                <div id="city-live" class="city-list">
-                  <p class="subtitle">Loading…</p>
-                </div>
+              <div class="card panel" id="city-live-card">
+                <details class="city-roster" id="city-live-details">
+                  <summary class="city-roster__summary">
+                    <div>
+                      <h2>Live in city</h2>
+                      <p class="subtitle">Approved partners streaming from the FiveM city. Closed so names stay off the page.</p>
+                    </div>
+                    <span class="city-roster__count" id="city-live-count"></span>
+                  </summary>
+                  <div class="city-roster__body">
+                    <div id="city-live" class="city-list">
+                      <p class="subtitle">Loading…</p>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
 
@@ -1440,6 +1452,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=108"></script>
+    <script src="/app.js?v=109"></script>
   </body>
 </html>
