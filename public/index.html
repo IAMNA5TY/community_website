@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=34" />
+    <link rel="stylesheet" href="/styles.css?v=35" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -213,69 +213,63 @@
               <button class="btn btn-secondary btn-compact signed-in-only" type="button" id="city-refresh">Refresh</button>
             </header>
 
-            <div class="guest-lock guest-lock--inline guest-only">
-              <p class="subtitle">Sign in with Kick in the top right for your character, points, and Discord. Watching is free.</p>
-            </div>
-
-            <div class="streamers-layout" id="city-streamers">
-              <aside class="streamers-sidebar card">
-                <div class="profile-streamers__toolbar">
-                  <button class="btn btn-secondary btn-compact" type="button" data-streamers-filter="live" id="streamers-filter-live">Live</button>
-                  <button class="btn btn-secondary btn-compact active" type="button" data-streamers-filter="all" id="streamers-filter-all">All</button>
-                  <button class="btn btn-secondary btn-compact" type="button" id="streamers-refresh-btn">Refresh</button>
-                </div>
-                <p class="profile-streamers__meta" id="profile-streamers-meta">Loading…</p>
-                <div class="profile-streamers__list" id="profile-streamers-list"></div>
-              </aside>
-
-              <div class="streamers-theater card" id="streamers-theater">
-                <div class="streamers-theater__empty" id="streamers-theater-empty">
-                  <p>Pick someone from the crew to watch. Click again to add more windows.</p>
-                </div>
-                <div class="streamers-theater__active hidden" id="streamers-theater-active">
-                  <div class="streamers-theater__top">
-                    <div>
-                      <h2 id="streamers-theater-title">Streamer</h2>
-                      <p class="subtitle" id="streamers-theater-slug"></p>
-                    </div>
-                    <button class="btn btn-secondary btn-compact" type="button" id="streamers-close-btn">Close all</button>
+            <div class="city-landing" id="city-streamers">
+              <div class="city-stage card">
+                <div class="city-stage__top">
+                  <div>
+                    <p class="city-stage__kicker" id="city-stage-kicker">kick.com/na5ty</p>
+                    <h2 id="city-stage-title">NA5TY</h2>
+                    <p class="subtitle" id="city-stage-status">Loading stream…</p>
                   </div>
-                  <div class="streamers-theater__stage">
-                    <div class="streamers-theater__main">
-                      <div class="streamers-player-grid" id="streamers-player-grid" data-count="0"></div>
-                      <div class="site-chat__interact signed-in-only" id="site-chat-interact">
-                        <div class="site-chat__points" id="site-chat-points"></div>
-                        <div class="site-chat__cmds" id="site-chat-cmds"></div>
-                      </div>
-                    </div>
-                    <div class="streamers-theater__chat" id="streamers-chat-panel">
-                      <div class="site-chat">
-                        <div class="site-chat__head">
-                          <span>Chat</span>
-                          <span class="site-chat__hint" id="site-chat-hint"></span>
-                        </div>
-                        <div class="site-chat__messages" id="site-chat-messages"></div>
-                        <form class="site-chat__composer signed-in-only" id="site-chat-form">
-                          <input
-                            id="site-chat-input"
-                            type="text"
-                            maxlength="500"
-                            placeholder="Send a message…"
-                            autocomplete="off"
-                          />
-                          <button class="btn btn-kick btn-compact" type="submit" id="site-chat-send">
-                            Chat
-                          </button>
-                        </form>
-                        <p class="site-chat__guest guest-only">Sign in to chat and see your points.</p>
-                        <p class="site-chat__status" id="site-chat-status"></p>
-                      </div>
-                    </div>
+                  <a class="btn btn-secondary btn-compact" id="city-stage-open" href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">Open on Kick</a>
+                </div>
+                <div class="city-stage__player" id="city-stage-player"></div>
+                <div class="city-stage__chat site-chat">
+                  <div class="site-chat__interact signed-in-only" id="site-chat-interact">
+                    <div class="site-chat__points" id="site-chat-points"></div>
+                    <div class="site-chat__cmds" id="site-chat-cmds"></div>
                   </div>
+                  <div class="site-chat__head">
+                    <span>Chat</span>
+                    <span class="site-chat__hint" id="site-chat-hint"></span>
+                  </div>
+                  <div class="site-chat__messages" id="site-chat-messages"></div>
+                  <form class="site-chat__composer signed-in-only" id="site-chat-form">
+                    <input
+                      id="site-chat-input"
+                      type="text"
+                      maxlength="500"
+                      placeholder="Send a message…"
+                      autocomplete="off"
+                    />
+                    <button class="btn btn-kick btn-compact" type="submit" id="site-chat-send">
+                      Chat
+                    </button>
+                  </form>
+                  <p class="site-chat__guest guest-only">Sign in to chat and see your points.</p>
+                  <p class="site-chat__status" id="site-chat-status"></p>
                 </div>
               </div>
+              <div class="city-landing__aside">
+                <div class="guest-lock guest-lock--strip guest-only">
+                  <p class="guest-lock__kicker">After Kick sign-in</p>
+                  <h2>Your character, points, and Discord</h2>
+                  <p class="subtitle">Use Sign in with Kick in the top right. Twitch is there if you only want to watch.</p>
+                </div>
+                <div class="card panel">
+                  <h2>Crew on Kick</h2>
+                  <p class="subtitle">NA5TY first. Click a name to watch here.</p>
+                  <div class="profile-streamers__toolbar">
+                    <button class="btn btn-secondary btn-compact" type="button" data-streamers-filter="live" id="streamers-filter-live">Live</button>
+                    <button class="btn btn-secondary btn-compact active" type="button" data-streamers-filter="all" id="streamers-filter-all">All</button>
+                    <button class="btn btn-secondary btn-compact" type="button" id="streamers-refresh-btn">Refresh</button>
+                  </div>
+                  <p class="profile-streamers__meta" id="profile-streamers-meta">Loading…</p>
+                  <div class="profile-streamers__list" id="profile-streamers-list"></div>
+                </div>
+                <p class="city-in-city-line guest-only" id="city-in-city-line"></p>
+              </div>
             </div>
-            <p class="city-in-city-line guest-only" id="city-in-city-line"></p>
 
             <div class="city-status signed-in-only" id="city-status">
               <p class="subtitle">Connecting to the city…</p>
@@ -1468,6 +1462,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=104"></script>
+    <script src="/app.js?v=105"></script>
   </body>
 </html>

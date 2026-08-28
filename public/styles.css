@@ -1544,6 +1544,33 @@ body:not(.is-guest) .guest-only {
   border: 0;
 }
 
+.city-stage__chat {
+  border-top: 1px solid #222;
+  padding-top: 10px;
+  min-height: 0;
+  height: auto;
+  grid-template-rows: auto auto auto auto;
+}
+
+.city-stage__chat .site-chat__messages {
+  max-height: 180px;
+  min-height: 120px;
+}
+
+.city-landing .profile-streamers__toolbar {
+  margin-top: 10px;
+}
+
+.city-landing .profile-streamers__meta {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.city-landing .profile-streamers__list {
+  max-height: min(52vh, 480px);
+}
+
 .city-partner-grid {
   display: grid;
   gap: 8px;
