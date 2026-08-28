@@ -27,6 +27,8 @@ else if (location.hash === "#profile") currentPage = "profile";
 else if (location.hash === "#streamers") currentPage = "streamers";
 else if (location.hash === "#overview") currentPage = "overview";
 let dashboardRole = "owner";
+let publicPreview = false;
+let publicPages = ["city", "profile", "streamers", "overview", "channel", "only-pixels", "discord"];
 let allowedPages = [
   "city",
   "profile",
@@ -122,20 +124,55 @@ function isLocalDashboardHost() {
   return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 }
 
+function pageLabel(page) {
+  const link = document.querySelector(`.nav-link[data-page="${page}"]`);
+  return link?.querySelector(".nav-label")?.textContent?.trim() || page;
+}
+
+function visibleNavPages() {
+  if (dashboardRole === "owner" && publicPreview) return publicPages;
+  return allowedPages;
+}
+
+function renderPublicTabsPanel() {
+  const panel = document.getElementById("public-tabs-panel");
+  const banner = document.getElementById("public-tabs-banner");
+  const list = document.getElementById("public-tabs-list");
+  const bannerList = document.getElementById("public-tabs-banner-list");
+  const btn = document.getElementById("public-preview-btn");
+  const isOwner = dashboardRole === "owner";
+
+  panel?.classList.toggle("hidden", !isOwner);
+  banner?.classList.toggle("hidden", !isOwner);
+
+  const items = publicPages.map((page) => `<li>${escapeHtml(pageLabel(page))}</li>`).join("");
+  if (list) list.innerHTML = items;
+  if (bannerList) bannerList.innerHTML = items;
+  if (btn) {
+    btn.textContent = publicPreview ? "Show my owner tabs" : "Preview public sidebar";
+  }
+}
+
 function applyNavAccess(me = {}) {
   dashboardRole = me.role || (me.isOwner ? "owner" : "player");
   if (Array.isArray(me.allowedPages) && me.allowedPages.length) {
     allowedPages = me.allowedPages.slice();
   }
+  if (Array.isArray(me.publicPages) && me.publicPages.length) {
+    publicPages = me.publicPages.slice();
+  }
 
   // Lighting (Hue/Govee) only on the stream PC — hide on the public site.
   if (!isLocalDashboardHost()) {
     allowedPages = allowedPages.filter((page) => page !== "lighting");
+    publicPages = publicPages.filter((page) => page !== "lighting");
   }
 
   document.querySelectorAll("[data-local-lighting-only]").forEach((el) => {
     el.classList.toggle("hidden", !isLocalDashboardHost());
   });
+
+  const pagesToShow = visibleNavPages();
 
   document.querySelectorAll(".nav-link").forEach((link) => {
     const page = link.dataset.page;
@@ -144,12 +181,12 @@ function applyNavAccess(me = {}) {
       link.classList.remove("hidden");
       return;
     }
-    link.classList.toggle("hidden", !allowedPages.includes(page));
+    link.classList.toggle("hidden", !pagesToShow.includes(page));
   });
 
   document.querySelectorAll(".hub-card[data-page]").forEach((card) => {
     const page = card.dataset.page;
-    card.classList.toggle("hidden", !allowedPages.includes(page));
+    card.classList.toggle("hidden", !pagesToShow.includes(page));
   });
 
   document.querySelectorAll(".nav-group").forEach((group) => {
@@ -167,15 +204,18 @@ function applyNavAccess(me = {}) {
     hubSection.classList.toggle("hidden", !anyHub);
   }
 
-  if (!allowedPages.includes(currentPage)) {
-    currentPage = allowedPages.includes("city")
+  const navPages = visibleNavPages();
+  if (!navPages.includes(currentPage)) {
+    currentPage = navPages.includes("city")
       ? "city"
-      : allowedPages.includes("profile")
+      : navPages.includes("profile")
         ? "profile"
-        : allowedPages.includes("only-pixels")
+        : navPages.includes("only-pixels")
           ? "only-pixels"
-          : allowedPages[0] || "profile";
+          : navPages[0] || "profile";
   }
+
+  renderPublicTabsPanel();
 }
 
 function closeMobileNav() {
@@ -190,7 +230,7 @@ function filterHubCards(query = "") {
   const q = query.trim().toLowerCase();
   document.querySelectorAll(".hub-card[data-page]").forEach((card) => {
     const page = card.dataset.page;
-    const allowed = !allowedPages.length || allowedPages.includes(page);
+    const allowed = !visibleNavPages().length || visibleNavPages().includes(page);
     if (!allowed) {
       card.classList.add("hidden");
       return;
@@ -201,14 +241,15 @@ function filterHubCards(query = "") {
 }
 
 function showPage(page) {
-  if (allowedPages.length && !allowedPages.includes(page)) {
-    page = allowedPages.includes("city")
+  const navPages = visibleNavPages();
+  if (navPages.length && !navPages.includes(page)) {
+    page = navPages.includes("city")
       ? "city"
-      : allowedPages.includes("profile")
+      : navPages.includes("profile")
         ? "profile"
-        : allowedPages.includes("only-pixels")
+        : navPages.includes("only-pixels")
           ? "only-pixels"
-          : allowedPages[0] || "profile";
+          : navPages[0] || "profile";
   }
   currentPage = page;
   document.querySelectorAll(".page-view").forEach((section) => {
@@ -2643,6 +2684,7 @@ function renderDashboard(data) {
   applyNavAccess({
     role: data.role,
     allowedPages: data.allowedPages,
+    publicPages: data.publicPages,
     isOwner,
   });
 
@@ -2705,6 +2747,7 @@ function renderDashboard(data) {
 function showLogin() {
   sessionProfile = null;
   sessionRole = "player";
+  publicPreview = false;
   sessionProvider = "kick";
   onlyPixelsState.signedIn = false;
   onlyPixelsState.currentUsername = "";
@@ -2819,6 +2862,18 @@ const menuToggle = document.getElementById("menu-toggle");
 const sidebarClose = document.getElementById("sidebar-close");
 const sidebarBackdrop = document.getElementById("sidebar-backdrop");
 const hubSearchInput = document.getElementById("hub-search-input");
+
+document.getElementById("public-preview-btn")?.addEventListener("click", () => {
+  if (dashboardRole !== "owner") return;
+  publicPreview = !publicPreview;
+  applyNavAccess({
+    role: dashboardRole,
+    allowedPages,
+    publicPages,
+    isOwner: true,
+  });
+  showPage(currentPage);
+});
 
 menuToggle?.addEventListener("click", () => openMobileNav());
 sidebarClose?.addEventListener("click", () => closeMobileNav());

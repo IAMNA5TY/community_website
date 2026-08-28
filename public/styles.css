@@ -409,6 +409,69 @@ body.platform-twitch .profile-card__platform-badge {
   color: var(--twitch);
 }
 
+.public-tabs-panel {
+  margin: 4px 4px 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(83, 252, 24, 0.28);
+  border-radius: 10px;
+  background: rgba(83, 252, 24, 0.06);
+}
+
+.public-tabs-panel__kicker,
+.public-tabs-banner__kicker {
+  margin: 0 0 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kick);
+}
+
+.public-tabs-panel__title {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.public-tabs-panel__list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.public-tabs-panel__btn {
+  margin-top: 10px;
+  width: 100%;
+  border: 1px solid rgba(83, 252, 24, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--kick);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 7px 8px;
+  cursor: pointer;
+}
+
+.public-tabs-panel__btn:hover {
+  background: rgba(83, 252, 24, 0.12);
+}
+
+.public-tabs-banner {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(83, 252, 24, 0.28);
+  border-radius: 14px;
+  background: rgba(83, 252, 24, 0.06);
+}
+
+.public-tabs-banner h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
 .sidebar-close {
   display: none;
   place-items: center;
