@@ -5278,6 +5278,10 @@ function renderCityPlayer(player, { showJob = false } = {}) {
   const kick = player.kickUsername
     ? `<a class="city-kick" href="https://kick.com/${encodeURIComponent(player.kickUsername)}" target="_blank" rel="noopener noreferrer">@${escapeHtml(player.kickUsername)}</a>`
     : '<span class="subtitle">Kick not linked</span>';
+  const points =
+    player.kickUsername && Number.isFinite(Number(player.myPoints))
+      ? `<span class="city-pill city-pill--points" title="Your Kick points on @${escapeHtml(player.kickUsername)}">${escapeHtml(String(player.myPoints))} pts</span>`
+      : "";
   const job = showJob && player.job
     ? `<span class="city-job">${escapeHtml(player.job)}</span>`
     : "";
@@ -5287,7 +5291,7 @@ function renderCityPlayer(player, { showJob = false } = {}) {
         <strong>${escapeHtml(player.name || "Unknown")}</strong>
         ${job}
       </div>
-      <div class="city-row__meta">${kick}${live}</div>
+      <div class="city-row__meta">${kick}${points}${live}</div>
     </article>
   `;
 }
@@ -5316,9 +5320,12 @@ function renderCityView(data) {
   `;
 
   if (data?.me) {
+    const minePts = Number.isFinite(Number(data.me.myPoints))
+      ? ` You have <strong>${escapeHtml(String(data.me.myPoints))}</strong> Kick points on this channel.`
+      : "";
     meBox.innerHTML = `
       ${renderCityPlayer(data.me, { showJob: true })}
-      <p class="subtitle">Linked to the Kick account you signed in with.</p>
+      <p class="subtitle">Linked to the Kick account you signed in with.${minePts}</p>
     `;
   } else {
     meBox.innerHTML = `
