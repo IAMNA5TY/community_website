@@ -670,7 +670,7 @@ body.platform-twitch .profile-card__platform-badge {
   gap: 16px;
   min-width: 0;
   align-content: start;
-  justify-items: end;
+  justify-items: stretch;
   padding: 28px 36px 40px;
   background:
     repeating-linear-gradient(
@@ -1672,11 +1672,24 @@ body:not(.is-guest) .guest-only {
 }
 
 .page-view { display: none; gap: 16px; }
-.page-view.active { display: grid; }
+.page-view.active {
+  display: grid;
+  width: 100%;
+  justify-items: stretch;
+}
 
 .page-view[data-page="streamers"].active {
   justify-items: stretch;
   width: 100%;
+}
+
+.page-view[data-page="profile"].active {
+  justify-items: start;
+}
+
+.guest-lock .subtitle,
+.page-header .subtitle {
+  max-width: 68ch;
 }
 
 .page-header {
@@ -1684,6 +1697,7 @@ body:not(.is-guest) .guest-only {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  width: 100%;
 }
 
 .stake-list {
