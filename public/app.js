@@ -145,11 +145,16 @@ function renderPublicTabsPanel() {
   panel?.classList.toggle("hidden", !isOwner);
   banner?.classList.toggle("hidden", !isOwner);
 
-  const items = publicPages.map((page) => `<li>${escapeHtml(pageLabel(page))}</li>`).join("");
-  if (list) list.innerHTML = items;
-  if (bannerList) bannerList.innerHTML = items;
+  const chips = publicPages
+    .map((page) => `<span class="public-tabs-chip">${escapeHtml(pageLabel(page))}</span>`)
+    .join("");
+  const numbered = publicPages
+    .map((page) => `<li>${escapeHtml(pageLabel(page))}</li>`)
+    .join("");
+  if (list) list.innerHTML = chips;
+  if (bannerList) bannerList.innerHTML = numbered;
   if (btn) {
-    btn.textContent = publicPreview ? "Show my owner tabs" : "Preview public sidebar";
+    btn.textContent = publicPreview ? "Exit preview" : "Preview";
   }
 }
 
