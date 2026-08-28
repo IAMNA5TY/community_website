@@ -487,6 +487,11 @@ body.platform-twitch .profile-card__platform-badge {
   background: rgba(83, 252, 24, 0.06);
 }
 
+.page-view[data-page="settings"] .public-tabs-banner,
+#public-tabs-banner.card {
+  margin-bottom: 0;
+}
+
 .public-tabs-banner h2 {
   margin: 0 0 6px;
   font-size: 1.15rem;
@@ -533,6 +538,56 @@ body.platform-twitch .profile-card__platform-badge {
 .nav-group--tools {
   padding-top: 10px;
   border-top: 1px solid #1e1e1e;
+}
+
+.nav-more {
+  display: grid;
+  gap: 1px;
+}
+
+.nav-more__toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #8b95a8;
+  border-radius: 9px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-more__toggle:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-more__toggle .nav-icon {
+  transition: transform 0.15s ease;
+}
+
+.nav-more.is-open .nav-more__toggle .nav-icon {
+  transform: rotate(-180deg);
+}
+
+.nav-more__list {
+  display: none;
+  gap: 1px;
+}
+
+.nav-more.is-open .nav-more__list {
+  display: grid;
+}
+
+.nav-link--quiet {
+  padding: 6px 10px 6px 12px;
+  font-size: 0.8rem;
+  color: #8b95a8;
 }
 
 .nav-group--other {

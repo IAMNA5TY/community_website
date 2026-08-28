@@ -139,7 +139,6 @@ function renderPublicTabsPanel() {
   const banner = document.getElementById("public-tabs-banner");
   const list = document.getElementById("public-tabs-list");
   const bannerList = document.getElementById("public-tabs-banner-list");
-  const btn = document.getElementById("public-preview-btn");
   const isOwner = dashboardRole === "owner";
 
   panel?.classList.toggle("hidden", !isOwner);
@@ -153,9 +152,9 @@ function renderPublicTabsPanel() {
     .join("");
   if (list) list.innerHTML = chips;
   if (bannerList) bannerList.innerHTML = numbered;
-  if (btn) {
+  document.querySelectorAll("[data-public-preview]").forEach((btn) => {
     btn.textContent = publicPreview ? "Exit preview" : "Preview";
-  }
+  });
 }
 
 function applyNavAccess(me = {}) {
@@ -229,6 +228,7 @@ function applyNavAccess(me = {}) {
   }
 
   renderPublicTabsPanel();
+  syncNavMoreTools();
 }
 
 function closeMobileNav() {
@@ -251,6 +251,22 @@ function filterHubCards(query = "") {
     const haystack = `${card.dataset.hubFilter || ""} ${card.textContent || ""}`.toLowerCase();
     card.classList.toggle("hidden", Boolean(q) && !haystack.includes(q));
   });
+}
+
+const MORE_TOOL_PAGES = ["workout", "slots", "drinking", "lighting", "stake"];
+
+function syncNavMoreTools() {
+  const wrap = document.getElementById("nav-more-tools");
+  const toggle = document.getElementById("nav-more-toggle");
+  if (!wrap) return;
+  const visible = [...wrap.querySelectorAll(".nav-link")].some(
+    (link) => !link.classList.contains("hidden")
+  );
+  wrap.classList.toggle("hidden", !visible);
+  if (MORE_TOOL_PAGES.includes(currentPage)) {
+    wrap.classList.add("is-open");
+  }
+  toggle?.setAttribute("aria-expanded", wrap.classList.contains("is-open") ? "true" : "false");
 }
 
 function showPage(page) {
@@ -298,6 +314,7 @@ function showPage(page) {
   if (page === "city") {
     refreshCity();
   }
+  syncNavMoreTools();
 }
 
 function renderStreamHero(data) {
@@ -2906,16 +2923,28 @@ const sidebarClose = document.getElementById("sidebar-close");
 const sidebarBackdrop = document.getElementById("sidebar-backdrop");
 const hubSearchInput = document.getElementById("hub-search-input");
 
-document.getElementById("public-preview-btn")?.addEventListener("click", () => {
-  if (dashboardRole !== "owner") return;
-  publicPreview = !publicPreview;
-  applyNavAccess({
-    role: dashboardRole,
-    allowedPages,
-    publicPages,
-    isOwner: true,
+document.querySelectorAll("[data-public-preview]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (dashboardRole !== "owner") return;
+    publicPreview = !publicPreview;
+    applyNavAccess({
+      role: dashboardRole,
+      allowedPages,
+      publicPages,
+      isOwner: true,
+    });
+    showPage(currentPage);
   });
-  showPage(currentPage);
+});
+
+document.getElementById("nav-more-toggle")?.addEventListener("click", () => {
+  const wrap = document.getElementById("nav-more-tools");
+  if (!wrap) return;
+  wrap.classList.toggle("is-open");
+  document.getElementById("nav-more-toggle")?.setAttribute(
+    "aria-expanded",
+    wrap.classList.contains("is-open") ? "true" : "false"
+  );
 });
 
 menuToggle?.addEventListener("click", () => openMobileNav());
@@ -5316,6 +5345,10 @@ function formatCityAge(updatedAt) {
   return `${minutes}m ago`;
 }
 
+function cityLiveEmptyHtml() {
+  return '<p class="subtitle">No partnered streamers in the city right now. Watch the crew on Streamers.</p>';
+}
+
 function renderCityPlayer(player, { showJob = false } = {}) {
   const live = player.live
     ? '<span class="city-pill city-pill--live">Live</span>'
@@ -5360,7 +5393,7 @@ function renderCityView(data) {
     const liveStreamers = data?.liveStreamers || [];
     liveBox.innerHTML = liveStreamers.length
       ? liveStreamers.map((player) => renderCityPlayer(player)).join("")
-      : '<p class="subtitle">Nobody partnered is in the city right now.</p>';
+      : cityLiveEmptyHtml();
     rosterCard?.classList.add("hidden");
     return;
   }
@@ -5381,12 +5414,9 @@ function renderCityView(data) {
   `;
 
   if (data?.me) {
-    const minePts = Number.isFinite(Number(data.me.myPoints))
-      ? ` You have <strong>${escapeHtml(String(data.me.myPoints))}</strong> Kick points on this channel.`
-      : "";
     meBox.innerHTML = `
       ${renderCityPlayer(data.me, { showJob: true })}
-      <p class="subtitle">Linked to the Kick account you signed in with.${minePts}</p>
+      <p class="subtitle">Linked to the Kick account you signed in with.</p>
     `;
   } else {
     meBox.innerHTML = `
@@ -5398,7 +5428,7 @@ function renderCityView(data) {
   const liveStreamers = data?.liveStreamers || [];
   liveBox.innerHTML = liveStreamers.length
     ? liveStreamers.map((player) => renderCityPlayer(player)).join("")
-    : '<p class="subtitle">Nobody partnered is in the city right now.</p>';
+    : cityLiveEmptyHtml();
 
   const players = Array.isArray(data?.players) ? data.players : null;
   if (rosterCard && roster && players) {
