@@ -360,10 +360,10 @@ body.is-dashboard {
   top: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   height: 100vh;
   max-height: 100vh;
-  padding: 18px 12px 16px;
+  padding: 16px 10px 14px;
   background: #121212;
   border-right: 1px solid #1e1e1e;
   overflow: auto;
@@ -410,27 +410,46 @@ body.platform-twitch .profile-card__platform-badge {
 }
 
 .public-tabs-panel {
-  margin: 4px 4px 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(83, 252, 24, 0.28);
+  margin: 0 2px 2px;
+  padding: 8px 8px 9px;
+  border: 1px solid rgba(83, 252, 24, 0.22);
   border-radius: 10px;
-  background: rgba(83, 252, 24, 0.06);
+  background: rgba(83, 252, 24, 0.05);
+}
+
+.public-tabs-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
 }
 
 .public-tabs-panel__kicker,
 .public-tabs-banner__kicker {
-  margin: 0 0 4px;
-  font-size: 0.68rem;
+  margin: 0;
+  font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--kick);
 }
 
-.public-tabs-panel__title {
-  margin: 0 0 8px;
-  font-size: 0.86rem;
-  font-weight: 700;
+.public-tabs-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.public-tabs-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #d5dbe6;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .public-tabs-panel__list {
@@ -442,16 +461,17 @@ body.platform-twitch .profile-card__platform-badge {
 }
 
 .public-tabs-panel__btn {
-  margin-top: 10px;
-  width: 100%;
+  flex-shrink: 0;
+  margin: 0;
+  width: auto;
   border: 1px solid rgba(83, 252, 24, 0.35);
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
   color: var(--kick);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 7px 8px;
+  padding: 4px 8px;
   cursor: pointer;
 }
 
@@ -501,26 +521,31 @@ body.platform-twitch .profile-card__platform-badge {
 
 .nav {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   flex: 1;
 }
 
 .nav-group {
   display: grid;
-  gap: 2px;
+  gap: 1px;
+}
+
+.nav-group--tools {
+  padding-top: 10px;
+  border-top: 1px solid #1e1e1e;
 }
 
 .nav-group--other {
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid #1e1e1e;
 }
 
 .nav-group__label {
-  margin: 0 0 6px 10px;
-  font-size: 0.68rem;
+  margin: 0 0 4px 10px;
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #667084;
 }
@@ -533,10 +558,10 @@ body.platform-twitch .profile-card__platform-badge {
   border: none;
   background: transparent;
   color: #c4ccd9;
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 9px;
+  padding: 8px 10px;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
