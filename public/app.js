@@ -24,17 +24,15 @@ let currentPage = "city";
 if (location.hash === "#only-pixels") currentPage = "only-pixels";
 else if (location.hash === "#discord" || location.hash.startsWith("#discord?")) currentPage = "discord";
 else if (location.hash === "#profile") currentPage = "profile";
-else if (location.hash === "#streamers") currentPage = "streamers";
+else if (location.hash === "#streamers") currentPage = "city";
 else if (location.hash === "#overview") currentPage = "overview";
 let dashboardRole = "owner";
 let publicPreview = false;
-let publicPages = ["city", "profile", "streamers", "overview", "channel", "only-pixels", "discord"];
-let guestPages = ["city", "profile", "streamers", "only-pixels", "discord"];
-const HOUSE_KICK_SLUG = "na5ty";
+let publicPages = ["city", "profile", "overview", "channel", "only-pixels", "discord"];
+let guestPages = ["city", "profile", "only-pixels", "discord"];
 let allowedPages = [
   "city",
   "profile",
-  "streamers",
   "overview",
   "only-pixels",
   "discord",
@@ -275,6 +273,7 @@ function syncNavMoreTools() {
 }
 
 function showPage(page) {
+  if (page === "streamers") page = "city";
   const navPages = visibleNavPages();
   if (navPages.length && !navPages.includes(page)) {
     page = navPages.includes("city")
@@ -312,12 +311,11 @@ function showPage(page) {
   if (page === "discord") {
     refreshDiscordPanel(dashboardData);
   }
-  if (page === "streamers") {
-    refreshPartnerStreamers();
-    ensurePartnerStreamersPolling();
-  }
   if (page === "city") {
     refreshCity();
+    refreshPartnerStreamers();
+    ensurePartnerStreamersPolling();
+    autoOpenLiveWatch();
   }
   syncNavMoreTools();
 }
@@ -2114,7 +2112,7 @@ function renderProfilePage(data) {
 
 let partnerStreamersState = {
   partners: [],
-  filter: "live",
+  filter: "all",
   loading: false,
   timer: null,
   chatTimer: null,
@@ -2378,7 +2376,7 @@ function openStreamerTheater(partnerOrSlug) {
 
   if (partnerStreamersState.tiles.length >= MAX_STREAM_TILES) {
     setSiteChatStatus(`Max ${MAX_STREAM_TILES} stream windows — close one to add another`, true);
-    showPage("streamers");
+    showPage("city");
     return;
   }
 
@@ -2401,7 +2399,7 @@ function openStreamerTheater(partnerOrSlug) {
   partnerStreamersState.chatMessages = [];
   partnerStreamersState.chatCommands = [];
   partnerStreamersState.points = null;
-  showPage("streamers");
+  if (currentPage !== "city") showPage("city");
 
   setSiteChatStatus("");
   renderStreamerPlayerGrid();
@@ -2610,7 +2608,7 @@ async function refreshSiteChat() {
 function ensureSiteChatPolling() {
   if (partnerStreamersState.chatTimer) return;
   partnerStreamersState.chatTimer = setInterval(() => {
-    if (currentPage === "streamers" && partnerStreamersState.selectedSlug) {
+    if (currentPage === "city" && partnerStreamersState.selectedSlug) {
       refreshSiteChat();
     }
   }, 2500);
@@ -2714,7 +2712,7 @@ async function refreshPartnerStreamers(force = false) {
 function ensurePartnerStreamersPolling() {
   if (partnerStreamersState.timer) return;
   partnerStreamersState.timer = setInterval(() => {
-    if (currentPage === "streamers") refreshPartnerStreamers();
+    if (currentPage === "city") refreshPartnerStreamers();
   }, 60000);
 }
 
@@ -2890,7 +2888,7 @@ document.addEventListener("click", (event) => {
   if (landingWatch) {
     event.preventDefault();
     const slug = landingWatch.dataset.watchLanding;
-    showPage("streamers");
+    showPage("city");
     if (slug) openStreamerTheater(slug);
     return;
   }
@@ -5360,95 +5358,37 @@ function formatCityAge(updatedAt) {
 }
 
 function cityLiveEmptyHtml() {
-  return '<p class="subtitle">No partnered streamers in the city right now. Watch the crew on Streamers.</p>';
+  return '<p class="subtitle">No partnered streamers in the city right now.</p>';
 }
 
-function ensureCityLandingPlayer() {
-  const stage = document.getElementById("city-stage-player");
-  if (!stage || stage.querySelector("iframe")) return;
-  const frame = document.createElement("iframe");
-  frame.title = "NA5TY on Kick";
-  frame.src = kickPlayerEmbedUrl(HOUSE_KICK_SLUG, { muted: true });
-  frame.allow = "autoplay; fullscreen; picture-in-picture";
-  frame.allowFullscreen = true;
-  stage.appendChild(frame);
-}
+let autoOpenedLiveWatch = false;
 
-function renderCityLandingPartners(partners) {
-  const list = document.getElementById("city-landing-partners");
-  if (!list) return;
-  const tiles = (partners || [])
-    .filter((row) => row.slug && row.slug !== HOUSE_KICK_SLUG)
-    .sort(
-      (a, b) =>
-        Number(b.isLive) - Number(a.isLive) ||
-        String(a.displayName || a.slug).localeCompare(String(b.displayName || b.slug), undefined, {
-          sensitivity: "base",
-        })
-    )
-    .slice(0, 6);
-
-  if (!tiles.length) {
-    list.innerHTML =
-      '<p class="subtitle">Partners go live here. Open Streamers to browse the full crew.</p>';
+async function autoOpenLiveWatch() {
+  if (autoOpenedLiveWatch || partnerStreamersState.tiles.length) return;
+  if (!partnerStreamersState.partners.length) {
+    await refreshPartnerStreamers();
+  }
+  if (autoOpenedLiveWatch || partnerStreamersState.tiles.length) {
+    autoOpenedLiveWatch = true;
     return;
   }
-
-  list.innerHTML = tiles
-    .map((partner) => {
-      const slug = escapeHtml(partner.slug);
-      const name = escapeHtml(partner.displayName || partner.slug);
-      const liveClass = partner.isLive ? "is-live" : "";
-      return `
-        <button class="city-partner" type="button" data-watch-landing="${slug}">
-          <span class="city-partner__live ${liveClass}" title="${partner.isLive ? "Live" : "Offline"}"></span>
-          <span>
-            <strong>${name}</strong>
-            <span class="subtitle">kick.com/${slug}</span>
-          </span>
-          <span class="city-partner__watch">${partner.isLive ? "Watch" : "Open"}</span>
-        </button>
-      `;
-    })
-    .join("");
+  const live = partnerStreamersState.partners.find((row) => row.isLive);
+  autoOpenedLiveWatch = true;
+  if (live) openStreamerTheater(live);
 }
 
-async function refreshCityLanding() {
-  if (!document.body.classList.contains("is-guest")) return;
-  ensureCityLandingPlayer();
-  const status = document.getElementById("city-stage-status");
+async function refreshCityInCityLine() {
   const inCity = document.getElementById("city-in-city-line");
-
-  try {
-    const response = await fetch("/api/rewards/live-partners", {
-      credentials: "same-origin",
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Could not load partners");
-    const partners = Array.isArray(data.partners) ? data.partners : [];
-    const house = partners.find((row) => row.slug === HOUSE_KICK_SLUG);
-    if (status) {
-      status.textContent = house?.isLive
-        ? "Live on Kick"
-        : "Offline — the player stays up for the next stream";
-    }
-    renderCityLandingPartners(partners);
-  } catch (error) {
-    if (status) status.textContent = error.message || "Could not load Kick status";
-    renderCityLandingPartners([]);
-  }
-
+  if (!inCity) return;
   try {
     const response = await fetch("/api/city", { credentials: "same-origin" });
     const data = await response.json().catch(() => ({}));
     const liveInCity = Array.isArray(data.liveStreamers) ? data.liveStreamers : [];
-    if (inCity) {
-      inCity.textContent = liveInCity.length
-        ? `${liveInCity.length} partnered streamer${liveInCity.length === 1 ? "" : "s"} in Only Pixels right now.`
-        : "No partnered streamers in Only Pixels right now.";
-    }
+    inCity.textContent = liveInCity.length
+      ? `${liveInCity.length} partnered streamer${liveInCity.length === 1 ? "" : "s"} in Only Pixels right now.`
+      : "No partnered streamers in Only Pixels right now.";
   } catch {
-    if (inCity) inCity.textContent = "";
+    inCity.textContent = "";
   }
 }
 
@@ -5552,7 +5492,7 @@ function renderCityView(data) {
 
 async function refreshCity() {
   if (document.body.classList.contains("is-guest")) {
-    await refreshCityLanding();
+    await refreshCityInCityLine();
     return;
   }
   try {
