@@ -521,6 +521,7 @@ app.get("/api/me", (req, res) => {
     return res.json({
       loggedIn: false,
       publicPages: dashboardAccess.getPublicPages(null, { req }),
+      guestPages: dashboardAccess.getGuestPages({ req }),
     });
   }
 

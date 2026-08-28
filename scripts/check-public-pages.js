@@ -15,7 +15,12 @@ const playerAllowed = access.getAllowedPages({
   profile: { username: "pinkyuwu" },
 });
 
+const guestNav = access.getGuestPages();
 assert(guestPublic.join() === kickPublic.join(), "logged-out public tabs match Kick viewers");
+assert(guestNav.includes("city"), "City is a guest tab");
+assert(guestNav.includes("streamers"), "Streamers is a guest tab");
+assert(!guestNav.includes("overview"), "Dashboard is not a guest tab");
+assert(!guestNav.includes("channel"), "Channel is not a guest tab");
 assert(kickPublic.includes("city"), "City is public");
 assert(kickPublic.includes("profile"), "Profile is public");
 assert(kickPublic.includes("streamers"), "Streamers is public");
