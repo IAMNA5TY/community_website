@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=30" />
+    <link rel="stylesheet" href="/styles.css?v=31" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -71,7 +71,7 @@
           <div class="public-tabs-panel hidden" id="public-tabs-panel">
             <div class="public-tabs-panel__row">
               <p class="public-tabs-panel__kicker">Public tabs</p>
-              <button class="public-tabs-panel__btn" id="public-preview-btn" type="button">
+              <button class="public-tabs-panel__btn" id="public-preview-btn" data-public-preview type="button">
                 Preview
               </button>
             </div>
@@ -133,26 +133,34 @@
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.2 4.5L19 8.2l-3.5 3.4.8 4.9L12 14.8 7.7 16.5l.8-4.9L5 8.2l4.8-.7L12 3z"/></svg></span>
                 <span class="nav-label">Rewards</span>
               </button>
-              <button class="nav-link" data-page="workout" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9v6M18 9v6M8 12h8M4 11v2M20 11v2"/></svg></span>
-                <span class="nav-label">Workout / OBS</span>
-              </button>
-              <button class="nav-link" data-page="slots" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 10v4M12 10v4M16 10v4"/></svg></span>
-                <span class="nav-label">Slots</span>
-              </button>
-              <button class="nav-link" data-page="drinking" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-1 7a5 5 0 11-6 0L8 3zM12 15v6"/></svg></span>
-                <span class="nav-label">Drinking</span>
-              </button>
-              <button class="nav-link" data-page="lighting" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.6.5 1 1.2 1 2h4c0-.8.4-1.5 1-2a6 6 0 00-3-11z"/></svg></span>
-                <span class="nav-label">Lighting</span>
-              </button>
-              <button class="nav-link" data-page="stake" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9 9.5c1-.8 5-.8 6 0M9 14.5c1 .8 5 .8 6 0"/></svg></span>
-                <span class="nav-label">Stake.us</span>
-              </button>
+              <div class="nav-more" id="nav-more-tools">
+                <button class="nav-more__toggle" id="nav-more-toggle" type="button" aria-expanded="false">
+                  <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9l6 6 6-6"/></svg></span>
+                  <span class="nav-label">More tools</span>
+                </button>
+                <div class="nav-more__list">
+                  <button class="nav-link nav-link--quiet" data-page="workout" type="button">
+                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9v6M18 9v6M8 12h8M4 11v2M20 11v2"/></svg></span>
+                    <span class="nav-label">Workout / OBS</span>
+                  </button>
+                  <button class="nav-link nav-link--quiet" data-page="slots" type="button">
+                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 10v4M12 10v4M16 10v4"/></svg></span>
+                    <span class="nav-label">Slots</span>
+                  </button>
+                  <button class="nav-link nav-link--quiet" data-page="drinking" type="button">
+                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-1 7a5 5 0 11-6 0L8 3zM12 15v6"/></svg></span>
+                    <span class="nav-label">Drinking</span>
+                  </button>
+                  <button class="nav-link nav-link--quiet" data-page="lighting" type="button">
+                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.6.5 1 1.2 1 2h4c0-.8.4-1.5 1-2a6 6 0 00-3-11z"/></svg></span>
+                    <span class="nav-label">Lighting</span>
+                  </button>
+                  <button class="nav-link nav-link--quiet" data-page="stake" type="button">
+                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9 9.5c1-.8 5-.8 6 0M9 14.5c1 .8 5 .8 6 0"/></svg></span>
+                    <span class="nav-label">Stake.us</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="nav-group nav-group--other">
@@ -202,26 +210,17 @@
           <section class="page-view active" data-page="city">
             <header class="page-header overview-header">
               <div>
-                <h1>Only Pixels</h1>
-                <p class="subtitle">FiveM city linked to Kick — your character, live streamers, and who’s online</p>
+                <h1>City</h1>
+                <p class="subtitle">Who’s in the FiveM city — your character, live partners, and (staff) the roster</p>
               </div>
               <button class="btn btn-secondary btn-compact" type="button" id="city-refresh">Refresh</button>
             </header>
 
-            <div class="public-tabs-banner hidden" id="public-tabs-banner">
-              <p class="public-tabs-banner__kicker">na5ty only</p>
-              <h2>Tabs the public can see</h2>
-              <p class="subtitle">
-                Viewers never get owner tools in the sidebar. This is the exact list they see.
-              </p>
-              <ol class="public-tabs-panel__list" id="public-tabs-banner-list"></ol>
-            </div>
-
             <div class="guest-lock guest-only">
               <p class="guest-lock__kicker">Look around</p>
-              <h2>Only Pixels, live with the crew</h2>
+              <h2>The city, live with the crew</h2>
               <p class="subtitle">
-                See which partnered Kick streamers are in the city right now. Sign in to unlock your character, Kick points, and the online roster.
+                See which partnered Kick streamers are in the city right now. Sign in to unlock your character and the online roster. Points live on Only Pixels.
               </p>
               <div class="guest-lock__cta">
                 <a class="btn btn-kick" href="/auth/kick">Sign in with Kick</a>
@@ -244,7 +243,7 @@
               </div>
               <div class="card panel">
                 <h2>Live in city</h2>
-                <p class="subtitle">Partnered Kick streamers who are in Only Pixels right now.<span class="signed-in-only"> The points pill is <strong>your</strong> Kick points on that streamer.</span></p>
+                <p class="subtitle">Partnered Kick streamers in the city right now.<span class="signed-in-only"> A points pill only shows on approved partners you’ve actually chatted on.</span></p>
                 <div id="city-live" class="city-list">
                   <p class="subtitle">Loading…</p>
                 </div>
@@ -255,7 +254,7 @@
               <div class="only-pixels-points-head">
                 <div>
                   <h2>Who’s in the city</h2>
-                  <p class="subtitle">Staff view — character names, jobs, and Kick links. Each linked streamer shows <strong>your</strong> Kick points on their channel (from the account you signed in with). Viewers only see their own character and live streamers (no metagame list).</p>
+                  <p class="subtitle">Staff view — names, jobs, and Kick links. Viewers only see their own character and live partners (no roster). Points only appear on approved partner channels you’ve chatted in — never on your own row.</p>
                 </div>
                 <label class="hub-search" for="city-search-input">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -415,7 +414,7 @@
                 <button class="hub-card" type="button" data-goto-page="city" data-page="city" data-hub-filter="city fivem only pixels character live">
                   <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10l8-6 8 6v10H4z"/><path d="M10 20v-6h4v6"/></svg></span>
                   <strong>City</strong>
-                  <span>Your FiveM character, live Kick streamers, and who’s in Only Pixels.</span>
+                  <span>Your FiveM character, live partnered streamers, and who’s online.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="channel" data-page="channel" data-hub-filter="channel profile description category">
                   <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19c1.8-3 4.2-4.5 7-4.5S16.2 16 18 19"/></svg></span>
@@ -1479,6 +1478,17 @@
               <h1>Settings</h1>
               <p class="subtitle">API access, sign-in activity, and webhooks</p>
             </header>
+            <div class="card panel hidden" id="public-tabs-banner">
+              <p class="public-tabs-banner__kicker">na5ty only</p>
+              <h2>Tabs the public can see</h2>
+              <p class="subtitle">
+                Viewers never get owner tools in the sidebar. This is the exact list they see. Preview from here or the sidebar chips.
+              </p>
+              <ol class="public-tabs-panel__list" id="public-tabs-banner-list"></ol>
+              <button class="public-tabs-panel__btn" id="public-preview-btn-settings" data-public-preview type="button">
+                Preview
+              </button>
+            </div>
             <div class="card panel">
               <h2>Sign-in activity</h2>
               <p class="subtitle">Recent Kick sign-in attempts — authorized and blocked</p>
@@ -1499,6 +1509,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=101"></script>
+    <script src="/app.js?v=102"></script>
   </body>
 </html>
