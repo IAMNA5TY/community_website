@@ -2550,6 +2550,36 @@ function formatSiteChatContent(content) {
   return html || escapeHtml(text);
 }
 
+function sameSiteChatLine(a, b) {
+  return (
+    String(a?.username || "")
+      .trim()
+      .toLowerCase() ===
+      String(b?.username || "")
+        .trim()
+        .toLowerCase() && String(a?.content || "") === String(b?.content || "")
+  );
+}
+
+function mergeSiteChatMessages(incoming) {
+  const server = Array.isArray(incoming) ? incoming.slice() : [];
+  const local = partnerStreamersState.chatMessages || [];
+  const now = Date.now();
+  for (const row of local) {
+    if (!row?.localPending) continue;
+    const age = now - (Date.parse(row.createdAt) || now);
+    if (age > 45000) continue;
+    if (server.some((msg) => sameSiteChatLine(msg, row))) continue;
+    server.push({
+      username: row.username,
+      content: row.content,
+      createdAt: row.createdAt,
+      localPending: true,
+    });
+  }
+  return server.slice(-20);
+}
+
 function renderSiteChatMessages() {
   const box = document.getElementById("site-chat-messages");
   if (!box) return;
@@ -2588,9 +2618,9 @@ async function refreshSiteChat() {
     if (!response.ok) throw new Error(data.error || "Failed to load chat");
 
     partnerStreamersState.canSend = Boolean(data.canSend);
-    partnerStreamersState.chatMessages = Array.isArray(data.messages)
-      ? data.messages
-      : [];
+    partnerStreamersState.chatMessages = mergeSiteChatMessages(
+      Array.isArray(data.messages) ? data.messages : []
+    );
     partnerStreamersState.chatCommands = Array.isArray(data.chat_commands)
       ? data.chat_commands
       : [];
@@ -3058,13 +3088,17 @@ document.getElementById("site-chat-form")?.addEventListener("submit", async (eve
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Failed to send");
     if (input) input.value = "";
-    if (data.message) {
-      partnerStreamersState.chatMessages = [
-        ...partnerStreamersState.chatMessages,
-        data.message,
-      ].slice(-20);
-      renderSiteChatMessages();
-    }
+    const pending = {
+      username: data.message?.username || "you",
+      content: data.message?.content || content,
+      createdAt: data.message?.createdAt || new Date().toISOString(),
+      localPending: true,
+    };
+    partnerStreamersState.chatMessages = [
+      ...partnerStreamersState.chatMessages,
+      pending,
+    ].slice(-20);
+    renderSiteChatMessages();
     setSiteChatStatus("");
     refreshSiteChat();
   } catch (error) {
