@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=41" />
+    <link rel="stylesheet" href="/styles.css?v=42" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -208,11 +208,18 @@
                   <div>
                     <p class="city-stage__kicker" id="city-stage-kicker">kick.com/na5ty</p>
                     <h2 id="city-stage-title">NA5TY</h2>
-                    <p class="subtitle" id="city-stage-status">Loading stream…</p>
+                    <p class="city-stage__status" id="city-stage-status">Watching</p>
                   </div>
                   <a class="btn btn-secondary btn-compact" id="city-stage-open" href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">Open on Kick</a>
                 </div>
-                <div class="city-stage__player" id="city-stage-player"></div>
+                <div class="city-stage__player" id="city-stage-player">
+                  <iframe
+                    title="Kick stream"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    data-slug="na5ty"
+                    src="https://player.kick.com/na5ty?autoplay=true&amp;muted=true"
+                  ></iframe>
+                </div>
               </div>
               <div class="city-landing__aside">
                 <div class="city-stage__chat card site-chat">
@@ -1439,6 +1446,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=112"></script>
+    <script src="/app.js?v=113"></script>
   </body>
 </html>

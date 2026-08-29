@@ -1542,8 +1542,29 @@ body:not(.is-guest) .guest-only {
 
 .city-stage h2 {
   margin: 2px 0 0;
+  font-size: 1.45rem;
   font-family: var(--font-display);
   letter-spacing: -0.03em;
+}
+
+.city-stage__status {
+  display: inline-flex;
+  margin: 8px 0 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: #141414;
+  border: 1px solid #2a2a2a;
+}
+
+.city-stage__status[data-live="1"] {
+  color: #0b3;
+  background: rgba(83, 252, 24, 0.12);
+  border-color: rgba(83, 252, 24, 0.35);
 }
 
 .city-stage__kicker {
