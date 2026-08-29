@@ -47,5 +47,17 @@ assert(
   "na5ty public list is the same as any Kick viewer"
 );
 
+assert(access.isPublicOverlayApiPath("/state"), "workout /api/state is a public overlay GET");
+assert(access.isPublicOverlayApiPath("/chat/messages"), "chat box /api/chat/messages is public");
+assert(access.isPublicOverlayApiPath("/chat/events"), "chat SSE is public");
+assert(access.isPublicOverlayApiPath("/alerts/state"), "stream alerts state is public");
+assert(access.isPublicOverlayApiPath("/alerts/events"), "stream alerts SSE is public");
+assert(access.isPublicOverlayApiPath("/slots"), "slots overlay is public");
+assert(access.isPublicOverlayApiPath("/slots-timer"), "slots timer overlay is public");
+assert(access.isPublicOverlayApiPath("/sub-goal"), "sub goal overlay is public");
+assert(!access.isPublicOverlayApiPath("/bot"), "chat bot API stays owner-only");
+assert(!access.isPublicOverlayApiPath("/webhooks/status"), "webhook status stays owner-only");
+assert(!access.isPlayerAllowedApiPath("/state"), "player tab allowlist does not cover overlays");
+
 console.log("public tabs:", kickPublic.join(", "));
 console.log("public pages check passed");

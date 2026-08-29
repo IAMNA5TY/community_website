@@ -207,6 +207,14 @@ app.use((req, res, next) => {
 
   const apiPath = req.path.replace(/^\/api/, "") || "/";
   if (dashboardAccess.isPlayerAllowedApiPath(apiPath)) return next();
+  // Guest / OBS overlays already work with no session. A signed-in Kick
+  // viewer in the same browser must still be able to poll those GETs.
+  if (
+    (req.method === "GET" || req.method === "HEAD") &&
+    dashboardAccess.isPublicOverlayApiPath(apiPath)
+  ) {
+    return next();
+  }
   return res.status(403).json({ error: "Forbidden" });
 });
 
