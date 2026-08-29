@@ -2162,14 +2162,14 @@ function updateStreamerTheaterHeader() {
   const kicker = document.getElementById("city-stage-kicker");
   const status = document.getElementById("city-stage-status");
   const open = document.getElementById("city-stage-open");
-  if (title) title.textContent = partner.displayName || slug;
-  if (kicker) kicker.textContent = `kick.com/${slug}`;
-  if (status) {
-    status.textContent = partner.isLive
-      ? "Live on Kick"
-      : slug === HOUSE_KICK_SLUG
-        ? "Offline — pick a live partner on the right"
-        : "Offline";
+  const nextTitle = partner.displayName || slug;
+  const nextKicker = `kick.com/${slug}`;
+  const nextStatus = partner.isLive ? "Live" : "Offline";
+  if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
+  if (kicker && kicker.textContent !== nextKicker) kicker.textContent = nextKicker;
+  if (status && status.textContent !== nextStatus) {
+    status.textContent = nextStatus;
+    status.dataset.live = partner.isLive ? "1" : "0";
   }
   if (open) {
     open.href = `https://kick.com/${encodeURIComponent(slug)}`;
@@ -2752,6 +2752,7 @@ async function refreshPartnerStreamers(force = false) {
   } finally {
     partnerStreamersState.loading = false;
     renderPartnerStreamersList();
+    if (currentPage === "city") updateStreamerTheaterHeader();
   }
 }
 
@@ -5420,20 +5421,20 @@ function cityLiveEmptyHtml() {
 }
 
 async function ensureCityHouseWatch() {
+  if (!partnerStreamersState.selectedSlug) {
+    const house =
+      partnerStreamersState.partners.find((row) => row.slug === HOUSE_KICK_SLUG) || {
+        slug: HOUSE_KICK_SLUG,
+        displayName: "NA5TY",
+        isLive: false,
+      };
+    focusCityWatch(house);
+  } else {
+    updateStreamerTheaterHeader();
+  }
   if (!partnerStreamersState.partners.length) {
     await refreshPartnerStreamers();
   }
-  if (partnerStreamersState.selectedSlug) {
-    updateStreamerTheaterHeader();
-    return;
-  }
-  const house =
-    partnerStreamersState.partners.find((row) => row.slug === HOUSE_KICK_SLUG) || {
-      slug: HOUSE_KICK_SLUG,
-      displayName: "NA5TY",
-      isLive: false,
-    };
-  focusCityWatch(house);
 }
 
 async function refreshCityInCityLine() {
