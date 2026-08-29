@@ -2245,7 +2245,6 @@ function createStreamTileElement(tile) {
   const frame = document.createElement("iframe");
   frame.title = `Kick stream ${tile.slug}`;
   frame.allow = "autoplay; fullscreen; picture-in-picture";
-  frame.allowFullscreen = true;
   frame.loading = "lazy";
 
   const catcher = document.createElement("button");
@@ -2403,7 +2402,6 @@ function focusCityWatch(partnerOrSlug) {
       frame = document.createElement("iframe");
       frame.title = "Kick stream";
       frame.allow = "autoplay; fullscreen; picture-in-picture";
-      frame.allowFullscreen = true;
       player.appendChild(frame);
     }
     if (frame.dataset.slug !== slug) {
