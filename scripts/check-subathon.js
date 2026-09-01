@@ -11,6 +11,10 @@ function assert(cond, label) {
   if (!cond) throw new Error(label);
 }
 
+const opening = subathon.loadForOverlay();
+assert(opening.count === 300, "empty clock opens on 300 subs");
+assert(opening.displayTime === "50:00:00", "empty clock is 50 hours");
+
 assert(subathon.parseCommand("!subathon")?.action === "show", "show");
 assert(subathon.parseCommand("!subathon start")?.action === "start", "start");
 assert(subathon.parseCommand("!subathon start 300")?.action === "seed", "start 300 seeds");
