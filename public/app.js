@@ -400,6 +400,7 @@ function renderOverviewQuickLinks(data) {
     ["Chat box", data.widgetsUrls?.chatBox],
     ["Stream alerts", data.widgetsUrls?.streamAlerts],
     ["Stream timer (4h→12h)", data.widgetsUrls?.subGoal],
+    ["Subathon", data.widgetsUrls?.subathon],
     ["Slots timer", data.slotsUrls?.timer],
     ["Slots widget", data.slotsUrls?.widget],
     ["Now playing", data.widgetsUrls?.nowPlaying],
@@ -1012,6 +1013,58 @@ async function subGoalAction(action, extra = {}) {
   }
 }
 
+function renderSubathonControls(subathon) {
+  const statusEl = document.getElementById("subathon-status");
+  const hoursInput = document.getElementById("subathon-start-hours");
+  const perSubInput = document.getElementById("subathon-persub");
+  if (!statusEl) return;
+
+  if (!subathon) {
+    statusEl.textContent = "Subathon loads after you sign in as owner.";
+    return;
+  }
+
+  const time = subathon.displayTime || "1:00:00";
+  const count = subathon.count || 0;
+  const perSub = subathon.minutesPerSub || 5;
+  const running = subathon.ended
+    ? "ended"
+    : subathon.isRunning
+      ? "counting down"
+      : "paused";
+  const last = subathon.lastSubBy ? ` · last ${subathon.lastSubBy}` : "";
+  statusEl.textContent = `${time} left · ${count} subs · +${perSub} min/sub · ${running}${last}`;
+  if (hoursInput && !hoursInput.matches(":focus")) {
+    hoursInput.value = String(
+      Math.round(((subathon.startSeconds || 3600) / 3600) * 100) / 100
+    );
+  }
+  if (perSubInput && !perSubInput.matches(":focus")) {
+    perSubInput.value = String(perSub);
+  }
+}
+
+async function subathonAction(action, extra = {}) {
+  const statusEl = document.getElementById("subathon-status");
+  try {
+    const res = await fetch("/api/subathon", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    if (dashboardData) dashboardData.subathon = data;
+    renderSubathonControls(data);
+    const frame = document.querySelector('iframe[title="Subathon preview"]');
+    if (frame) frame.src = frame.src;
+    return data;
+  } catch (error) {
+    if (statusEl) statusEl.textContent = error.message;
+    return null;
+  }
+}
+
 function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
   const urlsTable = document.getElementById("widgets-urls-table");
   if (urlsTable && widgetsUrls) {
@@ -1019,6 +1072,7 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
       ["Kick chat box (OBS)", widgetsUrls.chatBox],
       ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
       ["Stream timer — 4h→12h (OBS)", widgetsUrls.subGoal],
+      ["Subathon (OBS)", widgetsUrls.subathon],
       ["Now playing — Spotify (OBS)", widgetsUrls.nowPlaying],
       ["Cam overlay — shadow + B&W rim light (OBS)", widgetsUrls.camOverlay],
       ["Cam B&W rim light (OBS)", widgetsUrls.camSmoke],
@@ -1069,6 +1123,7 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
   }
 
   renderSubGoalControls(dashboardData?.subGoal);
+  renderSubathonControls(dashboardData?.subathon);
 }
 
 function renderLighting(lighting = {}) {
@@ -2815,6 +2870,7 @@ function renderDashboard(data) {
     webhookNote: data.webhookNote,
   });
   renderSubGoalControls(data.subGoal);
+  renderSubathonControls(data.subathon);
   renderLighting(data.lighting);
   renderStakeUrls(data.stakeUrls);
   renderCommandsTable(data.bot?.commands || []);
@@ -4037,6 +4093,27 @@ document.getElementById("subgoal-start-btn")?.addEventListener("click", async ()
 
 document.getElementById("subgoal-stop-btn")?.addEventListener("click", async () => {
   await subGoalAction("stop");
+});
+
+document.getElementById("subathon-start-btn")?.addEventListener("click", async () => {
+  await subathonAction("start");
+});
+document.getElementById("subathon-stop-btn")?.addEventListener("click", async () => {
+  await subathonAction("stop");
+});
+document.getElementById("subathon-reset-btn")?.addEventListener("click", async () => {
+  await subathonAction("reset");
+});
+document.getElementById("subathon-add-btn")?.addEventListener("click", async () => {
+  await subathonAction("add", { count: 1, by: "dashboard" });
+});
+document.getElementById("subathon-add-min-btn")?.addEventListener("click", async () => {
+  await subathonAction("addMinutes", { minutes: 5, by: "dashboard" });
+});
+document.getElementById("subathon-apply-btn")?.addEventListener("click", async () => {
+  const startHours = Number(document.getElementById("subathon-start-hours")?.value || 1);
+  const minutesPerSub = Number(document.getElementById("subathon-persub")?.value || 5);
+  await subathonAction("configure", { startHours, minutesPerSub });
 });
 
 document.getElementById("slots-set-hour-btn")?.addEventListener("click", async () => {

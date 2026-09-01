@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Subathon</title>
+  <link rel="stylesheet" href="../workout/css/workout-theme.css">
+  <link rel="stylesheet" href="/css/stream-bg.css">
+  <style>
+    body {
+      background: transparent !important;
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .subathon-wrap {
+      width: min(460px, 100%);
+    }
+
+    .subathon-body {
+      text-align: center;
+      padding: 18px 22px 16px;
+    }
+
+    .subathon-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--orange-bright);
+      margin-bottom: 8px;
+    }
+
+    .subathon-time {
+      font-family: var(--font-display);
+      font-size: 3.6rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--white);
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 28px rgba(83, 252, 24, 0.28);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .subathon-wrap.is-running .subathon-time {
+      text-shadow: 0 0 28px rgba(255, 87, 34, 0.4);
+    }
+
+    .subathon-wrap.is-ended .subathon-time {
+      color: var(--orange-bright);
+    }
+
+    .subathon-progress {
+      margin-top: 16px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+    }
+
+    .subathon-progress-fill {
+      height: 100%;
+      width: 40%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #53fc18, var(--orange));
+      box-shadow: 0 0 16px rgba(83, 252, 24, 0.35);
+      transition: width 0.35s ease;
+    }
+
+    .subathon-meta {
+      margin-top: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .subathon-last {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--blue-bright);
+    }
+
+    .subathon-meta [data-subathon-status] {
+      color: var(--blue-bright);
+    }
+
+    .subathon-wrap.is-running [data-subathon-status] {
+      color: #53fc18;
+    }
+
+    .subathon-wrap.is-pop {
+      animation: subathon-pop 0.4s ease;
+    }
+
+    @keyframes subathon-pop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="subathon-wrap panel orange-accent stream-bg" id="subathonRoot">
+    <div class="panel-header orange"><span class="icon">⏳</span> Subathon</div>
+    <div class="panel-body subathon-body">
+      <div class="subathon-eyebrow" data-subathon-label>SUBATHON</div>
+      <div class="subathon-time" data-subathon-time>1:00:00</div>
+      <div class="subathon-progress" aria-hidden="true">
+        <div class="subathon-progress-fill" data-subathon-fill></div>
+      </div>
+      <div class="subathon-meta">
+        <span data-subathon-meta>0 subs · +5 min each</span>
+        <span aria-hidden="true">·</span>
+        <span data-subathon-status>paused</span>
+      </div>
+      <div class="subathon-last" data-subathon-last>subs add time to the clock</div>
+    </div>
+  </div>
+
+  <script src="js/subathon.js?v=1"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const width = parseInt(params.get("width"), 10);
+    if (width > 0) {
+      document.querySelector(".subathon-wrap").style.width = `${width}px`;
+    }
+    initSubathonWidget({ root: document.getElementById("subathonRoot") });
+  </script>
+</body>
+</html>

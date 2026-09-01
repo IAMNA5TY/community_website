@@ -996,6 +996,53 @@
 
             <div class="card panel widgets-preview-card" style="margin-top:16px;">
               <div class="panel-header">
+                <h2>Subathon</h2>
+                <p class="subtitle">
+                  Classic countdown. Starts at <strong>1:00:00</strong>. Each Kick sub or gift adds
+                  <strong>5 minutes</strong>. No cap — keep going until the clock hits zero.
+                  OBS: <code>/widgets/subathon.html?obs=1</code>
+                </p>
+              </div>
+              <iframe
+                class="widgets-embed-frame"
+                src="/widgets/subathon.html?obs=1&embed=1&v=1"
+                title="Subathon preview"
+                style="min-height:300px;"
+              ></iframe>
+              <div class="btn-row slots-actions" style="margin-top:12px;flex-wrap:wrap;gap:8px;align-items:center;">
+                <button class="btn btn-kick btn-compact" id="subathon-start-btn" type="button">Start</button>
+                <button class="btn btn-secondary btn-compact" id="subathon-stop-btn" type="button">Pause</button>
+                <button class="btn btn-secondary btn-compact" id="subathon-reset-btn" type="button">Reset + start</button>
+                <button class="btn btn-secondary btn-compact" id="subathon-add-btn" type="button">+1 sub</button>
+                <button class="btn btn-secondary btn-compact" id="subathon-add-min-btn" type="button">+5 min</button>
+              </div>
+              <div class="btn-row slots-actions" style="margin-top:8px;flex-wrap:wrap;gap:8px;align-items:center;">
+                <label class="subtitle" for="subathon-start-hours">Start hours</label>
+                <input id="subathon-start-hours" type="number" min="0.25" max="24" step="0.25" value="1" style="width:72px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);" />
+                <label class="subtitle" for="subathon-persub">Min / sub</label>
+                <input id="subathon-persub" type="number" min="0.5" max="60" step="0.5" value="5" style="width:72px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);" />
+                <button class="btn btn-secondary btn-compact" id="subathon-apply-btn" type="button">Save settings</button>
+              </div>
+              <p class="subtitle" id="subathon-status" style="margin-top:12px;"></p>
+              <div class="card panel" style="margin-top:12px;">
+                <h3 style="margin:0 0 8px;font-size:1rem;">Chat commands</h3>
+                <table class="data-table">
+                  <tbody>
+                    <tr><td><code>!subathon</code></td><td>Anyone</td><td>Show time left + sub count</td></tr>
+                    <tr><td><code>!subathon start</code> / <code>stop</code></td><td>Mods</td><td>Start or pause the clock</td></tr>
+                    <tr><td><code>!subathon reset</code></td><td>Mods</td><td>New run from the start time</td></tr>
+                    <tr><td><code>!subathon 3</code></td><td>Mods</td><td>Add 3 subs worth of time</td></tr>
+                    <tr><td><code>!subathon +10</code></td><td>Mods</td><td>Add 10 minutes</td></tr>
+                    <tr><td><code>!subathon persub 5</code></td><td>Mods</td><td>Minutes added per sub</td></tr>
+                    <tr><td><code>!subathon label SUBATHON</code></td><td>Mods</td><td>Change the overlay title</td></tr>
+                  </tbody>
+                </table>
+                <p class="subtitle" style="margin-top:10px;">Kick subs and gift subs add time automatically while this overlay is up.</p>
+              </div>
+            </div>
+
+            <div class="card panel widgets-preview-card" style="margin-top:16px;">
+              <div class="panel-header">
                 <h2>Spotify — Now Playing</h2>
                 <p class="subtitle" id="spotify-status">Chat controls music with !request, !skip, !pause, !replaysong, !vol</p>
               </div>
@@ -1446,6 +1493,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=113"></script>
+    <script src="/app.js?v=114"></script>
   </body>
 </html>
