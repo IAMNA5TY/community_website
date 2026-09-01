@@ -489,14 +489,23 @@
                 <div>
                   <h2>Partner applications</h2>
                   <p class="subtitle">
-                    Staff can approve, deny, and reconsider streamer applications. Denied applicants keep viewer access. Approved users become partnered
-                    automatically when they link the same Kick account in city.
+                    Staff can add a Kick username from /kickmenu here, or approve/deny applications.
+                    Adding someone approves them and starts reading their Kick chat immediately.
                   </p>
                 </div>
                 <button class="btn btn-secondary btn-compact" type="button" id="only-pixels-partners-refresh">
                   Refresh
                 </button>
               </div>
+              <form class="only-pixels-form" id="only-pixels-partners-form">
+                <input
+                  id="only-pixels-partner-slug"
+                  name="slug"
+                  placeholder="Kick username to add"
+                  autocomplete="off"
+                />
+                <button class="btn btn-kick" type="submit">Add partner</button>
+              </form>
               <p class="only-pixels-note" id="only-pixels-partners-status"></p>
               <div class="only-pixels-partners-list" id="only-pixels-partners-list">
                 <p class="subtitle">Loading applications...</p>

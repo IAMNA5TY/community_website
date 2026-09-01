@@ -4750,6 +4750,31 @@ function bindOnlyPixelsPartnerEvents() {
   if (onlyPixelsState.partnersBound) return;
   onlyPixelsState.partnersBound = true;
 
+  document.getElementById("only-pixels-partners-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = document.getElementById("only-pixels-partner-slug");
+    const slug = String(input?.value || "").trim().replace(/^@/, "");
+    if (!slug) return;
+    setOnlyPixelsPartnersStatus(`Adding @${slug} and connecting chat…`);
+    try {
+      const response = await fetch("/api/rewards/partners", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Add failed");
+      if (input) input.value = "";
+      setOnlyPixelsPartnersStatus(
+        data.message || `Added @${data.streamer?.slug || slug} — chat monitor connecting.`,
+        "ok"
+      );
+      await loadOnlyPixelsPartners();
+    } catch (error) {
+      setOnlyPixelsPartnersStatus(error.message, "err");
+    }
+  });
+
   document.getElementById("only-pixels-partners-refresh")?.addEventListener("click", async () => {
     setOnlyPixelsPartnersStatus("Refreshing…");
     try {
