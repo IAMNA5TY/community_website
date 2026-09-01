@@ -37,6 +37,7 @@ assert(
   seeded.state.remainingSeconds === 300 * seeded.state.secondsPerSub,
   "clock opens on 300 × min/sub"
 );
-assert(seeded.state.displayTime === "25:00:00", "300 × 5 min is 25 hours");
+assert(seeded.state.minutesPerSub === 10, "default is 10 min per sub");
+assert(seeded.state.displayTime === "50:00:00", "300 × 10 min is 50 hours");
 
 console.log("subathon check passed");

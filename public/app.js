@@ -1026,7 +1026,7 @@ function renderSubathonControls(subathon) {
 
   const time = subathon.displayTime || "1:00:00";
   const count = subathon.count || 0;
-  const perSub = subathon.minutesPerSub || 5;
+  const perSub = subathon.minutesPerSub || 10;
   const running = subathon.ended
     ? "ended"
     : subathon.isRunning
@@ -4112,7 +4112,7 @@ document.getElementById("subathon-add-min-btn")?.addEventListener("click", async
 });
 document.getElementById("subathon-apply-btn")?.addEventListener("click", async () => {
   const startHours = Number(document.getElementById("subathon-start-hours")?.value || 1);
-  const minutesPerSub = Number(document.getElementById("subathon-persub")?.value || 5);
+  const minutesPerSub = Number(document.getElementById("subathon-persub")?.value || 10);
   await subathonAction("configure", { startHours, minutesPerSub });
 });
 document.getElementById("subathon-seed-btn")?.addEventListener("click", async () => {
