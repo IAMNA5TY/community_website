@@ -4115,6 +4115,10 @@ document.getElementById("subathon-apply-btn")?.addEventListener("click", async (
   const minutesPerSub = Number(document.getElementById("subathon-persub")?.value || 5);
   await subathonAction("configure", { startHours, minutesPerSub });
 });
+document.getElementById("subathon-seed-btn")?.addEventListener("click", async () => {
+  const count = Number(document.getElementById("subathon-seed-subs")?.value || 300);
+  await subathonAction("seed", { count, by: "opening gift" });
+});
 
 document.getElementById("slots-set-hour-btn")?.addEventListener("click", async () => {
   try {

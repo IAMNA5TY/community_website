@@ -998,14 +998,15 @@
               <div class="panel-header">
                 <h2>Subathon</h2>
                 <p class="subtitle">
-                  Classic countdown. Starts at <strong>1:00:00</strong>. Each Kick sub or gift adds
-                  <strong>5 minutes</strong>. No cap — keep going until the clock hits zero.
+                  Classic countdown. A 300-sub drop at <strong>5 min/sub</strong> opens at
+                  <strong>25:00:00</strong>. Use <strong>Start at that time</strong> or
+                  <code>!subathon start 300</code>. Extra Kick subs keep adding time.
                   OBS: <code>/widgets/subathon.html?obs=1</code>
                 </p>
               </div>
               <iframe
                 class="widgets-embed-frame"
-                src="/widgets/subathon.html?obs=1&embed=1&v=1"
+                src="/widgets/subathon.html?obs=1&embed=1&v=2"
                 title="Subathon preview"
                 style="min-height:300px;"
               ></iframe>
@@ -1023,6 +1024,11 @@
                 <input id="subathon-persub" type="number" min="0.5" max="60" step="0.5" value="5" style="width:72px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);" />
                 <button class="btn btn-secondary btn-compact" id="subathon-apply-btn" type="button">Save settings</button>
               </div>
+              <div class="btn-row slots-actions" style="margin-top:8px;flex-wrap:wrap;gap:8px;align-items:center;">
+                <label class="subtitle" for="subathon-seed-subs">Open on this many subs</label>
+                <input id="subathon-seed-subs" type="number" min="1" max="9999" step="1" value="300" style="width:88px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);" />
+                <button class="btn btn-kick btn-compact" id="subathon-seed-btn" type="button">Start at that time</button>
+              </div>
               <p class="subtitle" id="subathon-status" style="margin-top:12px;"></p>
               <div class="card panel" style="margin-top:12px;">
                 <h3 style="margin:0 0 8px;font-size:1rem;">Chat commands</h3>
@@ -1030,6 +1036,7 @@
                   <tbody>
                     <tr><td><code>!subathon</code></td><td>Anyone</td><td>Show time left + sub count</td></tr>
                     <tr><td><code>!subathon start</code> / <code>stop</code></td><td>Mods</td><td>Start or pause the clock</td></tr>
+                    <tr><td><code>!subathon start 300</code></td><td>Mods</td><td>Open the clock on 300 subs × min/sub (25:00 at 5 min)</td></tr>
                     <tr><td><code>!subathon reset</code></td><td>Mods</td><td>New run from the start time</td></tr>
                     <tr><td><code>!subathon 3</code></td><td>Mods</td><td>Add 3 subs worth of time</td></tr>
                     <tr><td><code>!subathon +10</code></td><td>Mods</td><td>Add 10 minutes</td></tr>
@@ -1493,6 +1500,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=114"></script>
+    <script src="/app.js?v=115"></script>
   </body>
 </html>
