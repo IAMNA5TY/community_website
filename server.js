@@ -1248,7 +1248,7 @@ app.get("/api/dashboard", async (req, res) => {
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
         subGoal: `${BASE_URL}/widgets/sub-goal.html?obs=1&v=5`,
-        subathon: `${BASE_URL}/widgets/subathon.html?obs=1&v=3`,
+        subathon: `${BASE_URL}/widgets/subathon.html?obs=1&v=4`,
         camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=12`,
         camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=12`,
         camShadow: `${BASE_URL}/widgets/cam-drop-shadow.png`,
@@ -1423,7 +1423,7 @@ app.get("/api/dashboard", async (req, res) => {
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
         subGoal: `${BASE_URL}/widgets/sub-goal.html?obs=1&v=5`,
-        subathon: `${BASE_URL}/widgets/subathon.html?obs=1&v=3`,
+        subathon: `${BASE_URL}/widgets/subathon.html?obs=1&v=4`,
         camOverlay: `${BASE_URL}/widgets/cam-overlay.html?obs=1&v=12`,
         camSmoke: `${BASE_URL}/widgets/cam-smoke.html?obs=1&v=12`,
         camShadow: `${BASE_URL}/widgets/cam-drop-shadow.png`,
@@ -2118,7 +2118,7 @@ app.post("/api/sub-goal", (req, res) => {
 
 app.get("/api/subathon", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.json(streamSubathonState.loadForDisplay());
+  res.json(streamSubathonState.loadForOverlay());
 });
 
 app.get("/api/subathon/events", (req, res) => {

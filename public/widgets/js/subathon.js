@@ -1,21 +1,17 @@
-const SUBATHON_BASE = location.protocol.startsWith("http")
-  ? `${location.protocol}//${location.host}`
-  : "http://127.0.0.1:3000";
-
-const API_SUBATHON = `${SUBATHON_BASE}/api/subathon`;
-const API_SUBATHON_EVENTS = `${SUBATHON_BASE}/api/subathon/events`;
+const API_SUBATHON = "/api/subathon";
+const API_SUBATHON_EVENTS = "/api/subathon/events";
 
 const SubathonStore = {
   _cache: null,
 
   defaults() {
     return {
-      count: 0,
+      count: 300,
       label: "SUBATHON",
-      startSeconds: 3600,
+      startSeconds: 180000,
       secondsPerSub: 600,
-      remainingSeconds: 3600,
-      displayTime: "1:00:00",
+      remainingSeconds: 180000,
+      displayTime: "50:00:00",
       minutesPerSub: 10,
       progressPct: 100,
       isRunning: false,
@@ -28,7 +24,7 @@ const SubathonStore = {
 
   async load() {
     try {
-      const res = await fetch(API_SUBATHON, { cache: "no-store" });
+      const res = await fetch(`${API_SUBATHON}?t=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("bad status");
       const state = { ...this.defaults(), ...(await res.json()) };
       this._cache = state;
