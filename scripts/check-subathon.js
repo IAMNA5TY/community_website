@@ -13,7 +13,7 @@ function assert(cond, label) {
 
 const opening = subathon.loadForOverlay();
 assert(opening.count === 300, "empty clock opens on 300 subs");
-assert(opening.displayTime === "50:00:00", "empty clock is 50 hours");
+assert(opening.displayTime === "25:00:00", "empty clock is 25 hours");
 
 assert(subathon.parseCommand("!subathon")?.action === "show", "show");
 assert(subathon.parseCommand("!subathon start")?.action === "start", "start");
@@ -41,7 +41,31 @@ assert(
   seeded.state.remainingSeconds === 300 * seeded.state.secondsPerSub,
   "clock opens on 300 × min/sub"
 );
-assert(seeded.state.minutesPerSub === 10, "default is 10 min per sub");
-assert(seeded.state.displayTime === "50:00:00", "300 × 10 min is 50 hours");
+assert(seeded.state.minutesPerSub === 5, "default is 5 min per sub");
+assert(seeded.state.displayTime === "25:00:00", "300 × 5 min is 25 hours");
+
+const leftoverPath = path.join(dir, "stream-subathon-state.json");
+fs.writeFileSync(
+  leftoverPath,
+  JSON.stringify({
+    count: 300,
+    label: "SUBATHON",
+    startSeconds: 3600,
+    secondsPerSub: 600,
+    maxSeconds: 0,
+    pausedRemaining: 180000,
+    isRunning: false,
+    endsAt: null,
+    lastAddedSeconds: 180000,
+    nonce: 1,
+  })
+);
+const scaled = subathon.loadForDisplay();
+assert(scaled.minutesPerSub === 5, "saved 10 min/sub becomes 5");
+assert(scaled.displayTime === "25:00:00", "50h leftover becomes 25h");
+assert(scaled.count === 300, "sub count stays after the rate drop");
+const scaledAgain = subathon.loadForDisplay();
+assert(scaledAgain.displayTime === "25:00:00", "rate drop only halves leftover once");
+assert(subathon.loadForOverlay().displayTime === "25:00:00", "25h leftover is not re-opened");
 
 console.log("subathon check passed");
