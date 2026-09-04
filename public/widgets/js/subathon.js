@@ -8,11 +8,11 @@ const SubathonStore = {
     return {
       count: 300,
       label: "SUBATHON",
-      startSeconds: 180000,
-      secondsPerSub: 600,
-      remainingSeconds: 180000,
-      displayTime: "50:00:00",
-      minutesPerSub: 10,
+      startSeconds: 90000,
+      secondsPerSub: 300,
+      remainingSeconds: 90000,
+      displayTime: "25:00:00",
+      minutesPerSub: 5,
       progressPct: 100,
       isRunning: false,
       ended: false,
@@ -74,7 +74,7 @@ function renderSubathon(root, state) {
   if (labelEl) labelEl.textContent = state.label || "SUBATHON";
   if (fillEl) fillEl.style.width = `${Math.min(100, Math.max(8, state.progressPct || 0))}%`;
   if (metaEl) {
-    metaEl.textContent = `${state.count || 0} sub${state.count === 1 ? "" : "s"} · +${state.minutesPerSub || 10} min each`;
+    metaEl.textContent = `${state.count || 0} sub${state.count === 1 ? "" : "s"} · +${state.minutesPerSub || 5} min each`;
   }
   if (lastEl) {
     lastEl.textContent = state.lastSubBy
