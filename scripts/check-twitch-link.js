@@ -76,4 +76,17 @@ const taken = (() => {
 })();
 assert(taken && /already linked/i.test(taken), "twitch name cannot be stolen");
 
+assert(
+  rewards.getRegistrationByLicense("license:license-pinky-1")?.kickUsername === "pinkyuwu",
+  "license: prefix still finds the /kickmenu link"
+);
+assert(
+  rewards.getRegistrationByLicense("license-pinky-1")?.gameLicense === "license-pinky-1",
+  "bare license still finds the same Kick account"
+);
+
+const again = rewards.linkTwitchUsername("pinkyuwu", "PinkyTwitch2");
+assert(again.gameLicense === "license-pinky-1", "changing twitch name still keeps kickmenu license");
+assert(again.twitchUsername === "pinkytwitch2", "twitch name can be updated later");
+
 console.log("twitch link without resync check passed");
