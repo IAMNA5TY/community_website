@@ -2839,6 +2839,15 @@ body:not(.is-guest) .guest-only {
 .only-pixels-note.ok { color: #7dffb3; }
 .only-pixels-note.err { color: #ff8e8e; }
 
+#only-pixels-twitch-current:empty {
+  display: none;
+}
+
+#only-pixels-twitch-current {
+  margin: 0 0 10px;
+  color: #c9b7ff;
+}
+
 .discord-status-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
