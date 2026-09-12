@@ -76,18 +76,20 @@ fs.writeFileSync(
     startSeconds: 3600,
     secondsPerSub: 300,
     maxSeconds: 0,
-    pausedRemaining: 36569,
+    pausedRemaining: 126569,
     isRunning: false,
     endsAt: null,
-    lastAddedSeconds: 1500,
+    lastAddedSeconds: 90000,
+    lastSubBy: "restored leftover",
     nonce: 64,
     scaledToFiveMin: true,
+    restoredHalvedTime: true,
   })
 );
-const restored = subathon.loadForDisplay();
-assert(restored.displayTime === "35:09:29", "already-converted clock gets the 25h back");
-assert(restored.minutesPerSub === 5, "restore keeps 5 min per sub");
-assert(restored.count === 162, "restore keeps the sub count");
-assert(subathon.loadForDisplay().displayTime === "35:09:29", "restore only adds 25h once");
+const undone = subathon.loadForDisplay();
+assert(undone.displayTime === "10:09:29", "the +25h restore is taken back");
+assert(undone.minutesPerSub === 5, "undo keeps 5 min per sub");
+assert(undone.count === 162, "undo keeps the sub count");
+assert(subathon.loadForDisplay().displayTime === "10:09:29", "undo only subtracts 25h once");
 
 console.log("subathon check passed");
