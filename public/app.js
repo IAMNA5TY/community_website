@@ -2180,6 +2180,7 @@ let partnerStreamersState = {
   selectedSlug: null,
   platform: "kick",
   twitchHouse: null,
+  twitchCrew: [],
   canSend: false,
   chatMessages: [],
   chatCommands: [],
@@ -2241,13 +2242,13 @@ function setCityPlatform(platform) {
   if (crewSub) {
     crewSub.textContent =
       next === "twitch"
-        ? "IAMNA5TY first. Same City watch box as Kick."
+        ? "IAMNA5TY first. Kick partners who added Twitch show here."
         : "NA5TY first. Click a name to watch here.";
   }
   if (next === "twitch") {
     const frame = document.getElementById("city-twitch-chat-frame");
     if (frame) frame.src = twitchChatEmbedUrl(HOUSE_TWITCH_LOGIN);
-    refreshTwitchHouse().then(() => ensureCityHouseWatch());
+    refreshTwitchCrew().then(() => ensureCityHouseWatch());
   } else {
     ensureCityHouseWatch();
     refreshPartnerStreamers();
@@ -2549,6 +2550,11 @@ function focusCityWatch(partnerOrSlug) {
     }
   }
 
+  if (isCityTwitch()) {
+    const chat = document.getElementById("city-twitch-chat-frame");
+    if (chat) chat.src = twitchChatEmbedUrl(slug);
+  }
+
   updateStreamerTheaterHeader();
   setSiteChatStatus("");
   renderSiteChatMessages();
@@ -2824,6 +2830,69 @@ async function refreshTwitchHouse() {
   }
 }
 
+async function refreshTwitchCrew() {
+  try {
+    const response = await fetch("/api/rewards/twitch-channels", { credentials: "same-origin" });
+    const data = await response.json().catch(() => ({}));
+    const channels = Array.isArray(data.channels) ? data.channels : [];
+    partnerStreamersState.twitchCrew = channels.length
+      ? channels
+      : [
+          {
+            login: HOUSE_TWITCH_LOGIN,
+            displayName: "IAMNA5TY",
+            kickUsername: "na5ty",
+            isHouse: true,
+          },
+        ];
+  } catch {
+    partnerStreamersState.twitchCrew = [
+      {
+        login: HOUSE_TWITCH_LOGIN,
+        displayName: "IAMNA5TY",
+        kickUsername: "na5ty",
+        isHouse: true,
+      },
+    ];
+  }
+  await refreshTwitchHouse();
+}
+
+function twitchCrewRows() {
+  const house = partnerStreamersState.twitchHouse || {
+    slug: HOUSE_TWITCH_LOGIN,
+    displayName: "IAMNA5TY",
+    isLive: false,
+  };
+  const crew = partnerStreamersState.twitchCrew || [];
+  const rows = crew.length
+    ? crew
+    : [
+        {
+          login: HOUSE_TWITCH_LOGIN,
+          displayName: "IAMNA5TY",
+          kickUsername: "na5ty",
+          isHouse: true,
+        },
+      ];
+  return rows.map((row) => {
+    const login = String(row.login || row.twitchUsername || HOUSE_TWITCH_LOGIN)
+      .trim()
+      .toLowerCase()
+      .replace(/^#/, "");
+    const isHouse = Boolean(row.isHouse) || login === HOUSE_TWITCH_LOGIN;
+    return {
+      slug: login,
+      displayName: isHouse
+        ? house.displayName || row.displayName || "IAMNA5TY"
+        : row.displayName || login,
+      isLive: isHouse ? Boolean(house.isLive) : Boolean(row.isLive),
+      kickUsername: row.kickUsername || null,
+      isHouse,
+    };
+  });
+}
+
 function renderPartnerStreamersList() {
   const list = document.getElementById("profile-streamers-list");
   const meta = document.getElementById("profile-streamers-meta");
@@ -2833,23 +2902,31 @@ function renderPartnerStreamersList() {
   document.getElementById("streamers-filter-all")?.classList.toggle("hidden", isCityTwitch());
 
   if (isCityTwitch()) {
-    const house = partnerStreamersState.twitchHouse || {
-      slug: HOUSE_TWITCH_LOGIN,
-      displayName: "IAMNA5TY",
-      isLive: false,
-    };
-    const selected = partnerStreamersState.selectedSlug === house.slug;
-    meta.textContent = house.isLive ? "1 live on Twitch" : "Offline on Twitch";
-    list.innerHTML = `
-      <button class="streamer-row ${selected ? "is-selected" : ""}" type="button" data-watch-slug="${escapeHtml(house.slug)}" data-watch-platform="twitch">
-        <span class="streamer-row__live ${house.isLive ? "is-live" : ""}" title="${house.isLive ? "Live on Twitch" : "Offline on Twitch"}"></span>
+    const rows = twitchCrewRows();
+    const liveCount = rows.filter((row) => row.isLive).length;
+    meta.textContent = liveCount
+      ? `${liveCount} live on Twitch`
+      : rows.length > 1
+        ? `${rows.length} Twitch channels linked`
+        : "Offline on Twitch";
+    list.innerHTML = rows
+      .map((row) => {
+        const selected = partnerStreamersState.selectedSlug === row.slug;
+        const slugLine = row.kickUsername && !row.isHouse
+          ? `Kick @${row.kickUsername}`
+          : `twitch.tv/${row.slug}`;
+        return `
+      <button class="streamer-row ${selected ? "is-selected" : ""}" type="button" data-watch-slug="${escapeHtml(row.slug)}" data-watch-platform="twitch">
+        <span class="streamer-row__live ${row.isLive ? "is-live" : ""}" title="${row.isLive ? "Live on Twitch" : "Offline on Twitch"}"></span>
         <div class="streamer-row__meta">
-          <span class="streamer-row__name">${escapeHtml(house.displayName)}</span>
-          <span class="streamer-row__slug">twitch.tv/${escapeHtml(house.slug)}</span>
+          <span class="streamer-row__name">${escapeHtml(row.displayName)}</span>
+          <span class="streamer-row__slug">${escapeHtml(slugLine)}</span>
         </div>
-        <span class="streamer-row__watch">${selected ? "Watching" : house.isLive ? "Watch" : "Open"}</span>
+        <span class="streamer-row__watch">${selected ? "Watching" : row.isLive ? "Watch" : "Open"}</span>
       </button>
     `;
+      })
+      .join("");
     return;
   }
 
@@ -3227,7 +3304,7 @@ document.getElementById("streamers-filter-all")?.addEventListener("click", () =>
   renderPartnerStreamersList();
 });
 document.getElementById("streamers-refresh-btn")?.addEventListener("click", () => {
-  if (isCityTwitch()) refreshTwitchHouse();
+  if (isCityTwitch()) refreshTwitchCrew();
   else refreshPartnerStreamers(true);
 });
 document.getElementById("streamers-close-btn")?.addEventListener("click", () => {
@@ -4553,11 +4630,73 @@ function renderOnlyPixelsApplication(application) {
         : "Staff will review your streamer application. You can still claim viewer rewards in city while pending.";
 }
 
+function setOnlyPixelsTwitchStatus(message, type = "") {
+  const el = document.getElementById("only-pixels-twitch-status");
+  if (!el) return;
+  el.textContent = message || "";
+  el.className = `only-pixels-note${type ? ` ${type}` : ""}`;
+}
+
+function renderOnlyPixelsTwitchLink(data = {}) {
+  const input = document.getElementById("only-pixels-twitch-username");
+  const card = document.getElementById("only-pixels-twitch-card");
+  const form = document.getElementById("only-pixels-twitch-form");
+  const current = document.getElementById("only-pixels-twitch-current");
+  const submit = form?.querySelector("button[type='submit']");
+  const canLink = Boolean(data.canLinkTwitch);
+  const twitchUsername = data.twitchUsername || "";
+
+  if (current) {
+    current.textContent = twitchUsername ? `Linked Twitch: ${twitchUsername}` : "";
+  }
+  if (input && !input.matches(":focus")) {
+    input.value = twitchUsername;
+  }
+  if (input) input.disabled = !canLink;
+  submit?.toggleAttribute("disabled", !canLink);
+  if (card) card.classList.toggle("is-linked", Boolean(twitchUsername));
+
+  if (data.signedInWithKick === false) {
+    setOnlyPixelsTwitchStatus("Sign in with Kick to add Twitch. Your /kickmenu link stays.", "err");
+    return;
+  }
+  if (!canLink && data.status === "pending") {
+    setOnlyPixelsTwitchStatus("Your Kick application is still pending. Add Twitch after you're approved.", "err");
+    return;
+  }
+  if (!canLink && data.status === "banned") {
+    setOnlyPixelsTwitchStatus("This Kick account cannot add Twitch.", "err");
+    return;
+  }
+  if (!canLink) {
+    setOnlyPixelsTwitchStatus("Sign in with Kick first. Approved or already-synced players can add Twitch without relinking.", "err");
+    return;
+  }
+  if (twitchUsername) {
+    setOnlyPixelsTwitchStatus(`Linked twitch.tv/${twitchUsername}. Kick and /kickmenu stay as-is.`, "ok");
+    return;
+  }
+  setOnlyPixelsTwitchStatus("Type the Twitch name you already use. Kick stays linked.");
+}
+
 async function loadOnlyPixelsApplication() {
   const response = await fetch("/api/rewards/partner-application");
   const data = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    renderOnlyPixelsTwitchLink({
+      canLinkTwitch: false,
+      signedInWithKick: false,
+    });
+    return data;
+  }
   if (!response.ok) throw new Error(data.error || "Could not load partner application");
   renderOnlyPixelsApplication(data.application);
+  renderOnlyPixelsTwitchLink({
+    twitchUsername: data.twitchUsername || data.application?.twitchUsername || null,
+    canLinkTwitch: Boolean(data.canLinkTwitch),
+    status: data.application?.status || "none",
+    signedInWithKick: true,
+  });
   refreshOnlyPixelsPartners(Boolean(data.isStaff));
   return data;
 }
@@ -4741,6 +4880,41 @@ function bindOnlyPixelsEvents() {
   if (onlyPixelsState.bound) return;
   onlyPixelsState.bound = true;
   bindOnlyPixelsPartnerEvents();
+
+  document.getElementById("only-pixels-twitch-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = document.getElementById("only-pixels-twitch-username");
+    const submit = event.currentTarget.querySelector("button[type='submit']");
+    const twitchUsername = input?.value?.trim();
+    if (!twitchUsername) {
+      setOnlyPixelsTwitchStatus("Enter your Twitch username.", "err");
+      return;
+    }
+    submit?.setAttribute("disabled", "");
+    setOnlyPixelsTwitchStatus("Saving Twitch name…");
+    try {
+      const response = await fetch("/api/rewards/twitch-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ twitchUsername }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not save Twitch name.");
+      renderOnlyPixelsTwitchLink({
+        twitchUsername: data.twitchUsername,
+        canLinkTwitch: true,
+        signedInWithKick: true,
+      });
+      setOnlyPixelsTwitchStatus(
+        data.message || `Saved twitch.tv/${data.twitchUsername}. Kick and /kickmenu stay as-is.`,
+        "ok"
+      );
+    } catch (error) {
+      setOnlyPixelsTwitchStatus(error.message, "err");
+    } finally {
+      submit?.removeAttribute("disabled");
+    }
+  });
 
   document.getElementById("only-pixels-register-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
