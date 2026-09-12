@@ -19,15 +19,24 @@ const emoteNameCache = new Map();
 function rememberEmotes(emotes = []) {
   for (const emote of emotes) {
     if (emote?.id && emote?.name) {
-      emoteNameCache.set(String(emote.name).toLowerCase(), String(emote.id));
+      emoteNameCache.set(String(emote.name).toLowerCase(), {
+        id: String(emote.id),
+        source: emote.source === "twitch" ? "twitch" : "kick",
+      });
     }
   }
 }
 
-function emoteImgTag(id, name) {
+const TWITCH_EMOTE_CDN = "https://static-cdn.jtvnw.net/emoticons/v2";
+
+function emoteImgTag(id, name, source = "kick") {
   const safeId = escapeAttr(String(id));
   const safeName = escapeHtml(String(name || ""));
-  return `<img class="chat-emote" src="${KICK_EMOTE_CDN}/${safeId}/fullsize" alt=":${safeName}:" title=":${safeName}:" loading="lazy">`;
+  const src =
+    source === "twitch"
+      ? `${TWITCH_EMOTE_CDN}/${safeId}/default/dark/2.0`
+      : `${KICK_EMOTE_CDN}/${safeId}/fullsize`;
+  return `<img class="chat-emote" src="${src}" alt=":${safeName}:" title=":${safeName}:" loading="lazy">`;
 }
 
 function formatChatContent(content, emotes = []) {
@@ -44,8 +53,8 @@ function formatChatContent(content, emotes = []) {
     if (match.index > lastIndex) {
       parts.push({ type: "text", value: text.slice(lastIndex, match.index) });
     }
-    parts.push({ type: "emote", id: match[1], name: match[2] });
-    emoteNameCache.set(String(match[2]).toLowerCase(), String(match[1]));
+    parts.push({ type: "emote", id: match[1], name: match[2], source: "kick" });
+    emoteNameCache.set(String(match[2]).toLowerCase(), { id: String(match[1]), source: "kick" });
     lastIndex = match.index + match[0].length;
   }
 
@@ -58,15 +67,24 @@ function formatChatContent(content, emotes = []) {
   let html = "";
   for (const part of parts) {
     if (part.type === "emote") {
-      html += emoteImgTag(part.id, part.name);
+      html += emoteImgTag(part.id, part.name, part.source || "kick");
       continue;
     }
 
     let chunk = escapeHtml(part.value);
     chunk = chunk.replace(/:([a-zA-Z0-9_]+):/g, (full, name) => {
-      const id = byName.get(name.toLowerCase());
-      return id ? emoteImgTag(id, name) : full;
+      const hit = byName.get(name.toLowerCase());
+      if (!hit) return full;
+      const id = typeof hit === "string" ? hit : hit.id;
+      const source = typeof hit === "string" ? "kick" : hit.source;
+      return emoteImgTag(id, name, source);
     });
+    for (const emote of emotes || []) {
+      if (emote?.source !== "twitch" || !emote.name) continue;
+      const token = escapeHtml(String(emote.name));
+      if (!token) continue;
+      chunk = chunk.split(token).join(emoteImgTag(emote.id, emote.name, "twitch"));
+    }
     html += chunk;
   }
 
@@ -80,9 +98,13 @@ function lineClass(message) {
 }
 
 function renderMessage(message) {
+  const isTwitch = message.platform === "twitch" || message.source === "twitch";
   const avatar = message.profilePicture || DEFAULT_AVATAR;
+  const platform = isTwitch
+    ? `<span class="chat-platform chat-platform--twitch" title="Twitch">TW</span>`
+    : "";
   return `
-    <div class="chat-line ${lineClass(message)}" data-id="${escapeAttr(message.id)}">
+    <div class="chat-line ${lineClass(message)}${isTwitch ? " twitch" : ""}" data-id="${escapeAttr(message.id)}">
       <img
         class="chat-avatar"
         src="${escapeAttr(avatar)}"
@@ -91,7 +113,7 @@ function renderMessage(message) {
         onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'"
       >
       <div class="chat-body">
-        <span class="chat-user">${escapeHtml(message.username)}</span>
+        <span class="chat-user">${platform}${escapeHtml(message.username)}</span>
         <span class="chat-text">${formatChatContent(message.content, message.emotes)}</span>
       </div>
     </div>

@@ -58,6 +58,7 @@ const signInLog = require("./lib/sign-in-log");
 const kickRewardsStore = require("./lib/kick-rewards-store");
 const { createKickRewardsRouter } = require("./lib/kick-rewards-routes");
 const kickPusherMonitor = require("./lib/kick-pusher-monitor");
+const twitchIrcMonitor = require("./lib/twitch-irc-monitor");
 const dashboardAccess = require("./lib/dashboard-access");
 const discord = require("./lib/discord");
 const kickSubscriberStore = require("./lib/kick-subscriber-store");
@@ -1244,7 +1245,7 @@ app.get("/api/dashboard", async (req, res) => {
       webhookUrl: WEBHOOK_URL,
       webhookNote: null,
       widgetsUrls: {
-        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
+        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}&v=14`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
         subGoal: `${BASE_URL}/widgets/sub-goal.html?obs=1&v=5`,
@@ -1419,7 +1420,7 @@ app.get("/api/dashboard", async (req, res) => {
         controlWidget: `${BASE_URL}/slots/slots-control-panel.html?embed=1`,
       },
       widgetsUrls: {
-        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}`,
+        chatBox: `${BASE_URL}/widgets/chat-box.html?obs=1&broadcasterId=${DEFAULT_BROADCASTER_ID}&v=14`,
         streamAlerts: `${BASE_URL}/widgets/stream-alerts.html?obs=1`,
         nowPlaying: `${BASE_URL}/widgets/now-playing.html?obs=1`,
         subGoal: `${BASE_URL}/widgets/sub-goal.html?obs=1&v=5`,
@@ -1708,6 +1709,7 @@ app.get("/api/chat/status", (req, res) => {
     pusherMessagesRecorded: ownerMonitor?.messagesRecorded || 0,
     pusherLastMessageAt: ownerMonitor?.lastMessageAt || null,
     pusherLastError: ownerMonitor?.lastError || null,
+    twitchIrc: twitchIrcMonitor.getStatus(),
   });
 });
 
@@ -3386,6 +3388,11 @@ webhook.loadPublicKey().then(async () => {
   } else {
     console.log("[pusher-monitor] disabled (KICK_PUSHER_MONITOR=0)");
   }
+  if (String(process.env.TWITCH_IRC_MONITOR || "1") !== "0") {
+    twitchIrcMonitor.start();
+  } else {
+    console.log("[twitch-irc] disabled (TWITCH_IRC_MONITOR=0)");
+  }
   const primaryId = tokenStore.getPrimaryBroadcasterId();
   if (primaryId) {
     workoutState.setBroadcaster(primaryId);
@@ -3429,6 +3436,11 @@ webhook.loadPublicKey().then(async () => {
     console.log(`[shutdown] ${signal || "exit"} — flushing stores`);
     try {
       kickPusherMonitor.stop?.();
+    } catch {
+      /* ignore */
+    }
+    try {
+      twitchIrcMonitor.stop?.();
     } catch {
       /* ignore */
     }
@@ -3480,6 +3492,7 @@ webhook.loadPublicKey().then(async () => {
     console.log(`Slots widget OBS: http://127.0.0.1:${PORT}/slots/slots-widget.html?obs=1&v=7`);
     console.log(`Drinking OBS overlays: ${BASE_URL}/drinking/shotgun-cam.html`);
     console.log(`Widget OBS overlays: ${BASE_URL}/widgets/chat-box.html?obs=1`);
+    console.log(`Twitch IRC: ${twitchIrcMonitor.getStatus().channels.map((c) => `#${c}`).join(", ") || "off"}`);
     console.log(`Stream alerts: ${BASE_URL}/widgets/stream-alerts.html?obs=1`);
     console.log(`Cam overlay: ${BASE_URL}/widgets/cam-overlay.html?obs=1`);
     if (!config.kick.clientId) console.warn("KICK_CLIENT_ID is not set");

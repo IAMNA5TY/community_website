@@ -397,7 +397,7 @@ function renderOverviewQuickLinks(data) {
   }
 
   const links = [
-    ["Chat box", data.widgetsUrls?.chatBox],
+    ["Chat box — Kick + Twitch", data.widgetsUrls?.chatBox],
     ["Stream alerts", data.widgetsUrls?.streamAlerts],
     ["Stream timer (4h→12h)", data.widgetsUrls?.subGoal],
     ["Subathon", data.widgetsUrls?.subathon],
@@ -923,7 +923,7 @@ async function refreshWidgetsChatStatus(chatStatusEl, webhook = {}) {
     const hookStatus = hookRes?.ok ? await hookRes.json() : null;
 
     if (health?.messageCount > 0) {
-      chatStatusEl.textContent = `Chat live — ${health.messageCount} message(s) on server. OBS should match.`;
+      chatStatusEl.textContent = `Chat live — ${health.messageCount} message(s) on server (Kick + Twitch). OBS should match.`;
       chatStatusEl.className = "subtitle ok";
       return;
     }
@@ -1069,7 +1069,7 @@ function renderWidgets(widgetsUrls, spotify = {}, webhook = {}) {
   const urlsTable = document.getElementById("widgets-urls-table");
   if (urlsTable && widgetsUrls) {
     renderObsUrlTable(urlsTable, [
-      ["Kick chat box (OBS)", widgetsUrls.chatBox],
+      ["Chat box — Kick + Twitch (OBS)", widgetsUrls.chatBox],
       ["Stream alerts — follows, subs, kicks (OBS)", widgetsUrls.streamAlerts],
       ["Stream timer — 4h→12h (OBS)", widgetsUrls.subGoal],
       ["Subathon (OBS)", widgetsUrls.subathon],

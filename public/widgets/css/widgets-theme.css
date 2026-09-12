@@ -140,6 +140,25 @@ body.chat-widget-page {
   margin-bottom: 3px;
 }
 
+.chat-platform {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  vertical-align: 1px;
+}
+
+.chat-platform--twitch {
+  background: #9146ff;
+  color: #fff;
+}
+
+.chat-line.twitch {
+  border-color: rgba(145, 70, 255, 0.35);
+}
+
 .chat-line.mod .chat-user,
 .chat-line.broadcaster .chat-user {
   color: var(--orange-bright);
