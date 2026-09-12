@@ -89,4 +89,11 @@ const again = rewards.linkTwitchUsername("pinkyuwu", "PinkyTwitch2");
 assert(again.gameLicense === "license-pinky-1", "changing twitch name still keeps kickmenu license");
 assert(again.twitchUsername === "pinkytwitch2", "twitch name can be updated later");
 
+const inGame = rewards.linkTwitchUsername("ingameplayer", "InGameTwitch");
+assert(!inGame.gameLicense, "in-game twitch save starts without wiping a license");
+const stamped = rewards.attachGameLicenseIfEmpty("ingameplayer", "license:abc123");
+assert(stamped.gameLicense === "license:abc123", "empty license can be stamped from FiveM");
+const keep = rewards.attachGameLicenseIfEmpty("ingameplayer", "license:other");
+assert(keep.gameLicense === "license:abc123", "existing license is not overwritten");
+
 console.log("twitch link without resync check passed");
