@@ -203,14 +203,20 @@
             </header>
 
             <div class="city-landing" id="city-streamers">
-              <div class="city-stage card">
+              <div class="city-stage card" id="city-stage" data-platform="kick">
                 <div class="city-stage__top">
                   <div>
                     <p class="city-stage__kicker" id="city-stage-kicker">kick.com/na5ty</p>
                     <h2 id="city-stage-title">NA5TY</h2>
                     <p class="city-stage__status" id="city-stage-status">Watching</p>
                   </div>
-                  <a class="btn btn-secondary btn-compact" id="city-stage-open" href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">Open on Kick</a>
+                  <div class="city-stage__actions">
+                    <div class="city-platform-switch" id="city-platform-switch">
+                      <button class="btn btn-secondary btn-compact active" type="button" data-city-platform="kick">Kick</button>
+                      <button class="btn btn-secondary btn-compact" type="button" data-city-platform="twitch">Twitch</button>
+                    </div>
+                    <a class="btn btn-secondary btn-compact" id="city-stage-open" href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">Open on Kick</a>
+                  </div>
                 </div>
                 <div class="city-stage__player" id="city-stage-player">
                   <iframe
@@ -222,7 +228,7 @@
                 </div>
               </div>
               <div class="city-landing__aside">
-                <div class="city-stage__chat card site-chat">
+                <div class="city-stage__chat card site-chat" id="city-kick-chat">
                   <details class="site-chat__tools signed-in-only">
                     <summary class="site-chat__tools-summary">Points &amp; moves</summary>
                     <div class="site-chat__interact" id="site-chat-interact">
@@ -250,9 +256,20 @@
                   <p class="site-chat__guest guest-only">Sign in to chat.</p>
                   <p class="site-chat__status" id="site-chat-status"></p>
                 </div>
+                <div class="city-stage__chat city-twitch-chat hidden" id="city-twitch-chat">
+                  <div class="site-chat__head">
+                    <span>Twitch chat</span>
+                    <span class="site-chat__hint">twitch.tv/iamna5ty</span>
+                  </div>
+                  <iframe
+                    id="city-twitch-chat-frame"
+                    title="Twitch chat"
+                    src="about:blank"
+                  ></iframe>
+                </div>
                 <div class="card panel">
-                  <h2>Crew on Kick</h2>
-                  <p class="subtitle">NA5TY first. Click a name to watch here.</p>
+                  <h2 id="city-crew-title">Crew on Kick</h2>
+                  <p class="subtitle" id="city-crew-subtitle">NA5TY first. Click a name to watch here.</p>
                   <div class="profile-streamers__toolbar">
                     <button class="btn btn-secondary btn-compact active" type="button" data-streamers-filter="live" id="streamers-filter-live">Live</button>
                     <button class="btn btn-secondary btn-compact" type="button" data-streamers-filter="all" id="streamers-filter-all">All</button>
@@ -1500,6 +1517,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=119"></script>
+    <script src="/app.js?v=120"></script>
   </body>
 </html>

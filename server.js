@@ -59,6 +59,7 @@ const kickRewardsStore = require("./lib/kick-rewards-store");
 const { createKickRewardsRouter } = require("./lib/kick-rewards-routes");
 const kickPusherMonitor = require("./lib/kick-pusher-monitor");
 const twitchIrcMonitor = require("./lib/twitch-irc-monitor");
+const twitchLive = require("./lib/twitch-live");
 const dashboardAccess = require("./lib/dashboard-access");
 const discord = require("./lib/discord");
 const kickSubscriberStore = require("./lib/kick-subscriber-store");
@@ -525,6 +526,20 @@ app.get("/api/health", (_req, res) => {
     rssMb: Math.round(mem.rss / 1024 / 1024),
     heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
   });
+});
+
+app.get("/api/twitch/live", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const status = await twitchLive.getLiveStatus(req.query.login);
+    res.json(status);
+  } catch (error) {
+    res.status(502).json({
+      error: error.message || "Twitch live check failed",
+      login: String(req.query.login || twitchLive.DEFAULT_LOGIN).toLowerCase(),
+      isLive: false,
+    });
+  }
 });
 
 app.get("/api/me", (req, res) => {

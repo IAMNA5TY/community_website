@@ -31,6 +31,7 @@ let publicPreview = false;
 let publicPages = ["city", "profile", "overview", "only-pixels", "discord"];
 let guestPages = ["city", "profile", "only-pixels", "discord"];
 const HOUSE_KICK_SLUG = "na5ty";
+const HOUSE_TWITCH_LOGIN = "iamna5ty";
 let allowedPages = [
   "city",
   "profile",
@@ -2177,6 +2178,8 @@ let partnerStreamersState = {
   tiles: [],
   focusedTileId: null,
   selectedSlug: null,
+  platform: "kick",
+  twitchHouse: null,
   canSend: false,
   chatMessages: [],
   chatCommands: [],
@@ -2194,6 +2197,64 @@ function kickPlayerEmbedUrl(slug, { muted = false } = {}) {
   return `https://player.kick.com/${encodeURIComponent(slug)}?${params}`;
 }
 
+function twitchParentHosts() {
+  const parents = new Set(["na5ty.com", "www.na5ty.com"]);
+  const host = String(location.hostname || "").trim();
+  if (host) parents.add(host);
+  return [...parents];
+}
+
+function twitchPlayerEmbedUrl(login, { muted = true } = {}) {
+  const params = new URLSearchParams({
+    channel: login,
+    autoplay: "true",
+    muted: muted ? "true" : "false",
+  });
+  for (const parent of twitchParentHosts()) params.append("parent", parent);
+  return `https://player.twitch.tv/?${params}`;
+}
+
+function twitchChatEmbedUrl(login) {
+  const params = new URLSearchParams({ darkpopout: "" });
+  for (const parent of twitchParentHosts()) params.append("parent", parent);
+  return `https://www.twitch.tv/embed/${encodeURIComponent(login)}/chat?${params}`;
+}
+
+function isCityTwitch() {
+  return partnerStreamersState.platform === "twitch";
+}
+
+function setCityPlatform(platform) {
+  const next = platform === "twitch" ? "twitch" : "kick";
+  if (partnerStreamersState.platform === next) return;
+  partnerStreamersState.platform = next;
+  partnerStreamersState.selectedSlug = null;
+  document.querySelectorAll("[data-city-platform]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.cityPlatform === next);
+  });
+  document.getElementById("city-stage")?.setAttribute("data-platform", next);
+  document.getElementById("city-kick-chat")?.classList.toggle("hidden", next === "twitch");
+  document.getElementById("city-twitch-chat")?.classList.toggle("hidden", next !== "twitch");
+  const crewTitle = document.getElementById("city-crew-title");
+  const crewSub = document.getElementById("city-crew-subtitle");
+  if (crewTitle) crewTitle.textContent = next === "twitch" ? "Crew on Twitch" : "Crew on Kick";
+  if (crewSub) {
+    crewSub.textContent =
+      next === "twitch"
+        ? "IAMNA5TY first. Same City watch box as Kick."
+        : "NA5TY first. Click a name to watch here.";
+  }
+  if (next === "twitch") {
+    const frame = document.getElementById("city-twitch-chat-frame");
+    if (frame) frame.src = twitchChatEmbedUrl(HOUSE_TWITCH_LOGIN);
+    refreshTwitchHouse().then(() => ensureCityHouseWatch());
+  } else {
+    ensureCityHouseWatch();
+    refreshPartnerStreamers();
+  }
+  renderPartnerStreamersList();
+}
+
 function tileShouldBeMuted(tile) {
   if (!tile) return true;
   if (tile.userMuted) return true;
@@ -2207,18 +2268,27 @@ function getFocusedStreamTile() {
 
 function updateStreamerTheaterHeader() {
   const focused = getFocusedStreamTile();
-  const slug = focused?.slug || partnerStreamersState.selectedSlug || HOUSE_KICK_SLUG;
-  const partner =
-    partnerStreamersState.partners.find((row) => row.slug === slug) || focused || {
-      slug,
-      displayName: slug === HOUSE_KICK_SLUG ? "NA5TY" : slug,
-    };
+  const twitch = isCityTwitch();
+  const slug =
+    focused?.slug ||
+    partnerStreamersState.selectedSlug ||
+    (twitch ? HOUSE_TWITCH_LOGIN : HOUSE_KICK_SLUG);
+  const partner = twitch
+    ? partnerStreamersState.twitchHouse || {
+        slug: HOUSE_TWITCH_LOGIN,
+        displayName: "IAMNA5TY",
+        isLive: false,
+      }
+    : partnerStreamersState.partners.find((row) => row.slug === slug) || focused || {
+        slug,
+        displayName: slug === HOUSE_KICK_SLUG ? "NA5TY" : slug,
+      };
   const title = document.getElementById("city-stage-title");
   const kicker = document.getElementById("city-stage-kicker");
   const status = document.getElementById("city-stage-status");
   const open = document.getElementById("city-stage-open");
-  const nextTitle = partner.displayName || slug;
-  const nextKicker = `kick.com/${slug}`;
+  const nextTitle = partner.displayName || (twitch ? "IAMNA5TY" : slug);
+  const nextKicker = twitch ? `twitch.tv/${slug}` : `kick.com/${slug}`;
   const nextStatus = partner.isLive ? "Live" : "Offline";
   if (title && title.textContent !== nextTitle) title.textContent = nextTitle;
   if (kicker && kicker.textContent !== nextKicker) kicker.textContent = nextKicker;
@@ -2227,7 +2297,10 @@ function updateStreamerTheaterHeader() {
     status.dataset.live = partner.isLive ? "1" : "0";
   }
   if (open) {
-    open.href = `https://kick.com/${encodeURIComponent(slug)}`;
+    open.href = twitch
+      ? `https://twitch.tv/${encodeURIComponent(slug)}`
+      : `https://kick.com/${encodeURIComponent(slug)}`;
+    open.textContent = twitch ? "Open on Twitch" : "Open on Kick";
   }
 }
 
@@ -2430,7 +2503,12 @@ function focusCityWatch(partnerOrSlug) {
     (typeof partnerOrSlug === "object" && partnerOrSlug) ||
     partnerStreamersState.partners.find((row) => row.slug === slug) || {
       slug,
-      displayName: slug === HOUSE_KICK_SLUG ? "NA5TY" : slug,
+      displayName:
+        slug === HOUSE_TWITCH_LOGIN
+          ? "IAMNA5TY"
+          : slug === HOUSE_KICK_SLUG
+            ? "NA5TY"
+            : slug,
     };
 
   const same = partnerStreamersState.selectedSlug === slug;
@@ -2459,9 +2537,15 @@ function focusCityWatch(partnerOrSlug) {
       frame.allow = "autoplay; fullscreen; picture-in-picture";
       player.appendChild(frame);
     }
-    if (frame.dataset.slug !== slug) {
+    const platform = isCityTwitch() ? "twitch" : "kick";
+    const nextSrc = platform === "twitch"
+      ? twitchPlayerEmbedUrl(slug, { muted: true })
+      : kickPlayerEmbedUrl(slug, { muted: true });
+    if (frame.dataset.slug !== slug || frame.dataset.platform !== platform) {
       frame.dataset.slug = slug;
-      frame.src = kickPlayerEmbedUrl(slug, { muted: true });
+      frame.dataset.platform = platform;
+      frame.title = platform === "twitch" ? "Twitch stream" : "Kick stream";
+      frame.src = nextSrc;
     }
   }
 
@@ -2652,6 +2736,7 @@ function renderSiteChatMessages() {
 }
 
 async function refreshSiteChat() {
+  if (isCityTwitch()) return;
   const slug = partnerStreamersState.selectedSlug;
   if (!slug) return;
   if (document.body.classList.contains("is-guest")) {
@@ -2712,10 +2797,61 @@ function ensureSiteChatPolling() {
   }, 2500);
 }
 
+async function refreshTwitchHouse() {
+  try {
+    const response = await fetch(
+      `/api/twitch/live?login=${encodeURIComponent(HOUSE_TWITCH_LOGIN)}&t=${Date.now()}`,
+      { credentials: "same-origin" }
+    );
+    const data = await response.json().catch(() => ({}));
+    partnerStreamersState.twitchHouse = {
+      slug: data.login || HOUSE_TWITCH_LOGIN,
+      displayName: data.displayName || "IAMNA5TY",
+      isLive: Boolean(data.isLive),
+      platform: "twitch",
+    };
+  } catch {
+    partnerStreamersState.twitchHouse = {
+      slug: HOUSE_TWITCH_LOGIN,
+      displayName: "IAMNA5TY",
+      isLive: false,
+      platform: "twitch",
+    };
+  }
+  if (isCityTwitch()) {
+    updateStreamerTheaterHeader();
+    renderPartnerStreamersList();
+  }
+}
+
 function renderPartnerStreamersList() {
   const list = document.getElementById("profile-streamers-list");
   const meta = document.getElementById("profile-streamers-meta");
   if (!list || !meta) return;
+
+  document.getElementById("streamers-filter-live")?.classList.toggle("hidden", isCityTwitch());
+  document.getElementById("streamers-filter-all")?.classList.toggle("hidden", isCityTwitch());
+
+  if (isCityTwitch()) {
+    const house = partnerStreamersState.twitchHouse || {
+      slug: HOUSE_TWITCH_LOGIN,
+      displayName: "IAMNA5TY",
+      isLive: false,
+    };
+    const selected = partnerStreamersState.selectedSlug === house.slug;
+    meta.textContent = house.isLive ? "1 live on Twitch" : "Offline on Twitch";
+    list.innerHTML = `
+      <button class="streamer-row ${selected ? "is-selected" : ""}" type="button" data-watch-slug="${escapeHtml(house.slug)}" data-watch-platform="twitch">
+        <span class="streamer-row__live ${house.isLive ? "is-live" : ""}" title="${house.isLive ? "Live on Twitch" : "Offline on Twitch"}"></span>
+        <div class="streamer-row__meta">
+          <span class="streamer-row__name">${escapeHtml(house.displayName)}</span>
+          <span class="streamer-row__slug">twitch.tv/${escapeHtml(house.slug)}</span>
+        </div>
+        <span class="streamer-row__watch">${selected ? "Watching" : house.isLive ? "Watch" : "Open"}</span>
+      </button>
+    `;
+    return;
+  }
 
   const partners = partnerStreamersState.partners || [];
   const liveCount = partners.filter((p) => p.isLive).length;
@@ -3078,6 +3214,10 @@ logoutBtn.addEventListener("click", async () => {
   showGuestShell();
 });
 
+document.getElementById("city-platform-switch")?.addEventListener("click", (event) => {
+  const btn = event.target.closest("[data-city-platform]");
+  if (btn?.dataset.cityPlatform) setCityPlatform(btn.dataset.cityPlatform);
+});
 document.getElementById("streamers-filter-live")?.addEventListener("click", () => {
   partnerStreamersState.filter = "live";
   renderPartnerStreamersList();
@@ -3087,7 +3227,8 @@ document.getElementById("streamers-filter-all")?.addEventListener("click", () =>
   renderPartnerStreamersList();
 });
 document.getElementById("streamers-refresh-btn")?.addEventListener("click", () => {
-  refreshPartnerStreamers(true);
+  if (isCityTwitch()) refreshTwitchHouse();
+  else refreshPartnerStreamers(true);
 });
 document.getElementById("streamers-close-btn")?.addEventListener("click", () => {
   closeStreamerTheater();
@@ -5502,6 +5643,20 @@ function cityLiveEmptyHtml() {
 }
 
 async function ensureCityHouseWatch() {
+  if (isCityTwitch()) {
+    if (!partnerStreamersState.twitchHouse) await refreshTwitchHouse();
+    const house = partnerStreamersState.twitchHouse || {
+      slug: HOUSE_TWITCH_LOGIN,
+      displayName: "IAMNA5TY",
+      isLive: false,
+    };
+    if (partnerStreamersState.selectedSlug !== house.slug) {
+      focusCityWatch(house);
+    } else {
+      updateStreamerTheaterHeader();
+    }
+    return;
+  }
   if (!partnerStreamersState.selectedSlug) {
     const house =
       partnerStreamersState.partners.find((row) => row.slug === HOUSE_KICK_SLUG) || {
