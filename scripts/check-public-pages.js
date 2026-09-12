@@ -61,5 +61,19 @@ assert(!access.isPublicOverlayApiPath("/bot"), "chat bot API stays owner-only");
 assert(!access.isPublicOverlayApiPath("/webhooks/status"), "webhook status stays owner-only");
 assert(!access.isPlayerAllowedApiPath("/state"), "player tab allowlist does not cover overlays");
 
+const twitchPublic = access.getPublicPages({
+  provider: "twitch",
+  profile: { username: "viewer" },
+});
+assert(twitchPublic.join() === kickPublic.join(), "Twitch viewers get the same community tabs as Kick");
+const twitchOwner = access.getAllowedPages({
+  provider: "twitch",
+  profile: { username: "iamna5ty" },
+});
+assert(twitchOwner.includes("overview"), "Twitch owner gets Dashboard");
+assert(twitchOwner.includes("only-pixels"), "Twitch owner gets Only Pixels");
+assert(twitchOwner.includes("discord"), "Twitch owner gets Discord Sub");
+assert(twitchOwner.includes("widgets"), "Twitch owner gets Widgets");
+
 console.log("public tabs:", kickPublic.join(", "));
 console.log("public pages check passed");
