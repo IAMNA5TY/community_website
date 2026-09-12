@@ -57,6 +57,8 @@ assert(access.isPublicOverlayApiPath("/slots-timer"), "slots timer overlay is pu
 assert(access.isPublicOverlayApiPath("/sub-goal"), "sub goal overlay is public");
 assert(access.isPublicOverlayApiPath("/subathon"), "subathon overlay is public");
 assert(access.isPublicOverlayApiPath("/subathon/events"), "subathon SSE is public");
+assert(access.isPublicOverlayApiPath("/twitch/live"), "Twitch live status is public");
+assert(access.isPlayerAllowedApiPath("/twitch/live"), "signed-in Kick viewers can poll Twitch live");
 assert(!access.isPublicOverlayApiPath("/bot"), "chat bot API stays owner-only");
 assert(!access.isPublicOverlayApiPath("/webhooks/status"), "webhook status stays owner-only");
 assert(!access.isPlayerAllowedApiPath("/state"), "player tab allowlist does not cover overlays");
