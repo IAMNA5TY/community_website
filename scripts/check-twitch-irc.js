@@ -37,4 +37,27 @@ assert(emotes.length === 2, "two kappa ranges");
 assert(channelList("IAMNA5TY, #pipsturr").join(",") === "iamna5ty,pipsturr", "channel list");
 assert(channelList("").join(",") === "iamna5ty", "default twitch channel");
 
+const { parseChatControlAction } = require("../lib/kick-chat-actions");
+assert(parseChatControlAction("left")?.action === "left", "left is a city control");
+assert(parseChatControlAction("right")?.action === "right", "right is a city control");
+assert(parseChatControlAction("forward")?.action === "forward", "forward is a city control");
+
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "twitch-controls-"));
+const rewards = require("../lib/kick-rewards-store");
+const recorded = rewards.recordChatMessage({
+  streamer: "na5ty",
+  username: "coco",
+  content: "left",
+  messageId: "twitch:test-left",
+});
+assert(recorded?.controlEvent?.action === "left", "Twitch left becomes a city control event");
+const queued = rewards.getControlEvents("na5ty", { afterId: 0, limit: 20 });
+assert(
+  (queued.events || []).some((row) => row.action === "left" && row.chatter_username === "coco"),
+  "FiveM control poll sees Twitch left"
+);
+
 console.log("twitch irc check passed");
