@@ -2167,6 +2167,10 @@ function renderProfilePage(data) {
   }
 
   renderProfileAccountActions(provider);
+  bindTwitchLinkForms();
+  if (!document.body.classList.contains("is-guest")) {
+    loadOnlyPixelsApplication().catch(() => {});
+  }
 }
 
 let partnerStreamersState = {
@@ -4630,18 +4634,62 @@ function renderOnlyPixelsApplication(application) {
         : "Staff will review your streamer application. You can still claim viewer rewards in city while pending.";
 }
 
-function setOnlyPixelsTwitchStatus(message, type = "") {
-  const el = document.getElementById("only-pixels-twitch-status");
+const TWITCH_LINK_FORMS = [
+  {
+    card: "only-pixels-twitch-card",
+    form: "only-pixels-twitch-form",
+    input: "only-pixels-twitch-username",
+    current: "only-pixels-twitch-current",
+    status: "only-pixels-twitch-status",
+  },
+  {
+    card: "profile-twitch-card",
+    form: "profile-twitch-form",
+    input: "profile-twitch-username",
+    current: "profile-twitch-current",
+    status: "profile-twitch-status",
+  },
+];
+
+function setTwitchLinkStatus(id, message, type = "") {
+  const el = document.getElementById(id);
   if (!el) return;
   el.textContent = message || "";
   el.className = `only-pixels-note${type ? ` ${type}` : ""}`;
 }
 
-function renderOnlyPixelsTwitchLink(data = {}) {
-  const input = document.getElementById("only-pixels-twitch-username");
-  const card = document.getElementById("only-pixels-twitch-card");
-  const form = document.getElementById("only-pixels-twitch-form");
-  const current = document.getElementById("only-pixels-twitch-current");
+function setOnlyPixelsTwitchStatus(message, type = "") {
+  setTwitchLinkStatus("only-pixels-twitch-status", message, type);
+}
+
+function twitchLinkStatusMessage(data = {}) {
+  const twitchUsername = data.twitchUsername || "";
+  if (data.signedInWithKick === false) {
+    return { message: "Sign in with Kick to register Twitch. Your /kickmenu link stays.", type: "err" };
+  }
+  if (!data.canLinkTwitch && data.status === "pending") {
+    return { message: "Your Kick application is still pending. Register Twitch after you're approved.", type: "err" };
+  }
+  if (!data.canLinkTwitch && data.status === "banned") {
+    return { message: "This Kick account cannot register Twitch.", type: "err" };
+  }
+  if (!data.canLinkTwitch) {
+    return {
+      message: "Sign in with Kick first. Approved or already-synced players can register Twitch without relinking.",
+      type: "err",
+    };
+  }
+  if (twitchUsername) {
+    return { message: `Linked twitch.tv/${twitchUsername}. Kick and /kickmenu stay as-is.`, type: "ok" };
+  }
+  return { message: "Type the Twitch name you already use. Kick stays linked.", type: "" };
+}
+
+function renderTwitchLinkForm(slot, data = {}) {
+  const input = document.getElementById(slot.input);
+  const card = document.getElementById(slot.card);
+  const form = document.getElementById(slot.form);
+  const current = document.getElementById(slot.current);
   const submit = form?.querySelector("button[type='submit']");
   const canLink = Boolean(data.canLinkTwitch);
   const twitchUsername = data.twitchUsername || "";
@@ -4655,28 +4703,57 @@ function renderOnlyPixelsTwitchLink(data = {}) {
   if (input) input.disabled = !canLink;
   submit?.toggleAttribute("disabled", !canLink);
   if (card) card.classList.toggle("is-linked", Boolean(twitchUsername));
+  const status = twitchLinkStatusMessage({ ...data, twitchUsername, canLinkTwitch: canLink });
+  setTwitchLinkStatus(slot.status, status.message, status.type);
+}
 
-  if (data.signedInWithKick === false) {
-    setOnlyPixelsTwitchStatus("Sign in with Kick to add Twitch. Your /kickmenu link stays.", "err");
-    return;
+function renderOnlyPixelsTwitchLink(data = {}) {
+  for (const slot of TWITCH_LINK_FORMS) {
+    renderTwitchLinkForm(slot, data);
   }
-  if (!canLink && data.status === "pending") {
-    setOnlyPixelsTwitchStatus("Your Kick application is still pending. Add Twitch after you're approved.", "err");
-    return;
+}
+
+function bindTwitchLinkForms() {
+  for (const slot of TWITCH_LINK_FORMS) {
+    const form = document.getElementById(slot.form);
+    if (!form || form.dataset.bound) continue;
+    form.dataset.bound = "true";
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const input = document.getElementById(slot.input);
+      const submit = event.currentTarget.querySelector("button[type='submit']");
+      const twitchUsername = input?.value?.trim();
+      if (!twitchUsername) {
+        setTwitchLinkStatus(slot.status, "Enter your Twitch username.", "err");
+        return;
+      }
+      submit?.setAttribute("disabled", "");
+      setTwitchLinkStatus(slot.status, "Saving Twitch name…");
+      try {
+        const response = await fetch("/api/rewards/twitch-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ twitchUsername }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Could not save Twitch name.");
+        renderOnlyPixelsTwitchLink({
+          twitchUsername: data.twitchUsername,
+          canLinkTwitch: true,
+          signedInWithKick: true,
+        });
+        const message =
+          data.message || `Saved twitch.tv/${data.twitchUsername}. Kick and /kickmenu stay as-is.`;
+        for (const row of TWITCH_LINK_FORMS) {
+          setTwitchLinkStatus(row.status, message, "ok");
+        }
+      } catch (error) {
+        setTwitchLinkStatus(slot.status, error.message, "err");
+      } finally {
+        submit?.removeAttribute("disabled");
+      }
+    });
   }
-  if (!canLink && data.status === "banned") {
-    setOnlyPixelsTwitchStatus("This Kick account cannot add Twitch.", "err");
-    return;
-  }
-  if (!canLink) {
-    setOnlyPixelsTwitchStatus("Sign in with Kick first. Approved or already-synced players can add Twitch without relinking.", "err");
-    return;
-  }
-  if (twitchUsername) {
-    setOnlyPixelsTwitchStatus(`Linked twitch.tv/${twitchUsername}. Kick and /kickmenu stay as-is.`, "ok");
-    return;
-  }
-  setOnlyPixelsTwitchStatus("Type the Twitch name you already use. Kick stays linked.");
 }
 
 async function loadOnlyPixelsApplication() {
@@ -4881,40 +4958,7 @@ function bindOnlyPixelsEvents() {
   onlyPixelsState.bound = true;
   bindOnlyPixelsPartnerEvents();
 
-  document.getElementById("only-pixels-twitch-form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const input = document.getElementById("only-pixels-twitch-username");
-    const submit = event.currentTarget.querySelector("button[type='submit']");
-    const twitchUsername = input?.value?.trim();
-    if (!twitchUsername) {
-      setOnlyPixelsTwitchStatus("Enter your Twitch username.", "err");
-      return;
-    }
-    submit?.setAttribute("disabled", "");
-    setOnlyPixelsTwitchStatus("Saving Twitch name…");
-    try {
-      const response = await fetch("/api/rewards/twitch-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ twitchUsername }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Could not save Twitch name.");
-      renderOnlyPixelsTwitchLink({
-        twitchUsername: data.twitchUsername,
-        canLinkTwitch: true,
-        signedInWithKick: true,
-      });
-      setOnlyPixelsTwitchStatus(
-        data.message || `Saved twitch.tv/${data.twitchUsername}. Kick and /kickmenu stay as-is.`,
-        "ok"
-      );
-    } catch (error) {
-      setOnlyPixelsTwitchStatus(error.message, "err");
-    } finally {
-      submit?.removeAttribute("disabled");
-    }
-  });
+  bindTwitchLinkForms();
 
   document.getElementById("only-pixels-register-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
