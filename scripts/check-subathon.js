@@ -68,4 +68,26 @@ const scaledAgain = subathon.loadForDisplay();
 assert(scaledAgain.displayTime === "25:00:00", "rate drop only halves leftover once");
 assert(subathon.loadForOverlay().displayTime === "25:00:00", "25h leftover is not re-opened");
 
+fs.writeFileSync(
+  leftoverPath,
+  JSON.stringify({
+    count: 162,
+    label: "SUBATHON",
+    startSeconds: 3600,
+    secondsPerSub: 300,
+    maxSeconds: 0,
+    pausedRemaining: 36569,
+    isRunning: false,
+    endsAt: null,
+    lastAddedSeconds: 1500,
+    nonce: 64,
+    scaledToFiveMin: true,
+  })
+);
+const restored = subathon.loadForDisplay();
+assert(restored.displayTime === "35:09:29", "already-converted clock gets the 25h back");
+assert(restored.minutesPerSub === 5, "restore keeps 5 min per sub");
+assert(restored.count === 162, "restore keeps the sub count");
+assert(subathon.loadForDisplay().displayTime === "35:09:29", "restore only adds 25h once");
+
 console.log("subathon check passed");
