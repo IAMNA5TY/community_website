@@ -842,6 +842,14 @@ body.is-guest .nav-group__label {
   text-decoration: none;
 }
 
+#profile-twitch-card .only-pixels-form {
+  max-width: none;
+}
+
+#profile-twitch-current:empty {
+  display: none;
+}
+
 .profile-streamers__head {
   display: flex;
   align-items: baseline;

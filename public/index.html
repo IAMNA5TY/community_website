@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=43" />
+    <link rel="stylesheet" href="/styles.css?v=44" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -357,6 +357,24 @@
                 <h2 class="profile-card__title profile-card__title--sm">Stream</h2>
                 <dl class="profile-rows" id="profile-stream-rows"></dl>
               </div>
+              <div class="card profile-card" id="profile-twitch-card">
+                <h2 class="profile-card__title profile-card__title--sm">Register Twitch</h2>
+                <p class="subtitle">
+                  Already partnered or synced on Kick? Type your Twitch name.
+                  This does <strong>not</strong> reset <code>/kickmenu</code>.
+                </p>
+                <p class="subtitle" id="profile-twitch-current"></p>
+                <form class="only-pixels-form" id="profile-twitch-form">
+                  <input
+                    id="profile-twitch-username"
+                    name="twitchUsername"
+                    placeholder="Twitch username (example: IAMNA5TY)"
+                    autocomplete="username"
+                  />
+                  <button class="btn btn-twitch" type="submit">Save Twitch</button>
+                </form>
+                <p class="only-pixels-note" id="profile-twitch-status"></p>
+              </div>
               <div class="card profile-card" id="profile-account-card">
                 <h2 class="profile-card__title profile-card__title--sm">Account</h2>
                 <p class="profile-account__note" id="profile-account-note"></p>
@@ -502,9 +520,9 @@
             </div>
 
             <div class="card panel only-pixels-register signed-in-only" id="only-pixels-twitch-card">
-              <h2>Add Twitch</h2>
+              <h2>Register Twitch</h2>
               <p class="subtitle">
-                Already synced or approved on Kick? Add your Twitch name here.
+                Already synced or approved on Kick? Register your Twitch name here.
                 This does <strong>not</strong> reset <code>/kickmenu</code> or make anyone relink Kick.
               </p>
               <p class="subtitle" id="only-pixels-twitch-current"></p>
@@ -1536,6 +1554,6 @@
       <p class="error hidden" id="error-banner" role="alert"></p>
     </main>
 
-    <script src="/app.js?v=122"></script>
+    <script src="/app.js?v=123"></script>
   </body>
 </html>
