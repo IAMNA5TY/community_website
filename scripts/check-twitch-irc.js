@@ -34,6 +34,7 @@ assert(notice.quantity === 5, "mystery gift count");
 
 const emotes = parseTwitchEmotes("25:0-4,12-16", "Kappa test Kappa");
 assert(emotes.length === 2, "two kappa ranges");
-assert(channelList("Na5ty, #pipsturr").join(",") === "na5ty,pipsturr", "channel list");
+assert(channelList("IAMNA5TY, #pipsturr").join(",") === "iamna5ty,pipsturr", "channel list");
+assert(channelList("").join(",") === "iamna5ty", "default twitch channel");
 
 console.log("twitch irc check passed");
