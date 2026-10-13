@@ -466,6 +466,8 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
+
+  await require("./lib/monitored-webhooks").ensureWatchlistChatWebhooks(config);
 }
 
 async function subscribeMonitoredStreamerWebhooks(broadcasterId) {
