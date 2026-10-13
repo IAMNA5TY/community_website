@@ -348,9 +348,13 @@ async function setupKickSubscriptions(req, options = {}) {
     const accessToken = await kickApi.ensureAccessToken(req, config.kick);
     let subs;
     if (force) {
-      subs = await kickApi.resubscribeChannelEvents(accessToken, broadcasterId);
+      subs = await kickApi.resubscribeChannelEvents(accessToken, broadcasterId, {
+        includeChat: true,
+      });
     } else {
-      subs = await kickApi.subscribeToChannelEvents(accessToken, broadcasterId);
+      subs = await kickApi.subscribeToChannelEvents(accessToken, broadcasterId, {
+        includeChat: true,
+      });
     }
 
     const events = subscriptionEventsFromList(subs);
@@ -422,26 +426,32 @@ async function ensureStoredWebhookSubscriptions(options = {}) {
 
   for (const broadcasterId of broadcasterIds) {
     if (!broadcasterId) continue;
-    if (!webhookSubscription.shouldAttempt(broadcasterId, { force })) {
-      if (webhookSubscription.isRateLimited(broadcasterId)) {
-        console.warn(`[webhooks] boot subscribe skipped for ${broadcasterId} — rate limit`);
-      }
+    if (webhookSubscription.isRateLimited(broadcasterId)) {
+      console.warn(`[webhooks] boot subscribe skipped for ${broadcasterId} — rate limit`);
+      continue;
+    }
+    const hasChat = webhookSubscription
+      .getCachedEvents(broadcasterId)
+      .includes("chat.message.sent");
+    if (hasChat && !webhookSubscription.shouldAttempt(broadcasterId, { force })) {
       continue;
     }
 
     try {
       const subs = force
-        ? await kickApi.resubscribeChannelEvents(accessToken, broadcasterId)
+        ? await kickApi.resubscribeChannelEvents(accessToken, broadcasterId, {
+            includeChat: true,
+          })
         : await kickApi.subscribeToChannelEvents(accessToken, broadcasterId, {
-            includeChat: false,
+            includeChat: true,
           });
       const events = subscriptionEventsFromList(subs);
       webhookSubscription.noteResult(broadcasterId, {
         events,
-        chatActive: String(process.env.KICK_PUSHER_MONITOR || "1") !== "0",
+        chatActive: events.includes("chat.message.sent"),
       });
       console.log(
-        `[webhooks] boot ${broadcasterId}: non-chat events (${events.join(", ") || "none"}) — partner chat via Pusher`
+        `[webhooks] boot ${broadcasterId}: ${events.join(", ") || "none"}`
       );
     } catch (error) {
       webhookSubscription.noteResult(broadcasterId, {
@@ -3298,32 +3308,7 @@ webhook.loadPublicKey().then(async () => {
     );
   }
 
-  // One-time cleanup: delete leftover chat.message.sent webhooks (Pusher owns chat now).
-  // Skip on every restart — repeated purge list/delete storms Kick rate limits.
-  try {
-    const token = tokenStore.getBroadcasterToken(DEFAULT_BROADCASTER_ID);
-    const shouldPurge =
-      Boolean(token?.accessToken) &&
-      typeof kickApi.purgeChatMessageSubscriptions === "function" &&
-      (changed || webhookState.shouldPurgeChatMessageSubscriptions());
-    if (shouldPurge) {
-      const accessToken = await kickApi.ensureAccessTokenForBroadcaster(
-        DEFAULT_BROADCASTER_ID,
-        config.kick
-      );
-      const purged = await kickApi.purgeChatMessageSubscriptions(accessToken);
-      webhookState.noteChatMessagePurged();
-      if (purged.deleted > 0) {
-        console.log(`[webhooks] purged ${purged.deleted} leftover chat.message.sent subscription(s)`);
-      } else {
-        console.log("[webhooks] no leftover chat.message.sent subscriptions");
-      }
-    } else {
-      console.log("[webhooks] chat.message.sent purge skipped (already done)");
-    }
-  } catch (error) {
-    console.warn("[webhooks] chat purge skipped:", error.message);
-  }
+  // chat.message.sent is how Kick delivers tip/commands. Do not delete it on boot.
 
   await ensureStoredWebhookSubscriptions({ webhookUrlChanged: changed });
 
