@@ -245,3 +245,7 @@ html.hub-embed body { padding-top: 0 !important; }
 
 /* overlay previews: the dashboard is color-scheme dark, the overlays are not; a mismatch makes Chrome paint the iframe white */
 html.hub-creator iframe { color-scheme: normal; }
+
+/* parts of the old pages that moved to the player site (na5ty.com) */
+.hub-gone { display: none !important; }
+@media (min-width: 901px) { html.hub-tabs .nav-more.is-open:not(.dd-open) .nav-more__toggle .nav-icon { transform: none !important; } }

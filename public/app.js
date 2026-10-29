@@ -3399,7 +3399,7 @@ document.getElementById("profile-streamers-list")?.addEventListener("click", (ev
   openStreamerTheater(row.dataset.watchSlug);
 });
 
-leaderboardTabs.addEventListener("click", (event) => {
+leaderboardTabs?.addEventListener("click", (event) => {
   const button = event.target.closest(".tab");
   if (!button || !dashboardData) return;
   leaderboardPeriod = button.dataset.period;

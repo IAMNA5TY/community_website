@@ -53,7 +53,7 @@
       btn.type = 'button'; btn.className = 'hub-dd__btn';
       btn.innerHTML = isAccount
         ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="9" r="3.5"/><path d="M5 19c1.8-3 4.2-4.5 7-4.5S16.2 16 18 19"/></svg><span>Account</span>' + chev
-        : `<span>Community</span>${chev}`;
+        : `<span>${(g.querySelector('.nav-group__label') || {}).textContent || 'Community'}</span>${chev}`;
       const menu = document.createElement('div');
       menu.className = 'hub-dd__menu';
       [...g.children].forEach((c) => { if (!c.classList.contains('nav-group__label')) menu.appendChild(c); });

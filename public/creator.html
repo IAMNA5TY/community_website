@@ -100,10 +100,6 @@
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 6h14v9H9l-4 4V6z"/></svg></span>
                 <span class="nav-label">Chat &amp; Subs</span>
               </button>
-              <button class="nav-link" data-page="leaderboard" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 20V10h3v10H8zm5 0V4h3v16h-3zm5 0v-7h3v7h-3zM4 20v-4h3v4H4z"/></svg></span>
-                <span class="nav-label">Leaderboard</span>
-              </button>
               <button class="nav-link" data-page="rewards" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.2 4.5L19 8.2l-3.5 3.4.8 4.9L12 14.8 7.7 16.5l.8-4.9L5 8.2l4.8-.7L12 3z"/></svg></span>
                 <span class="nav-label">Rewards</span>
@@ -122,39 +118,19 @@
                     <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 10v4M12 10v4M16 10v4"/></svg></span>
                     <span class="nav-label">Slots</span>
                   </button>
-                  <button class="nav-link nav-link--quiet" data-page="drinking" type="button">
-                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-1 7a5 5 0 11-6 0L8 3zM12 15v6"/></svg></span>
-                    <span class="nav-label">Drinking</span>
-                  </button>
-                  <button class="nav-link nav-link--quiet" data-page="lighting" type="button">
-                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.6.5 1 1.2 1 2h4c0-.8.4-1.5 1-2a6 6 0 00-3-11z"/></svg></span>
-                    <span class="nav-label">Lighting</span>
-                  </button>
-                  <button class="nav-link nav-link--quiet" data-page="stake" type="button">
-                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9 9.5c1-.8 5-.8 6 0M9 14.5c1 .8 5 .8 6 0"/></svg></span>
-                    <span class="nav-label">Stake.us</span>
-                  </button>
                 </div>
               </div>
             </div>
 
             <div class="nav-group">
-              <p class="nav-group__label">Community (city)</p>
-              <button class="nav-link" data-page="city" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10l8-6 8 6v10H4z"/><path d="M10 20v-6h4v6"/></svg></span>
-                <span class="nav-label">City</span>
-              </button>
-              <button class="nav-link" data-page="profile" type="button">
-                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19c1.8-3 4.2-4.5 7-4.5S16.2 16 18 19"/></svg></span>
-                <span class="nav-label">Profile</span>
-              </button>
+              <p class="nav-group__label">Partners &amp; subs</p>
               <button class="nav-link" data-page="only-pixels" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z"/></svg></span>
-                <span class="nav-label">Only Pixels</span>
+                <span class="nav-label">Partner applications</span>
               </button>
               <button class="nav-link" data-page="discord" type="button">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 10h.01M16 10h.01M7 16c1.5 1 3.2 1.5 5 1.5s3.5-.5 5-1.5M6 7l1-2c2 .8 4 .8 5 0s3-.8 5 0l1 2c-2.2.6-4.2.6-6 0s-3.8-.6-6 0z"/><path d="M8 17l-1 3M16 17l1 3"/></svg></span>
-                <span class="nav-label">Discord Sub</span>
+                <span class="nav-label">Discord subs</span>
               </button>
             </div>
 
@@ -194,198 +170,9 @@
 
           <p class="notice hidden" id="webhook-notice"></p>
 
-          <section class="page-view active" data-page="city">
-            <header class="page-header overview-header">
-              <div>
-                <h1>City</h1>
-                <p class="subtitle guest-only">Watch the crew.</p>
-                <p class="subtitle signed-in-only">Watch the crew. Your character is below.</p>
-              </div>
-              <button class="btn btn-secondary btn-compact signed-in-only" type="button" id="city-refresh">Refresh</button>
-            </header>
 
-            <div class="city-landing" id="city-streamers">
-              <div class="city-stage card" id="city-stage" data-platform="kick">
-                <div class="city-stage__top">
-                  <div>
-                    <p class="city-stage__kicker" id="city-stage-kicker">kick.com/na5ty</p>
-                    <h2 id="city-stage-title">NA5TY</h2>
-                    <p class="city-stage__status" id="city-stage-status">Watching</p>
-                  </div>
-                  <div class="city-stage__actions">
-                    <div class="city-platform-switch" id="city-platform-switch">
-                      <button class="btn btn-secondary btn-compact active" type="button" data-city-platform="kick">Kick</button>
-                      <button class="btn btn-secondary btn-compact" type="button" data-city-platform="twitch">Twitch</button>
-                    </div>
-                    <a class="btn btn-secondary btn-compact" id="city-stage-open" href="https://kick.com/na5ty" target="_blank" rel="noopener noreferrer">Open on Kick</a>
-                  </div>
-                </div>
-                <div class="city-stage__player" id="city-stage-player">
-                  <iframe
-                    title="Kick stream"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    data-slug="na5ty"
-                    src="https://player.kick.com/na5ty?autoplay=true&amp;muted=true"
-                  ></iframe>
-                </div>
-              </div>
-              <div class="city-landing__aside">
-                <div class="city-stage__chat card site-chat" id="city-kick-chat">
-                  <details class="site-chat__tools signed-in-only">
-                    <summary class="site-chat__tools-summary">Points &amp; moves</summary>
-                    <div class="site-chat__interact" id="site-chat-interact">
-                      <div class="site-chat__points" id="site-chat-points"></div>
-                      <div class="site-chat__cmds" id="site-chat-cmds"></div>
-                    </div>
-                  </details>
-                  <div class="site-chat__head">
-                    <span>Chat</span>
-                    <span class="site-chat__hint" id="site-chat-hint"></span>
-                  </div>
-                  <div class="site-chat__messages" id="site-chat-messages"></div>
-                  <form class="site-chat__composer signed-in-only" id="site-chat-form">
-                    <input
-                      id="site-chat-input"
-                      type="text"
-                      maxlength="500"
-                      placeholder="Send a message…"
-                      autocomplete="off"
-                    />
-                    <button class="btn btn-kick btn-compact" type="submit" id="site-chat-send">
-                      Chat
-                    </button>
-                  </form>
-                  <p class="site-chat__guest guest-only">Sign in to chat.</p>
-                  <p class="site-chat__status" id="site-chat-status"></p>
-                </div>
-                <div class="city-stage__chat city-twitch-chat hidden" id="city-twitch-chat">
-                  <div class="site-chat__head">
-                    <span>Twitch chat</span>
-                    <span class="site-chat__hint">twitch.tv/iamna5ty · left / right / forward</span>
-                  </div>
-                  <iframe
-                    id="city-twitch-chat-frame"
-                    title="Twitch chat"
-                    src="about:blank"
-                  ></iframe>
-                </div>
-                <div class="card panel">
-                  <h2 id="city-crew-title">Crew on Kick</h2>
-                  <p class="subtitle" id="city-crew-subtitle">NA5TY first. Click a name to watch here.</p>
-                  <div class="profile-streamers__toolbar">
-                    <button class="btn btn-secondary btn-compact active" type="button" data-streamers-filter="live" id="streamers-filter-live">Live</button>
-                    <button class="btn btn-secondary btn-compact" type="button" data-streamers-filter="all" id="streamers-filter-all">All</button>
-                    <button class="btn btn-secondary btn-compact signed-in-only" type="button" id="streamers-refresh-btn">Refresh</button>
-                  </div>
-                  <p class="profile-streamers__meta" id="profile-streamers-meta">Loading…</p>
-                  <div class="profile-streamers__list" id="profile-streamers-list"></div>
-                </div>
-              </div>
-            </div>
 
-            <div class="city-status signed-in-only" id="city-status">
-              <p class="subtitle">Connecting to the city…</p>
-            </div>
-
-            <div class="stats-grid signed-in-only" id="city-stats"></div>
-
-            <div class="city-layout signed-in-only">
-              <div class="card panel" id="city-me-card">
-                <h2>Your character</h2>
-                <div id="city-me">
-                  <p class="subtitle">Sign in with the same Kick username you linked in <code>/kickmenu</code>.</p>
-                </div>
-              </div>
-              <div class="card panel" id="city-live-card">
-                <details class="city-roster" id="city-live-details">
-                  <summary class="city-roster__summary">
-                    <div>
-                      <h2>Live in city</h2>
-                      <p class="subtitle">Approved partners streaming from the FiveM city. Closed so names stay off the page.</p>
-                    </div>
-                    <span class="city-roster__count" id="city-live-count"></span>
-                  </summary>
-                  <div class="city-roster__body">
-                    <div id="city-live" class="city-list">
-                      <p class="subtitle">Loading…</p>
-                    </div>
-                  </div>
-                </details>
-              </div>
-            </div>
-
-            <div class="card panel hidden" id="city-roster-card">
-              <details class="city-roster" id="city-roster-details">
-                <summary class="city-roster__summary">
-                  <div>
-                    <h2>Who’s in the city</h2>
-                    <p class="subtitle">Staff only. Closed by default so names stay off the page until you open it.</p>
-                  </div>
-                  <span class="city-roster__count" id="city-roster-count"></span>
-                </summary>
-                <div class="city-roster__body">
-                  <label class="hub-search" for="city-search-input">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-                    <input id="city-search-input" type="search" placeholder="Search players…" autocomplete="off" />
-                  </label>
-                  <div id="city-roster" class="city-list">
-                    <p class="subtitle">Loading roster…</p>
-                  </div>
-                </div>
-              </details>
-            </div>
-          </section>
-
-          <section class="page-view" data-page="profile">
-            <div class="guest-lock guest-only">
-              <p class="guest-lock__kicker">Your account</p>
-              <h2>Sign in to see your profile</h2>
-              <p class="subtitle">
-                Kick in the top right unlocks your avatar and account. Until then you can still watch the crew on City.
-              </p>
-            </div>
-            <div class="profile-stack signed-in-only" id="profile-stack">
-              <div class="card profile-card" id="profile-card">
-                <div class="profile-card__hero">
-                  <div class="profile-card__avatar-wrap">
-                    <img id="profile-avatar" class="profile-card__avatar" alt="Profile picture" />
-                    <span class="profile-card__platform-badge" id="profile-platform-badge">Kick</span>
-                  </div>
-                  <h1 class="profile-card__title">Profile</h1>
-                </div>
-                <dl class="profile-rows" id="profile-rows"></dl>
-              </div>
-              <div class="card profile-card" id="profile-stream-card">
-                <h2 class="profile-card__title profile-card__title--sm">Stream</h2>
-                <dl class="profile-rows" id="profile-stream-rows"></dl>
-              </div>
-              <div class="card profile-card" id="profile-twitch-card">
-                <h2 class="profile-card__title profile-card__title--sm">Register Twitch</h2>
-                <p class="subtitle">
-                  Already partnered or synced on Kick? Type your Twitch name.
-                  This does <strong>not</strong> reset <code>/kickmenu</code>.
-                </p>
-                <p class="subtitle" id="profile-twitch-current"></p>
-                <form class="only-pixels-form" id="profile-twitch-form">
-                  <input
-                    id="profile-twitch-username"
-                    name="twitchUsername"
-                    placeholder="Twitch username (example: IAMNA5TY)"
-                    autocomplete="username"
-                  />
-                  <button class="btn btn-twitch" type="submit">Save Twitch</button>
-                </form>
-                <p class="only-pixels-note" id="profile-twitch-status"></p>
-              </div>
-              <div class="card profile-card" id="profile-account-card">
-                <h2 class="profile-card__title profile-card__title--sm">Account</h2>
-                <p class="profile-account__note" id="profile-account-note"></p>
-                <div class="profile-account__actions" id="profile-account-actions"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="page-view" data-page="overview">
+          <section class="page-view active" data-page="overview">
             <header class="page-header overview-header">
               <div>
                 <h1>Dashboard</h1>
@@ -422,20 +209,15 @@
                 </label>
               </div>
               <div class="hub-grid" id="hub-grid">
-                <button class="hub-card" type="button" data-goto-page="city" data-page="city" data-hub-filter="city fivem only pixels character live">
-                  <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10l8-6 8 6v10H4z"/><path d="M10 20v-6h4v6"/></svg></span>
-                  <strong>City</strong>
-                  <span>Watch the crew, your FiveM character, and who’s online.</span>
-                </button>
-                <button class="hub-card" type="button" data-goto-page="only-pixels" data-page="only-pixels" data-hub-filter="only pixels kick city fivem">
+                <button class="hub-card" type="button" data-goto-page="only-pixels" data-page="only-pixels" data-hub-filter="partners applications approve streamers only pixels">
                   <span class="hub-card__icon hub-card__icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
-                  <strong>Only Pixels</strong>
-                  <span>Kick points and streamer partnership for in-city rewards.</span>
+                  <strong>Partner applications</strong>
+                  <span>Approve streamers who want to be city partners.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="discord" data-page="discord" data-hub-filter="discord sub role subscriber">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 10h.01M16 10h.01M7 16c1.5 1 3.2 1.5 5 1.5s3.5-.5 5-1.5"/></svg></span>
-                  <strong>Discord Sub Role</strong>
-                  <span>Link Discord and claim the na5ty subscriber role.</span>
+                  <strong>Discord subs</strong>
+                  <span>Sub roster, badge sightings and manual role tools.</span>
                 </button>
                 <button class="hub-card" type="button" data-goto-page="widgets" data-page="widgets" data-hub-filter="widgets alerts chat spotify overlay obs">
                   <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
@@ -457,32 +239,17 @@
                   <strong>Slots</strong>
                   <span>Viewer slot requests, random picks, and session timer overlays.</span>
                 </button>
-                <button class="hub-card" type="button" data-goto-page="drinking" data-page="drinking" data-hub-filter="drinking shotgun beers cheers">
-                  <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-1 7a5 5 0 11-6 0L8 3zM12 15v6"/></svg></span>
-                  <strong>Drinking</strong>
-                  <span>Shotgun counter, cheers tracking, and cam scene for OBS.</span>
-                </button>
-                <button class="hub-card" type="button" data-goto-page="lighting" data-page="lighting" data-hub-filter="lighting hue govee beat local">
-                  <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.6.5 1 1.2 1 2h4c0-.8.4-1.5 1-2a6 6 0 00-3-11z"/></svg></span>
-                  <strong>Lighting</strong>
-                  <span>Local only on your stream PC — Hue / Govee beat sync (not on na5ty.com).</span>
-                </button>
-                <button class="hub-card" type="button" data-goto-page="stake" data-page="stake" data-hub-filter="stake race affiliate">
-                  <span class="hub-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9 9.5c1-.8 5-.8 6 0M9 14.5c1 .8 5 .8 6 0"/></svg></span>
-                  <strong>Stake.us</strong>
-                  <span>Daily race standings and referral leaderboard overlays.</span>
-                </button>
               </div>
             </div>
           </section>
 
           <section class="page-view" data-page="only-pixels">
             <header class="page-header">
-                <h1>Only Pixels</h1>
-                <p class="subtitle">Kick points, streamer partnership, and chat rewards for in-city</p>
+                <h1>Partner applications</h1>
+                <p class="subtitle">Approve or deny streamers who applied to be city partners. Players manage their own points and chat on <a href="/">na5ty.com</a>.</p>
             </header>
 
-            <div class="guest-lock guest-only">
+            <div class="guest-lock guest-only hub-gone">
               <p class="guest-lock__kicker">Only Pixels</p>
               <h2>Points and partnership after Kick sign-in</h2>
               <p class="subtitle">
@@ -490,7 +257,7 @@
               </p>
             </div>
 
-            <div class="card panel only-pixels-register signed-in-only">
+            <div class="card panel only-pixels-register signed-in-only hub-gone">
               <h2>Apply for Streamer Rewards Partnership</h2>
               <p class="subtitle">
                 First register as a <strong>Streamer</strong> in the in-city Kick menu. Then sign in
@@ -521,7 +288,7 @@
               </div>
             </div>
 
-            <div class="card panel only-pixels-register signed-in-only" id="only-pixels-twitch-card">
+            <div class="card panel only-pixels-register signed-in-only hub-gone" id="only-pixels-twitch-card">
               <h2>Register Twitch</h2>
               <p class="subtitle">
                 Already synced or approved on Kick? Register your Twitch name here.
@@ -540,7 +307,7 @@
               <p class="only-pixels-note" id="only-pixels-twitch-status"></p>
             </div>
 
-            <div class="card panel only-pixels-register signed-in-only" id="city-chat-card" hidden>
+            <div class="card panel only-pixels-register signed-in-only hub-gone" id="city-chat-card" hidden>
               <h2>Chat from the city</h2>
               <p class="subtitle">
                 Type in a streamer's Kick chat from the Kick hub in OnlyPixels, as yourself. Words like
@@ -575,7 +342,7 @@
               </div>
             </div>
 
-            <div class="card panel only-pixels-points signed-in-only">
+            <div class="card panel only-pixels-points signed-in-only hub-gone">
               <div class="only-pixels-points-head">
                 <div>
                   <h2>Your Kick Points</h2>
@@ -599,11 +366,11 @@
 
           <section class="page-view" data-page="discord">
             <header class="page-header">
-              <h1>Discord Sub Role</h1>
-              <p class="subtitle">Link Discord and claim the na5ty subscriber role — verified from Kick sub events on this site</p>
+              <h1>Discord subs</h1>
+              <p class="subtitle">Your sub roster, Kick badge sightings and manual role tools. Viewers claim the role themselves on <a href="/">na5ty.com</a>.</p>
             </header>
 
-            <div class="guest-lock guest-only">
+            <div class="guest-lock guest-only hub-gone">
               <p class="guest-lock__kicker">Discord</p>
               <h2>Claim the subscriber role after you sign in</h2>
               <p class="subtitle">
@@ -611,7 +378,7 @@
               </p>
             </div>
 
-            <div class="card panel signed-in-only">
+            <div class="card panel signed-in-only hub-gone">
               <h2>Subscriber role for na5ty</h2>
               <p class="subtitle">
                 We check the <strong>Kick username you signed in with</strong> (example: <code>na5ty</code>),
@@ -893,88 +660,6 @@
             </div>
           </section>
 
-          <section class="page-view" data-page="drinking">
-            <header class="page-header">
-              <h1>Drinking / Shotgun Cam</h1>
-              <p class="subtitle">Track shotgunned beers — counter, alerts, and a cam frame scene for OBS</p>
-            </header>
-
-            <div class="drinking-studio">
-              <div class="card panel drinking-preview-card">
-                <div class="panel-header">
-                  <h2>Shotgun Cam Scene</h2>
-                  <p class="subtitle">Full 1920×1080 lens frame — webcam fills the entire view underneath</p>
-                </div>
-                <iframe
-                  class="drinking-scene-frame"
-                  src="/drinking/widget-scene.html"
-                  title="Shotgun cam scene preview"
-                ></iframe>
-              </div>
-
-              <div class="drinking-side-stack">
-                <div class="card panel drinking-preview-card">
-                  <div class="panel-header">
-                    <h2>Beer Counter</h2>
-                    <p class="subtitle">Stackable overlay — session count + goal progress</p>
-                  </div>
-                  <iframe
-                    class="drinking-embed-frame"
-                    src="/drinking/beer-counter.html?embed=1"
-                    title="Beer counter preview"
-                  ></iframe>
-                </div>
-
-                <iframe
-                  class="drinking-control-frame"
-                  src="/drinking/control-panel.html?embed=1"
-                  title="Drinking control panel"
-                ></iframe>
-              </div>
-            </div>
-
-            <div class="card panel">
-              <h2>Shotgun controls</h2>
-              <p class="subtitle" id="drinking-status" style="margin-bottom:12px;">Loading counter...</p>
-              <div class="btn-row slots-actions">
-                <button class="btn btn-kick btn-compact" id="drinking-shotgun-dash-btn" type="button">+1 Shotgun</button>
-                <button class="btn btn-secondary btn-compact" id="drinking-cheer-dash-btn" type="button">+1 Cheers</button>
-                <button class="btn btn-secondary btn-compact" id="drinking-shotgun-3-dash-btn" type="button">+3 Shotguns</button>
-                <button class="btn btn-secondary btn-compact" id="drinking-undo-dash-btn" type="button">Undo -1</button>
-                <button class="btn btn-secondary btn-compact" id="drinking-reset-dash-btn" type="button">Reset session</button>
-              </div>
-              <div class="btn-row slots-actions" style="margin-top:10px;align-items:center;">
-                <label class="subtitle" for="drinking-goal-dash-input">Session goal</label>
-                <input id="drinking-goal-dash-input" type="number" min="1" max="99" value="12" style="width:72px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);" />
-                <button class="btn btn-secondary btn-compact" id="drinking-goal-dash-btn" type="button">Set goal</button>
-                <button class="btn btn-secondary btn-compact" id="drinking-test-cheers-btn" type="button">Test !cheers</button>
-                <button class="btn btn-secondary btn-compact" id="drinking-test-alert-btn" type="button">Test shotgun alert</button>
-              </div>
-            </div>
-
-            <div class="card panel">
-              <h2>OBS Browser Source URLs</h2>
-              <div id="drinking-urls-table"></div>
-            </div>
-
-            <div class="card panel">
-              <h2>Chat commands</h2>
-              <table class="data-table">
-                <thead>
-                  <tr><th>Command</th><th>Who</th><th>Action</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><code>!shotgun</code> or <code>/shotgun</code></td><td>Mods / streamer</td><td>+1 beer on the shotgun counter (OBS alert)</td></tr>
-                  <tr><td><code>!shotgun -1</code></td><td>Mods / streamer</td><td>Remove 1 from the shotgun counter</td></tr>
-                  <tr><td><code>!shotgun 3</code></td><td>Mods / streamer</td><td>Add multiple shotguns at once</td></tr>
-                  <tr><td><code>cheers</code>, <code>!cheers</code>, or <code>/cheers</code></td><td>Anyone</td><td>+1 on the chat cheers counter</td></tr>
-                  <tr><td><code>!beers</code> or <code>/beers</code></td><td>Anyone</td><td>Show shotgun + cheers counts</td></tr>
-                  <tr><td><code>!beer reset</code></td><td>Mods / streamer</td><td>Reset session counters (keeps all-time)</td></tr>
-                </tbody>
-              </table>
-              <p class="subtitle" style="margin-top:12px;">OBS tip: size your <strong>webcam</strong> to full 1920×1080, then add <strong>shotgun-cam</strong> on top (transparent). The overlay is a full-screen lens border — only the edges and HUD panels are visible.</p>
-            </div>
-          </section>
 
           <section class="page-view" data-page="widgets">
             <header class="page-header">
@@ -1229,251 +914,7 @@
             </div>
           </section>
 
-          <section class="page-view" data-page="lighting">
-            <header class="page-header">
-              <h1>Lighting</h1>
-              <p class="subtitle">Local only — Hue / Govee on this PC. Spotify still connects from Widgets on the public site.</p>
-            </header>
 
-            <div class="card panel">
-              <div class="panel-header">
-                <h2>Philips Hue</h2>
-                <p class="subtitle" id="hue-status">Discover your Hue Bridge on the same network as this PC.</p>
-              </div>
-
-              <div class="btn-row slots-actions" id="hue-connect-row">
-                <button class="btn btn-secondary btn-compact" id="hue-discover-btn" type="button">Discover bridges</button>
-                <input
-                  class="lighting-input"
-                  id="hue-bridge-ip"
-                  type="text"
-                  placeholder="Bridge IP (192.168.1.177)"
-                  style="min-width:220px;"
-                />
-                <button class="btn btn-kick btn-compact" id="hue-connect-btn" type="button">Connect</button>
-                <button class="btn btn-secondary btn-compact hidden" id="hue-disconnect-btn" type="button">Disconnect</button>
-              </div>
-
-              <p class="subtitle" id="hue-discover-results" style="margin-top:12px;"></p>
-              <p class="subtitle" style="margin-top:8px;">
-                Before connecting: press the <strong>link button</strong> on top of your Hue Bridge (round button).
-              </p>
-
-              <div class="hidden" id="hue-devices-panel" style="margin-top:16px;">
-                <div class="panel-header">
-                  <h3>Stream lights</h3>
-                  <button class="btn btn-secondary btn-compact" id="hue-refresh-devices-btn" type="button">Refresh</button>
-                </div>
-                <p class="subtitle" style="margin-bottom:12px;">
-                  Pick individual lights and/or a room group. Group wins for test commands if both are set.
-                </p>
-
-                <label class="subtitle" for="hue-group-select">Room / group</label>
-                <select id="hue-group-select" class="lighting-input" style="display:block; margin:8px 0 16px; min-width:280px;">
-                  <option value="">— No group —</option>
-                </select>
-
-                <div id="hue-lights-table"></div>
-
-                <div class="btn-row slots-actions" style="margin-top:16px;">
-                  <button class="btn btn-secondary btn-compact" id="hue-save-selection-btn" type="button">Save selection</button>
-                  <button class="btn btn-kick btn-compact" id="hue-test-pulse-btn" type="button">Test pulse</button>
-                  <button class="btn btn-secondary btn-compact" id="hue-test-on-btn" type="button">Test on</button>
-                  <button class="btn btn-secondary btn-compact" id="hue-test-off-btn" type="button">Test off</button>
-                  <button class="btn btn-secondary btn-compact" id="hue-reset-btn" type="button">Reset lights</button>
-                </div>
-                <p class="subtitle" id="hue-test-status" style="margin-top:12px;"></p>
-              </div>
-            </div>
-
-            <div class="card panel" id="spotify-lighting-sync-panel">
-              <div class="panel-header">
-                <h2>Spotify sync</h2>
-                <p class="subtitle" id="spotify-sync-status">Mood colors + beat pulse for your saved Hue lights</p>
-              </div>
-              <p class="subtitle" style="margin-bottom:12px;">
-                Concert mode: lights stay <strong>off</strong> between hits, then flash color → black on each beat.
-                With <strong>System audio</strong> on, every detected audio beat triggers a flash (not just BPM drops).
-              </p>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;">
-                <label class="subtitle" style="display:flex;align-items:center;gap:8px;">
-                  <input type="checkbox" id="spotify-sync-mood" />
-                  Song palette — unique colors per track (used on drops)
-                </label>
-              </div>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;">
-                <label class="subtitle" style="display:flex;align-items:center;gap:8px;">
-                  <input type="checkbox" id="spotify-sync-beat" />
-                  Concert drops — flash on/off to the beat (black between hits)
-                </label>
-              </div>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;">
-                <label class="subtitle" style="display:flex;align-items:center;gap:8px;">
-                  <input type="checkbox" id="spotify-sync-audio" checked />
-                  System audio — hear PC sound for real beat hits (falls back to BPM if capture fails)
-                </label>
-              </div>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
-                <span class="subtitle">Audio sensitivity:</span>
-                <button class="btn btn-secondary btn-compact" id="spotify-sync-audio-down" type="button">−</button>
-                <span class="subtitle" id="spotify-sync-audio-label">6</span>
-                <button class="btn btn-secondary btn-compact" id="spotify-sync-audio-up" type="button">+</button>
-                <span class="subtitle" style="opacity:0.75;">(higher = more hits)</span>
-              </div>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
-                <span class="subtitle">Beat timing fine-tune:</span>
-                <button class="btn btn-secondary btn-compact" id="spotify-sync-bpm-down" type="button">−5 BPM</button>
-                <span class="subtitle" id="spotify-sync-bpm-label">0 offset</span>
-                <button class="btn btn-secondary btn-compact" id="spotify-sync-bpm-up" type="button">+5 BPM</button>
-              </div>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
-                <span class="subtitle">Beat phase nudge:</span>
-                <button class="btn btn-secondary btn-compact" id="spotify-sync-phase-early" type="button">Earlier</button>
-                <span class="subtitle" id="spotify-sync-phase-label">0 ms</span>
-                <button class="btn btn-secondary btn-compact" id="spotify-sync-phase-late" type="button">Later</button>
-              </div>
-              <button class="btn btn-kick btn-compact" id="spotify-sync-save-btn" type="button">Save sync settings</button>
-              <button class="btn btn-secondary btn-compact" id="spotify-sync-calibrate-btn" type="button">Save calibration for current song</button>
-              <p class="subtitle" style="margin-top:10px;">
-                <strong>Calibrate with Sandstorm:</strong> play it from the start — wild mode flashes every beat at 136 BPM.
-                Fine-tune with ±5 BPM, then click <strong>Save calibration for current song</strong>.
-              </p>
-              <p class="subtitle" id="spotify-sync-runtime" style="margin-top:12px;"></p>
-            </div>
-
-            <div class="card panel" id="govee-panel">
-              <div class="panel-header">
-                <h2>Govee LAN</h2>
-                <p class="subtitle" id="govee-status">Local control via GoveeLAN — no cloud API key needed</p>
-              </div>
-              <p class="subtitle" style="margin-bottom:12px;">
-                Your phone uses Govee cloud. This dashboard uses <strong>local LAN</strong> — in Govee Home → each light → Settings → turn on <strong>LAN Control</strong>.
-                If you run <strong>GoveeLAN on this PC</strong>, close it first (only one app can use UDP port 4002).
-              </p>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
-                <input
-                  class="lighting-input"
-                  id="govee-scan-ips"
-                  type="text"
-                  placeholder="Optional device IPs (comma separated)"
-                  style="min-width:280px;"
-                />
-                <button class="btn btn-kick btn-compact" id="govee-scan-btn" type="button">Scan LAN</button>
-                <button class="btn btn-secondary btn-compact" id="govee-refresh-btn" type="button">Refresh list</button>
-              </div>
-              <div id="govee-devices-table"></div>
-              <div class="btn-row slots-actions" style="margin-top:16px;">
-                <button class="btn btn-secondary btn-compact" id="govee-save-selection-btn" type="button">Save selection</button>
-                <button class="btn btn-kick btn-compact" id="govee-test-pulse-btn" type="button">Test pulse</button>
-                <button class="btn btn-secondary btn-compact" id="govee-test-on-btn" type="button">Test on</button>
-                <button class="btn btn-secondary btn-compact" id="govee-test-off-btn" type="button">Test off</button>
-              </div>
-              <p class="subtitle" id="govee-test-status" style="margin-top:12px;"></p>
-            </div>
-
-            <div class="card panel" id="lighting-layout-panel">
-              <div class="panel-header">
-                <h2>Light layout</h2>
-                <p class="subtitle" id="lighting-layout-status">Drag lights to match your room — beat sync uses this map</p>
-              </div>
-              <p class="subtitle" style="margin-bottom:12px;">
-                Stack lights <strong>top to bottom</strong>. <strong>Color map</strong> lights each dot a different color (blue top / red bottom on dual strips).
-              </p>
-              <div class="btn-row slots-actions" style="margin-bottom:12px;align-items:center;">
-                <button class="btn btn-secondary btn-compact" id="lighting-layout-sync-btn" type="button">Sync from devices</button>
-                <label class="subtitle" for="lighting-layout-pattern">Flash pattern</label>
-                <select id="lighting-layout-pattern" class="lighting-input" style="min-width:180px;">
-                  <option value="unison">All together</option>
-                  <option value="chase">Chase (one per beat)</option>
-                  <option value="alternate">Alternate odds/evens</option>
-                  <option value="sides">Top vs bottom</option>
-                  <option value="rainbow">Rainbow (all, different colors)</option>
-                </select>
-                <button class="btn btn-secondary btn-compact" id="lighting-chat-off-btn" type="button">Music only (lights off)</button>
-                <button class="btn btn-secondary btn-compact" id="lighting-chat-on-btn" type="button">Resume lights</button>
-                <button class="btn btn-secondary btn-compact" id="lighting-layout-map-btn" type="button">Color map</button>
-                <button class="btn btn-secondary btn-compact" id="lighting-layout-split-btn" type="button">Split 2 strips</button>
-                <button class="btn btn-kick btn-compact" id="lighting-layout-save-btn" type="button">Save layout</button>
-                <button class="btn btn-secondary btn-compact" id="lighting-layout-test-btn" type="button">Test pattern</button>
-              </div>
-              <div class="lighting-layout-stage-wrap">
-                <div class="lighting-layout-stage" id="lighting-layout-stage" aria-label="Light layout stage">
-                  <span class="lighting-layout-label lighting-layout-label--top">Top</span>
-                  <span class="lighting-layout-label lighting-layout-label--bottom">Bottom</span>
-                </div>
-              </div>
-              <p class="subtitle" id="lighting-layout-hint" style="margin-top:12px;"></p>
-            </div>
-
-            <div class="card panel">
-              <h2>Roadmap</h2>
-              <table class="data-table">
-                <thead>
-                  <tr><th>Phase</th><th>Feature</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>1</td><td>Hue connect, pick lights, test controls</td><td>Active</td></tr>
-                  <tr><td>2</td><td>Govee LAN connect + beat sync with Hue</td><td>Active</td></tr>
-                  <tr><td>3</td><td>Stream alert triggers (sub, gift, follow)</td><td>Planned</td></tr>
-                  <tr><td>4</td><td>Spotify mood + beat pulse</td><td>Active</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="page-view" data-page="stake">
-            <header class="page-header">
-              <h1>Stake.us Race Leaderboard</h1>
-              <p class="subtitle">Live daily race standings from your Stake.us account</p>
-            </header>
-
-            <div class="card panel">
-              <h2>Connection</h2>
-              <div class="detail-card" id="stake-status"></div>
-            </div>
-
-            <div class="card panel">
-              <div class="panel-header">
-                <h2 id="stake-race-title">Active race</h2>
-                <button class="btn btn-secondary btn-compact" id="stake-refresh-btn" type="button">Refresh</button>
-              </div>
-              <div class="detail-card" id="stake-race-meta"></div>
-              <div id="stake-leaderboard-table"></div>
-            </div>
-
-            <div class="card panel">
-              <div class="panel-header">
-                <h2>Code <code id="stake-affiliate-code">na5ty</code> referral leaderboard</h2>
-                <div class="tab-row" id="stake-affiliate-tabs">
-                  <button class="tab active" data-period="month" type="button">This month</button>
-                  <button class="tab" data-period="30days" type="button">Last 30 days</button>
-                  <button class="tab" data-period="lifetime" type="button">Lifetime</button>
-                </div>
-              </div>
-              <p class="subtitle" id="stake-affiliate-note"></p>
-              <div class="detail-card" id="stake-affiliate-meta"></div>
-              <div id="stake-affiliate-table"></div>
-            </div>
-
-            <div class="card panel">
-              <h2>What this connection can read</h2>
-              <div class="two-col">
-                <div>
-                  <h3 class="subtitle" style="margin-bottom:8px;">Available now</h3>
-                  <ul class="stake-list" id="stake-available-stats"></ul>
-                </div>
-                <div>
-                  <h3 class="subtitle" style="margin-bottom:8px;">Blocked / not available</h3>
-                  <ul class="stake-list stake-list-muted" id="stake-blocked-stats"></ul>
-                </div>
-              </div>
-            </div>
-
-            <div class="card panel">
-              <h2>OBS Browser Source URLs</h2>
-              <div id="stake-urls-table"></div>
-            </div>
-          </section>
 
           <section class="page-view" data-page="bot">
             <header class="page-header">
@@ -1551,33 +992,6 @@
             </div>
           </section>
 
-          <section class="page-view" data-page="leaderboard">
-            <header class="page-header">
-              <h1>Leaderboards</h1>
-              <p class="subtitle">KICKs and gifted subs — synced from Kick (week / month / lifetime)</p>
-              <div class="header-actions">
-                <button class="btn btn-secondary btn-compact" id="leaderboard-refresh-btn" type="button">
-                  Refresh
-                </button>
-                <div class="tab-row" id="leaderboard-tabs">
-                  <button class="tab active" data-period="week" type="button">Week</button>
-                  <button class="tab" data-period="month" type="button">Month</button>
-                  <button class="tab" data-period="lifetime" type="button">Lifetime</button>
-                </div>
-              </div>
-            </header>
-            <p class="subtitle" id="leaderboard-updated-at" style="margin:0;"></p>
-            <div class="card panel">
-              <h2>KICKs leaderboard</h2>
-              <p class="subtitle">Top KICKs gifters on your channel</p>
-              <div id="leaderboard-table"></div>
-            </div>
-            <div class="card panel" style="margin-top:16px;">
-              <h2>Gifted subs leaderboard</h2>
-              <p class="subtitle" id="gifted-sub-leaderboard-note">Top gifted subscription supporters</p>
-              <div id="gifted-sub-leaderboard-table"></div>
-            </div>
-          </section>
 
           <section class="page-view" data-page="settings">
             <header class="page-header">
