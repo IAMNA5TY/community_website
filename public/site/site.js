@@ -264,7 +264,11 @@
     const st = a && a.status;
     const badge = st === 'approved' ? '<span class="status ok">Partner</span>' : st === 'pending' ? '<span class="status warn">Waiting for staff</span>' : st === 'banned' ? '<span class="status bad">Not approved</span>' : '';
     card('partner', `${title('tip', 'Stream in the city?', badge)}
-      ${st === 'approved' ? '<p>You\'re a partner: your chat can earn points and hit you in the city when you\'re live.</p>'
+      ${st === 'approved' ? `<p>You're a partner: your chat can earn points and hit you in the city when you're live.</p>
+           <h3 class="sub-h">Your OBS overlay</h3>
+           <p>Shows your chat's trolls, pots and tips on stream as they land. In OBS add a <b>Browser</b> source, 1920 × 1080, with this link:</p>
+           <div class="row"><input class="field mono" id="ov-url" readonly value="${esc(overlayUrl())}"><button class="btn accent sm" data-act="copyOverlay">${ic('copy')} Copy</button></div>
+           <div class="row"><a class="btn dark sm" href="/overlay/city.html?demo=1" target="_blank" rel="noopener">${ic('eye')} Preview it</a></div>`
         : st === 'pending' ? '<p>Your application is in. Staff will review it. You keep everything viewers get in the meantime.</p>'
         : st === 'banned' ? `<p class="muted">${esc(a.reason || 'This application was not approved.')}</p>`
         : `<p>Partners get their own points and trolls in their chat. To apply:</p>
@@ -281,11 +285,14 @@
       <div class="row"><input class="field" id="tw-name" maxlength="40" placeholder="Twitch username" value="${esc(data.twitchUsername || '')}"><button class="btn twitch" data-act="twitch">Save</button></div>`);
   }
 
+  const overlayUrl = () => `${location.origin}/overlay/city.html?channel=${encodeURIComponent(myName().toLowerCase())}`;
+
   /* ---------------------------------------------------------------- actions */
   const ACT = {
     watch: (el) => openWatch(el.dataset.slug),
     closeWatch,
     tab: (el) => { S.tab = el.dataset.tab; renderWords(); },
+    copyOverlay: async () => { if (await copy(overlayUrl())) toast('Overlay link copied. Paste it into an OBS Browser source.', 'ok'); },
     copyWord: async (el) => { if (await copy(el.dataset.word)) toast(`Copied "${el.dataset.word}". Paste it on its own in their Kick chat.`, 'ok'); },
     logout: async () => { await api('/auth/logout', { method: 'POST' }); location.href = '/'; },
     cityChat: async (el) => {

@@ -256,3 +256,6 @@ a.setup__item[href]:hover { background: rgba(255, 255, 255, .06); }
     .hero-points__n { font-size: 32px; }
 }
 .nav a { white-space: nowrap; }
+
+.sub-h { margin: 16px 0 4px !important; font-size: 17px !important; }
+.field.mono { font-family: var(--mono); font-size: 13px; }

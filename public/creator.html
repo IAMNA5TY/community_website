@@ -988,6 +988,49 @@
               <div id="overview-obs-links"></div>
             </div>
 
+            <div class="card panel city-overlay-card" id="city-overlay-card">
+              <div class="panel-header">
+                <h2>City overlay</h2>
+                <p class="subtitle">What chat does to you in the city, live on stream: trolls landing, pots filling and firing, tips. Add it as one Browser source, 1920 × 1080. Every partner gets their own link on na5ty.com under Your stuff.</p>
+              </div>
+              <div class="city-overlay-stage"><iframe src="/overlay/city.html?demo=1&amp;sound=0" title="City overlay preview" scrolling="no"></iframe><span class="city-overlay-stage__tag">Preview with fake events</span></div>
+              <div class="city-overlay-url">
+                <input id="city-overlay-url" readonly value="https://na5ty.com/overlay/city.html?channel=na5ty" />
+                <button class="btn btn-kick btn-compact" id="city-overlay-copy" type="button">Copy link</button>
+              </div>
+              <p class="subtitle">Add <code>&amp;sound=0</code> for no sounds, <code>&amp;moves=0</code> to hide the small movement chips, or <code>&amp;demo=1</code> to line it up in OBS.</p>
+              <style>
+                .city-overlay-card { margin-bottom: 18px; }
+                .city-overlay-stage { position: relative; width: 100%; max-width: 900px; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 14px; margin: 12px 0;
+                  background: url(/site/art/scenes/city.webp) center / cover; }
+                html.season-halloween .city-overlay-stage { background-image: url(/site/art/scenes/halloween.webp); }
+                html.season-harvest .city-overlay-stage { background-image: url(/site/art/scenes/harvest.webp); }
+                html.season-holiday .city-overlay-stage { background-image: url(/site/art/scenes/holiday.webp); }
+                .city-overlay-stage iframe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; background: transparent; }
+                .city-overlay-stage__tag { position: absolute; left: 10px; top: 10px; padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; background: rgba(0,0,0,.6); color: #ddd; }
+                .city-overlay-url { display: flex; gap: 8px; }
+                .city-overlay-url input { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.35); color: #fff; font: 600 14px ui-monospace, monospace; }
+              </style>
+              <script>
+                (() => {
+                  const stage = document.querySelector(".city-overlay-stage");
+                  const frame = stage && stage.querySelector("iframe");
+                  const fit = () => { if (frame) frame.style.transform = `scale(${stage.clientWidth / 1920})`; };
+                  if (window.ResizeObserver && stage) new ResizeObserver(fit).observe(stage); else window.addEventListener("resize", fit);
+                  fit();
+                  const input = document.getElementById("city-overlay-url");
+                  fetch("/api/me", { credentials: "same-origin" }).then((r) => r.json()).then((me) => {
+                    const name = me && me.loggedIn && me.provider === "kick" && me.profile && me.profile.username;
+                    if (name && input) input.value = `https://na5ty.com/overlay/city.html?channel=${encodeURIComponent(String(name).toLowerCase())}`;
+                  }).catch(() => {});
+                  document.getElementById("city-overlay-copy")?.addEventListener("click", async (ev) => {
+                    try { await navigator.clipboard.writeText(input.value); } catch (_) { input.select(); document.execCommand("copy"); }
+                    ev.target.textContent = "Copied!"; setTimeout(() => { ev.target.textContent = "Copy link"; }, 1600);
+                  });
+                })();
+              </script>
+            </div>
+
             <div class="widgets-layout widgets-layout--dual">
               <div class="card panel widgets-preview-card">
                 <div class="panel-header">

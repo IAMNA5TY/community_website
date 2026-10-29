@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NA5TY city overlay</title>
+<!--
+  Partner OBS overlay: what chat does to you in the city, live on your stream.
+  OBS: Browser source, URL https://na5ty.com/overlay/city.html?channel=<your kick name>, 1920 x 1080.
+  Options: &sound=0 (no sounds)  &moves=0 (hide the small movement chips)  &demo=1 (fake events to line it up)
+-->
+<style>
+@font-face { font-family: 'Bungee'; src: url('/site/fonts/bungee-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Fredoka'; src: url('/site/fonts/fredoka-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+@font-face { font-family: 'Fredoka'; src: url('/site/fonts/fredoka-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+@font-face { font-family: 'Creepster'; src: url('/site/fonts/creepster-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Rye'; src: url('/site/fonts/rye-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Mountains of Christmas'; src: url('/site/fonts/mountains-of-christmas-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+:root {
+  --accent: #53fc18; --glow: rgba(83, 252, 24, .55); --pop: #ffd25a; --cream: #fff3cf; --gold: #ffc94d;
+  --plate-a: rgba(24, 16, 40, .94); --plate-b: rgba(10, 6, 20, .96); --season-font: 'Bungee';
+}
+.season-halloween { --accent: #ff7a1a; --glow: rgba(255, 122, 26, .55); --pop: #8cff4a; --season-font: 'Creepster'; --plate-a: rgba(26, 12, 42, .94); }
+.season-harvest { --accent: #ffb02e; --glow: rgba(255, 176, 46, .55); --pop: #ffc35e; --season-font: 'Rye'; --plate-a: rgba(38, 14, 14, .94); --plate-b: rgba(18, 6, 6, .96); }
+.season-holiday { --accent: #ff3b52; --glow: rgba(255, 59, 82, .55); --pop: #96d7ff; --season-font: 'Mountains of Christmas'; --plate-a: rgba(10, 18, 44, .94); --plate-b: rgba(4, 8, 24, .96); }
+html, body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+body { font: 600 22px/1.2 'Fredoka', system-ui, sans-serif; color: #fff; }
+
+.plate { position: relative; background: linear-gradient(180deg, var(--plate-a), var(--plate-b)); border: 2px solid rgba(255, 255, 255, .1);
+  border-radius: 28px; box-shadow: 0 24px 50px rgba(0, 0, 0, .6), 0 0 40px var(--glow), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.plate::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  --s: radial-gradient(circle at 35% 35%, #ffe6a8 0 2px, #a8742a 3.5px, #4a300c 5.5px, transparent 6.5px);
+  background: var(--s) 10px 10px / 14px 14px no-repeat, var(--s) calc(100% - 10px) 10px / 14px 14px no-repeat,
+              var(--s) 10px calc(100% - 10px) / 14px 14px no-repeat, var(--s) calc(100% - 10px) calc(100% - 10px) / 14px 14px no-repeat; }
+
+/* big alert: trolls, pots firing, tips */
+#alert { position: absolute; left: 50%; top: 6vh; transform: translateX(-50%); display: flex; align-items: center; gap: 26px;
+  min-width: 640px; max-width: 980px; padding: 22px 40px 22px 26px; opacity: 0; pointer-events: none; }
+#alert.show { animation: drop .55s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+#alert.hide { animation: lift .4s ease-in forwards; }
+@keyframes drop { from { opacity: 0; transform: translate(-50%, -60px) scale(.85) rotate(-2deg); } to { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0); } }
+@keyframes lift { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -40px) scale(.92); } }
+#alert .key { width: 170px; height: 170px; flex: none; filter: drop-shadow(0 12px 12px rgba(0, 0, 0, .6)); animation: bob 1.1s ease-in-out infinite alternate; }
+@keyframes bob { from { transform: translateY(-4px) rotate(-3deg); } to { transform: translateY(4px) rotate(3deg); } }
+#alert .who { font-size: 26px; color: var(--pop); text-shadow: 0 2px 0 rgba(0, 0, 0, .6); }
+#alert .what { margin: 4px 0 6px; font: 400 54px/1.02 'Bungee', sans-serif; color: var(--cream);
+  text-shadow: 0 4px 0 rgba(0, 0, 0, .6), 0 0 18px var(--glow), 0 0 40px var(--glow); }
+#alert .sub { font-size: 22px; color: #d8d0ec; }
+#alert .tag { display: inline-block; margin-left: 10px; padding: 3px 12px; border-radius: 10px; font: 400 18px 'Bungee', sans-serif;
+  background: var(--accent); color: #140700; vertical-align: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .5); }
+#alert.big .what { font-size: 62px; }
+#alert.big { box-shadow: 0 24px 50px rgba(0, 0, 0, .6), 0 0 60px var(--glow), 0 0 120px var(--glow); }
+.flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 18%, var(--glow), transparent 60%); opacity: 0; }
+.flash.go { animation: flash .9s ease-out; }
+@keyframes flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+
+/* the open pot: bottom right */
+#pot { position: absolute; right: 3vw; bottom: 5vh; width: 420px; display: flex; align-items: center; gap: 14px; padding: 16px 22px 16px 14px;
+  transition: opacity .4s, transform .4s; }
+#pot.off { opacity: 0; transform: translateY(30px); }
+#pot img { width: 120px; height: 120px; flex: none; filter: drop-shadow(0 10px 10px rgba(0, 0, 0, .6)); }
+#pot .t { font: 400 15px 'Bungee', sans-serif; color: var(--pop); letter-spacing: .5px; }
+#pot .n { font: 400 30px/1.05 'Bungee', sans-serif; color: var(--cream); text-shadow: 0 3px 0 rgba(0, 0, 0, .6), 0 0 16px var(--glow); }
+#pot .bar { height: 14px; margin: 8px 0 6px; border-radius: 99px; background: rgba(255, 255, 255, .1); overflow: hidden; box-shadow: inset 0 2px 3px rgba(0, 0, 0, .5); }
+#pot .bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--pop)); transition: width .6s; box-shadow: 0 0 12px var(--glow); }
+#pot .h { font-size: 17px; color: #cfc8e2; }
+#pot .h b { color: #fff; font-family: 'Bungee', sans-serif; font-weight: 400; }
+#pot.bump { animation: bump .5s; }
+@keyframes bump { 30% { transform: scale(1.06); } }
+
+/* small chips for movement words: bottom left */
+#moves { position: absolute; left: 3vw; bottom: 5vh; display: flex; flex-direction: column-reverse; gap: 8px; }
+.mv { display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px; border-radius: 16px; font-size: 20px;
+  background: linear-gradient(180deg, var(--plate-a), var(--plate-b)); border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 8px 18px rgba(0, 0, 0, .5);
+  animation: slide .35s ease-out; transition: opacity .5s, transform .5s; }
+.mv img { width: 46px; height: 46px; }
+.mv b { color: var(--pop); }
+.mv.out { opacity: 0; transform: translateX(-30px); }
+@keyframes slide { from { opacity: 0; transform: translateX(-40px); } }
+</style>
+</head>
+<body>
+<div class="flash" id="flash"></div>
+<div class="plate" id="alert"><img class="key" id="a-key" alt="" /><div><div class="who" id="a-who"></div><div class="what" id="a-what"></div><div class="sub" id="a-sub"></div></div></div>
+<div class="plate off" id="pot"><img id="p-img" alt="" /><div style="flex:1;min-width:0"><div class="t" id="p-t">Chat pot</div><div class="n" id="p-n"></div><div class="bar"><i id="p-bar"></i></div><div class="h" id="p-h"></div></div></div>
+<div id="moves"></div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const channel = (q.get('channel') || q.get('c') || '').trim().replace(/^@/, '').toLowerCase();
+  const SOUND = q.get('sound') !== '0', MOVES = q.get('moves') !== '0', DEMO = q.get('demo') === '1';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+  const key = (a) => `/site/art/keys/${encodeURIComponent(a || 'fire')}.webp`;
+
+  let month = new Date().getMonth() + 1;
+  try { month = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'numeric' }).format(new Date())); } catch (_) {}
+  const season = { 10: 'halloween', 11: 'harvest', 12: 'holiday' }[month] || 'city';
+  document.body.className = `season-${season}`;
+  const POT_ART = { halloween: 'cauldron', harvest: 'pie', holiday: 'globe', city: 'jar' }[season];
+
+  /* ---------- sounds (made here, no files) */
+  let ac = null;
+  function tone(freqs, dur = .12, type = 'triangle', vol = .12) {
+    if (!SOUND) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      freqs.forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * dur;
+        o.type = type; o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + dur * 1.8);
+        o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur * 2);
+      });
+    } catch (_) {}
+  }
+  const SFX = { hit: () => tone([392, 523, 659, 784], .09, 'square', .07), pot: () => tone([523, 659, 784, 1047, 1319], .08, 'triangle', .12),
+    chip: () => tone([880, 1175], .06, 'sine', .08), cash: () => tone([1319, 1568, 2093], .07, 'triangle', .1) };
+
+  /* ---------- big alerts, one at a time */
+  const queue = []; let busy = false;
+  function enqueue(a) { if (queue.length < 12) queue.push(a); if (!busy) next(); }
+  function next() {
+    const a = queue.shift();
+    if (!a) { busy = false; return; }
+    busy = true;
+    const el = $('alert');
+    $('a-key').src = key(a.art); $('a-key').onerror = function () { this.onerror = null; this.src = key('fire'); };
+    $('a-who').innerHTML = a.who; $('a-what').innerHTML = a.what; $('a-sub').innerHTML = a.sub || '';
+    el.classList.toggle('big', Boolean(a.big));
+    el.classList.remove('hide'); void el.offsetWidth; el.classList.add('show');
+    const f = $('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+    (SFX[a.sfx] || SFX.hit)();
+    setTimeout(() => {
+      el.classList.remove('show'); el.classList.add('hide');
+      setTimeout(next, 450);
+    }, a.big ? 6500 : 5200);
+  }
+
+  /* ---------- movement chips */
+  function chip(e) {
+    if (!MOVES) return;
+    const box = $('moves');
+    const d = document.createElement('div');
+    d.className = 'mv';
+    d.innerHTML = `<img src="${key(e.action)}" alt="" onerror="this.onerror=null;this.src='${key('fire')}'"><span><b>@${esc(e.viewer)}</b> ${esc(e.label || e.action)}</span>`;
+    box.prepend(d);
+    while (box.children.length > 5) box.lastChild.remove();
+    setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 500); }, 6000);
+  }
+
+  /* ---------- pot meter */
+  let potState = null;
+  function showPot(p, bump) {
+    const el = $('pot');
+    if (!p || !p.price) { el.classList.add('off'); potState = null; return; }
+    const pct = Math.max(0, Math.min(1, (p.filled || 0) / p.price));
+    $('p-img').src = `/site/art/props/${POT_ART}_${Math.min(3, Math.floor(pct * 4))}.webp`;
+    $('p-n').textContent = p.label || p.action;
+    $('p-bar').style.width = `${pct * 100}%`;
+    $('p-h').innerHTML = `<b>${fmt(p.filled)}</b> / ${fmt(p.price)} · ${fmt(p.contributors || 1)} in · type <b>${esc(p.action)}</b> to chip in`;
+    el.classList.remove('off');
+    if (bump) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+    potState = p;
+  }
+
+  /* ---------- events -> what shows */
+  const SMALL = new Set(['control', 'emote']);
+  function onEvent(e) {
+    const who = `@${esc(e.viewer || 'chat')}`;
+    const label = esc(e.label || e.action || '');
+    switch (e.kind) {
+      case 'play':
+        if (SMALL.has(e.group)) return chip(e);
+        return enqueue({ art: e.action, who: `${who} sent`, what: label, sub: e.price ? `<span class="tag">${fmt(e.price)} pts</span>` : '', sfx: 'hit' });
+      case 'pot_open':
+        SFX.chip(); return showPot({ action: e.action, label: e.label, filled: e.filled, price: e.price, contributors: e.contributors }, true);
+      case 'pot_add':
+        SFX.chip(); return showPot({ action: e.action, label: e.label, filled: e.filled, price: e.price, contributors: e.contributors }, true);
+      case 'pot_fire':
+        showPot(null);
+        return enqueue({ art: e.action, who: `Chat filled the pot!`, what: label, sub: `${fmt(e.contributors)} viewers · ${fmt(e.price)} Kick Points · last in: ${who}`, sfx: 'pot', big: true });
+      case 'pot_refund':
+        return showPot(null);
+      case 'tip':
+        return enqueue({ art: 'tip', who: `${who} tipped`, what: `$${fmt(e.amount || 500)}`, sub: 'in the city', sfx: 'cash' });
+      case 'donate':
+        return enqueue({ art: 'donate', who: `${who} donated`, what: `$${fmt(e.amount || 25)}`, sub: 'in the city', sfx: 'cash' });
+      case 'dailymech':
+        return enqueue({ art: 'dailymech', who: `${who} sent`, what: 'Mech parts', sub: 'daily drop', sfx: 'cash' });
+      default:
+        return null;
+    }
+  }
+
+  /* ---------- polling */
+  let after = -1;
+  async function poll() {
+    try {
+      const r = await fetch(`/api/rewards/overlay/${encodeURIComponent(channel)}?after=${Math.max(0, after)}`, { cache: 'no-store' });
+      const d = await r.json();
+      if (d && d.success !== false) {
+        if (after < 0 || d.last < after) {           // first load (or the site restarted): start from now
+          after = d.last || 0;
+        } else {
+          (d.events || []).forEach(onEvent);
+          if (d.events && d.events.length) after = d.events[d.events.length - 1].id;
+          else after = Math.max(after, 0);
+        }
+        if (!d.pot && potState) showPot(null);
+        else if (d.pot && (!potState || d.pot.filled !== potState.filled)) showPot(d.pot, false);
+      }
+    } catch (_) {}
+    setTimeout(poll, 1500);
+  }
+
+  /* ---------- demo mode: line it up in OBS */
+  function demo() {
+    const names = ['KlassyRaptor', 'bigtony_44', 'lilmeep', 'devilmaykill579', 'pinkyuwu'];
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    const seq = [
+      () => onEvent({ kind: 'play', action: 'forward', label: 'Walk forward', group: 'control', viewer: pick(names) }),
+      () => onEvent({ kind: 'play', action: season === 'city' ? 'fire' : { halloween: 'pumpkin', harvest: 'stuffed', holiday: 'snowball' }[season], label: season === 'halloween' ? 'Pumpkin head' : 'Troll', group: 'troll', viewer: pick(names), price: 25 }),
+      () => onEvent({ kind: 'pot_open', action: 'zombies', label: 'Zombie horde', viewer: pick(names), filled: 25, price: 150, contributors: 1 }),
+      () => onEvent({ kind: 'play', action: 'left', label: 'Turn left', group: 'control', viewer: pick(names) }),
+      () => onEvent({ kind: 'pot_add', action: 'zombies', label: 'Zombie horde', viewer: pick(names), filled: 75, price: 150, contributors: 3 }),
+      () => onEvent({ kind: 'pot_add', action: 'zombies', label: 'Zombie horde', viewer: pick(names), filled: 125, price: 150, contributors: 5 }),
+      () => onEvent({ kind: 'pot_fire', action: 'zombies', label: 'Zombie horde', viewer: pick(names), price: 150, contributors: 6 }),
+      () => onEvent({ kind: 'tip', viewer: pick(names), amount: 500 }),
+    ];
+    let i = 0;
+    const tick = () => { seq[i % seq.length](); i += 1; setTimeout(tick, i % seq.length === 0 ? 9000 : 3800); };
+    setTimeout(tick, 800);
+  }
+
+  if (DEMO) demo();
+  else if (channel) poll();
+})();
+</script>
+</body>
+</html>
