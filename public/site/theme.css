@@ -1,0 +1,175 @@
+/* Kick hub look for the creator pages (dashboard at /creator + slots / workout / drinking control panels).
+   Loaded only on those pages, after their own CSS. On-stream OBS overlays never load it.
+   html classes come from /site/theme.js: hub-theme, hub-creator | hub-panel, season-*. */
+@font-face { font-family: 'Bungee'; src: url('fonts/bungee-latin-400-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Fredoka'; src: url('fonts/fredoka-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Fredoka'; src: url('fonts/fredoka-latin-500-normal.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Fredoka'; src: url('fonts/fredoka-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Fredoka'; src: url('fonts/fredoka-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Creepster'; src: url('fonts/creepster-latin-400-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Rye'; src: url('fonts/rye-latin-400-normal.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Mountains of Christmas'; src: url('fonts/mountains-of-christmas-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+
+/* ---------------------------------------------------------------- palette (same as the player site) */
+html.hub-theme {
+    --hub-accent: #53fc18; --hub-glow: rgba(83, 252, 24, .4); --hub-pop: #ffd25a; --hub-cream: #fff3cf;
+    --hub-plate-a: rgba(24, 16, 40, .92); --hub-plate-b: rgba(10, 6, 20, .95); --hub-line: rgba(255, 255, 255, .09);
+    --hub-scene: url('art/scenes/city.webp'); --hub-season-font: 'Bungee';
+    --hub-display: 'Bungee', 'Fredoka', sans-serif; --hub-body: 'Fredoka', system-ui, sans-serif;
+    --hub-screw: radial-gradient(circle, #e9c27a 0 2.6px, #8a5e1f 3.2px, rgba(0, 0, 0, .55) 4.2px, transparent 5px);
+    background: #07040f;
+}
+html.hub-theme.season-halloween { --hub-accent: #ff7a1a; --hub-glow: rgba(255, 122, 26, .4); --hub-pop: #8cff4a; --hub-scene: url('art/scenes/halloween.webp'); --hub-season-font: 'Creepster'; --hub-plate-a: rgba(26, 12, 42, .92); }
+html.hub-theme.season-harvest { --hub-accent: #ffb02e; --hub-glow: rgba(255, 176, 46, .4); --hub-pop: #ffc35e; --hub-scene: url('art/scenes/harvest.webp'); --hub-season-font: 'Rye'; --hub-plate-a: rgba(38, 14, 14, .92); --hub-plate-b: rgba(18, 6, 6, .95); }
+html.hub-theme.season-holiday { --hub-accent: #ff3b52; --hub-glow: rgba(255, 59, 82, .4); --hub-pop: #96d7ff; --hub-scene: url('art/scenes/holiday.webp'); --hub-season-font: 'Mountains of Christmas'; --hub-plate-a: rgba(10, 18, 44, .92); --hub-plate-b: rgba(4, 8, 24, .95); }
+
+.hub-scene { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(7, 4, 15, .45), rgba(7, 4, 15, .7) 60%, rgba(7, 4, 15, .9)), var(--hub-scene) center bottom / cover no-repeat, #07040f; }
+
+/* plate = the hub's panel: dark gradient, soft edge, brass screws in the corners (drawn as backgrounds, no extra markup) */
+html.hub-theme .hub-plate-look,
+html.hub-creator .card,
+html.hub-panel .card {
+    background:
+        var(--hub-screw) 7px 7px / 12px 12px no-repeat,
+        var(--hub-screw) calc(100% - 7px) 7px / 12px 12px no-repeat,
+        var(--hub-screw) 7px calc(100% - 7px) / 12px 12px no-repeat,
+        var(--hub-screw) calc(100% - 7px) calc(100% - 7px) / 12px 12px no-repeat,
+        linear-gradient(180deg, var(--hub-plate-a), var(--hub-plate-b)) !important;
+    border: 1px solid rgba(255, 255, 255, .08) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05) !important;
+}
+
+/* ================================================================ creator dashboard (/creator) */
+html.hub-creator {
+    --bg: transparent; --card: rgba(24, 16, 40, .92); --border: rgba(255, 255, 255, .1);
+    --text: #f1ecff; --muted: #a9a2c2; --kick: var(--hub-accent); --kick-soft: var(--hub-pop);
+    --font-display: 'Fredoka', system-ui, sans-serif; --font-body: 'Fredoka', system-ui, sans-serif;
+}
+html.hub-creator body { background: transparent !important; font-family: var(--hub-body); font-weight: 500; }
+html.hub-creator .content { background: transparent !important; }
+
+/* sidebar: a tall plate */
+html.hub-creator .sidebar {
+    background: linear-gradient(180deg, rgba(14, 8, 26, .94), rgba(6, 3, 14, .97)) !important;
+    border-right: 1px solid rgba(255, 255, 255, .08) !important;
+    box-shadow: 8px 0 30px rgba(0, 0, 0, .45);
+}
+html.hub-creator .sidebar-brand__name {
+    font-family: var(--hub-display) !important; font-weight: 400 !important; letter-spacing: .5px;
+    color: var(--hub-cream) !important; text-shadow: 0 0 6px var(--hub-glow), 0 0 18px var(--hub-glow), 0 2px 0 rgba(0, 0, 0, .6);
+}
+html.hub-creator .sidebar-brand__tag { color: var(--hub-pop) !important; }
+html.hub-creator .nav-group__label { color: rgba(255, 255, 255, .45) !important; letter-spacing: .12em; }
+html.hub-creator .nav-link { border-radius: 11px !important; font-weight: 600; color: #d6d0e8 !important; }
+html.hub-creator .nav-link:hover { background: rgba(255, 255, 255, .06) !important; }
+html.hub-creator .nav-link.active {
+    color: #fff !important;
+    background: linear-gradient(90deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .03)) !important;
+    box-shadow: inset 3px 0 0 var(--hub-accent), 0 0 16px var(--hub-glow);
+}
+html.hub-creator .nav-link.active .nav-icon { color: var(--hub-accent) !important; }
+.hub-back {
+    display: flex; align-items: center; gap: 8px; margin: 0 4px 6px; padding: 9px 12px; border-radius: 11px;
+    text-decoration: none; font: 700 14px var(--hub-body); color: #061500; background: var(--hub-accent);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, .5);
+}
+.hub-back:hover { filter: brightness(1.08); }
+
+/* page titles in the sign font */
+html.hub-creator .page-header h1,
+html.hub-creator .page-view > header h1 {
+    font-family: var(--hub-display) !important; font-weight: 400 !important; letter-spacing: .5px;
+    color: var(--hub-cream); text-shadow: 0 3px 0 rgba(0, 0, 0, .6), 0 0 22px var(--hub-glow);
+}
+html.hub-creator h2 { font-weight: 700; color: #fff; }
+
+/* buttons: the hub's chunky keys */
+html.hub-creator .btn {
+    border-radius: 12px !important; font-family: var(--hub-body) !important; font-weight: 700 !important;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, .5); transition: transform .08s, filter .15s;
+}
+html.hub-creator .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .5); }
+html.hub-creator .btn:hover:not(:disabled) { filter: brightness(1.08); }
+html.hub-creator .btn-kick { background: var(--hub-accent) !important; color: #140700 !important; }
+html.hub-creator .btn-secondary { background: rgba(29, 23, 48, .9) !important; border: 1px solid rgba(255, 255, 255, .12) !important; color: #eee !important; }
+html.hub-creator .btn-secondary.active { border-color: var(--hub-accent) !important; box-shadow: 0 4px 0 rgba(0, 0, 0, .5), 0 0 14px var(--hub-glow); }
+
+/* inputs */
+html.hub-creator .content input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+html.hub-creator .content select,
+html.hub-creator .content textarea {
+    background: rgba(0, 0, 0, .38) !important; border: 1px solid rgba(255, 255, 255, .14) !important;
+    border-radius: 12px !important; color: #fff !important; font-family: var(--hub-body) !important;
+}
+html.hub-creator .content input:focus, html.hub-creator .content select:focus, html.hub-creator .content textarea:focus {
+    border-color: var(--hub-accent) !important; outline: none; box-shadow: 0 0 0 3px var(--hub-glow) !important;
+}
+
+/* tool cards on the Dashboard tab, tables, small chips */
+html.hub-creator .hub-card {
+    background: rgba(0, 0, 0, .32) !important; border: 1px solid rgba(255, 255, 255, .08) !important; border-radius: 16px !important;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, .35); transition: transform .1s, border-color .15s, box-shadow .15s;
+}
+html.hub-creator .hub-card:hover { transform: translateY(-2px); border-color: var(--hub-accent) !important; box-shadow: 0 4px 0 rgba(0, 0, 0, .35), 0 0 18px var(--hub-glow); }
+html.hub-creator .data-table th, html.hub-creator .url-table th { color: var(--hub-pop); font-weight: 700; }
+html.hub-creator .data-table td, html.hub-creator .data-table th, html.hub-creator .url-table td, html.hub-creator .url-table th { border-color: rgba(255, 255, 255, .08) !important; }
+html.hub-creator .tab { border-radius: 10px !important; font-weight: 700; }
+html.hub-creator .tab.active { color: #fff !important; box-shadow: inset 0 -2px 0 var(--hub-accent); }
+html.hub-creator code { font-family: ui-monospace, monospace; }
+
+/* ================================================================ control panels (slots / workout / drinking) */
+html.hub-panel {
+    --bg-deep: transparent; --bg-panel: rgba(24, 16, 40, .92); --bg-card: rgba(0, 0, 0, .32);
+    --border: rgba(255, 255, 255, .1); --border-light: rgba(255, 255, 255, .16);
+    --font: 'Fredoka', system-ui, sans-serif; --font-display: 'Bungee', 'Fredoka', sans-serif;
+}
+html.hub-panel body:not(.embed) { background: transparent !important; font-family: var(--hub-body); padding-top: 64px; }
+html.hub-panel .dash-header h1 {
+    font-family: var(--hub-display) !important; font-weight: 400 !important; letter-spacing: .5px; color: var(--hub-cream) !important;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, .6), 0 0 22px var(--hub-glow);
+}
+html.hub-panel .card-title { color: var(--hub-pop) !important; letter-spacing: .1em; }
+html.hub-panel .stat-box {
+    background: rgba(0, 0, 0, .35) !important; border: 1px solid rgba(255, 255, 255, .08) !important; border-radius: 14px !important;
+}
+html.hub-panel .stat-box .val { font-family: var(--hub-display) !important; font-weight: 400 !important; }
+html.hub-panel .btn, html.hub-panel .btn-beer {
+    border-radius: 12px !important; font-family: var(--hub-body) !important; font-weight: 700 !important;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, .5); transition: transform .08s, filter .15s;
+}
+html.hub-panel .btn:active, html.hub-panel .btn-beer:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .5); }
+html.hub-panel .btn-dark { background: rgba(29, 23, 48, .95) !important; border: 1px solid rgba(255, 255, 255, .12) !important; }
+html.hub-panel .field input, html.hub-panel .goal-row input {
+    background: rgba(0, 0, 0, .38) !important; border: 1px solid rgba(255, 255, 255, .14) !important; border-radius: 12px !important;
+    font-family: var(--hub-body) !important;
+}
+html.hub-panel .field input:focus, html.hub-panel .goal-row input:focus { border-color: var(--hub-accent) !important; box-shadow: 0 0 0 3px var(--hub-glow) !important; }
+html.hub-panel .status-bar { border-radius: 12px !important; }
+html.hub-panel .divider { border-color: rgba(255, 255, 255, .08) !important; }
+
+/* top strip on the control panels: back to the dashboard / the site */
+.hub-strip {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 30; height: 52px; display: flex; align-items: center; gap: 12px;
+    padding: 0 18px; background: linear-gradient(180deg, rgba(5, 2, 12, .94), rgba(5, 2, 12, .78)); border-bottom: 1px solid rgba(255, 255, 255, .08);
+    font-family: var(--hub-body); backdrop-filter: blur(6px);
+}
+.hub-strip__brand { font-family: var(--hub-display); font-size: 20px; color: var(--hub-cream); text-decoration: none; text-shadow: 0 0 6px var(--hub-glow), 0 0 16px var(--hub-glow); }
+.hub-strip__sp { flex: 1; }
+.hub-strip a.hub-strip__link {
+    display: inline-flex; align-items: center; height: 34px; padding: 0 13px; border-radius: 10px; text-decoration: none;
+    font-weight: 700; font-size: 14px; color: #eee; background: rgba(29, 23, 48, .95); border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 3px 0 rgba(0, 0, 0, .5);
+}
+.hub-strip a.hub-strip__link.main { background: var(--hub-accent); color: #140700; border: 0; }
+
+/* let the season scene show through the dashboard shell */
+html.hub-creator body.is-dashboard, html.hub-creator .app-shell, html.hub-creator .page { background: transparent !important; }
+html.hub-creator .content { background: linear-gradient(180deg, rgba(7, 4, 15, .25), rgba(7, 4, 15, .55)) !important; }
+html.hub-creator .hub-search { background: rgba(0, 0, 0, .38) !important; border: 1px solid rgba(255, 255, 255, .14) !important; border-radius: 12px !important; }
+html.hub-creator .hub-search:focus-within { border-color: var(--hub-accent) !important; box-shadow: 0 0 0 3px var(--hub-glow); }
+html.hub-creator .content .hub-search input { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+html.hub-creator .public-tabs-panel { border-color: rgba(255, 255, 255, .12) !important; background: rgba(0, 0, 0, .3) !important; border-radius: 14px !important; }
+html.hub-panel .card { padding: 22px 24px !important; }
+/* panel shown inside the dashboard iframe: stay see-through, no top strip padding */
+html.hub-theme.hub-embed, html.hub-embed body { background: transparent !important; }
+html.hub-embed body { padding-top: 0 !important; }

@@ -20,7 +20,7 @@ let sessionProfile = null;
 let sessionRole = "player";
 let leaderboardPeriod = "week";
 let stakeAffiliatePeriod = "month";
-let currentPage = "city";
+let currentPage = "overview";
 if (location.hash === "#only-pixels") currentPage = "only-pixels";
 else if (location.hash === "#discord" || location.hash.startsWith("#discord?")) currentPage = "discord";
 else if (location.hash === "#profile") currentPage = "profile";
@@ -223,7 +223,9 @@ function applyNavAccess(me = {}) {
 
   const navPages = visibleNavPages();
   if (!navPages.includes(currentPage)) {
-    currentPage = navPages.includes("city")
+    currentPage = navPages.includes("overview")
+      ? "overview"
+      : navPages.includes("city")
       ? "city"
       : navPages.includes("profile")
         ? "profile"
@@ -279,7 +281,9 @@ function showPage(page) {
   if (page === "channel") page = "overview";
   const navPages = visibleNavPages();
   if (navPages.length && !navPages.includes(page)) {
-    page = navPages.includes("city")
+    page = navPages.includes("overview")
+      ? "overview"
+      : navPages.includes("city")
       ? "city"
       : navPages.includes("profile")
         ? "profile"
@@ -5234,8 +5238,10 @@ if (location.hash === "#only-pixels") {
   currentPage = "discord";
 } else if (location.hash === "#overview" || location.hash === "#channel") {
   currentPage = "overview";
-} else if (location.hash === "#city" || !location.hash) {
+} else if (location.hash === "#city") {
   currentPage = "city";
+} else if (!location.hash) {
+  currentPage = "overview";
 }
 
 function setDiscordStatus(message, type = "") {
