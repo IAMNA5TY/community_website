@@ -223,6 +223,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname, "public")));
+// Creator tools (the old dashboard) live at /creator; the player site is /
+app.get("/creator", (_req, res) => res.sendFile(path.join(__dirname, "public", "creator.html")));
 app.use("/api", createKickRewardsRouter(config));
 
 function randomState() {
@@ -2452,11 +2454,11 @@ app.get("/auth/spotify/callback", async (req, res) => {
   const returnTo = pending?.returnTo || BASE_URL;
 
   if (error) {
-    return res.redirect(`${returnTo}/?error=${encodeURIComponent(String(error))}`);
+    return res.redirect(`${returnTo}/creator?error=${encodeURIComponent(String(error))}`);
   }
 
   if (!pending) {
-    return res.redirect(`${returnTo}/?error=invalid_spotify_state`);
+    return res.redirect(`${returnTo}/creator?error=invalid_spotify_state`);
   }
 
   try {
@@ -2476,9 +2478,9 @@ app.get("/auth/spotify/callback", async (req, res) => {
       });
     }
     await spotifyState.refreshPlayback(pending.broadcasterId, { force: true });
-    res.redirect(`${returnTo}/?spotify=connected`);
+    res.redirect(`${returnTo}/creator?spotify=connected`);
   } catch (err) {
-    res.redirect(`${returnTo}/?error=${encodeURIComponent(err.message)}`);
+    res.redirect(`${returnTo}/creator?error=${encodeURIComponent(err.message)}`);
   }
 });
 
@@ -3024,7 +3026,7 @@ app.get("/auth/kick/callback", async (req, res) => {
       }
     }
 
-    redirectWithSession(req, res, isOwner ? "/" : "/#only-pixels");
+    redirectWithSession(req, res, isOwner ? "/creator" : "/#me");
   } catch (err) {
     redirectWithSession(req, res, `/?error=${encodeURIComponent(err.message)}`);
   }
