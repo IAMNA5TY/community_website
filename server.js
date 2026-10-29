@@ -3026,7 +3026,7 @@ app.get("/auth/kick/callback", async (req, res) => {
       }
     }
 
-    redirectWithSession(req, res, isOwner ? "/creator" : "/#me");
+    redirectWithSession(req, res, isOwner ? "/creator" : "/");
   } catch (err) {
     redirectWithSession(req, res, `/?error=${encodeURIComponent(err.message)}`);
   }

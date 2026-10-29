@@ -6,7 +6,7 @@
     <title>NA5TY · Kick hub for OnlyPixels</title>
     <meta name="description" content="Chat on Kick, earn points, and hit OnlyPixels streamers live in the city with zombies, blackouts and fireworks." />
     <link rel="icon" href="/site/art/keys/fire.webp" />
-    <link rel="stylesheet" href="/site/site.css?v=1" />
+    <link rel="stylesheet" href="/site/site.css?v=2" />
   </head>
   <body class="season-city">
     <div class="scene" aria-hidden="true"></div>
@@ -18,29 +18,44 @@
       </a>
       <nav class="nav" id="nav">
         <a href="#home" data-nav="home">Home</a>
+        <a href="#me" data-nav="me" class="signed-only hidden">Your stuff</a>
         <a href="#live" data-nav="live">Live</a>
+        <a href="#words" data-nav="words">Words</a>
         <a href="#how" data-nav="how">How it works</a>
-        <a href="#me" data-nav="me">My stuff</a>
       </nav>
       <div class="auth" id="auth"></div>
     </header>
 
     <main>
-      <!-- ============================================================ HOME -->
       <section class="page" data-page="home">
-        <div class="plate hero">
+        <!-- hero: a join card for visitors, a welcome + setup checklist once signed in (site.js fills #hero-text) -->
+        <div class="plate hero" id="home">
           <div class="screws"><i></i><i></i><i></i><i></i></div>
           <img class="hero__sign" src="/site/art/props/sign.webp" alt="Kick Hub" width="900" height="285" />
-          <div class="hero__text">
+          <div class="hero__text" id="hero-text">
             <span class="season-tag" id="season-tag"></span>
             <h1>Chat on Kick.<br />Hit streamers in the city.</h1>
-            <p>
-              OnlyPixels streamers play live in our GTA city. Chat in their Kick chat to earn points, then type a word to
-              send zombies, a blackout or fireworks their way. It happens on their stream, right then.
-            </p>
-            <div class="hero__cta" id="hero-cta"></div>
+            <p>OnlyPixels streamers play live in our GTA city. Chat in their Kick chat to earn points, then type a word to send zombies, a blackout or fireworks their way.</p>
           </div>
         </div>
+
+        <!-- signed out: what signing in gets you -->
+        <section class="block perks-block hidden" id="perks">
+          <div class="block__head"><h2>Sign in and you get</h2><p class="muted">Free. One tap with your Kick account.</p></div>
+          <div class="perks">
+            <div class="plate perk"><div class="screws"><i></i><i></i><i></i><i></i></div><img src="/site/art/keys/balance.webp" alt="" /><h3>Your points</h3><p>See your Kick Points for every streamer, live.</p></div>
+            <div class="plate perk"><div class="screws"><i></i><i></i><i></i><i></i></div><img src="/site/art/keys/daily.webp" alt="" /><h3>Chat from the city</h3><p>Type in a streamer's Kick chat while you play.</p></div>
+            <div class="plate perk"><div class="screws"><i></i><i></i><i></i><i></i></div><img src="/site/art/keys/donate.webp" alt="" /><h3>Discord sub role</h3><p>Subbed to na5ty? Claim the role in one click.</p></div>
+            <div class="plate perk"><div class="screws"><i></i><i></i><i></i><i></i></div><img src="/site/art/keys/tip.webp" alt="" /><h3>Stream in the city</h3><p>Streamers: apply to get your own chat trolls.</p></div>
+          </div>
+          <div class="perks-cta"><a class="btn kick big" href="/auth/kick"><span class="k">K</span> Sign in with Kick</a></div>
+        </section>
+
+        <!-- signed in: your stuff, right on the home page -->
+        <section class="block hidden" id="me">
+          <div class="block__head"><h2>Your stuff</h2><p class="muted">Everything tied to your Kick account.</p></div>
+          <div class="me-grid" id="me-grid"></div>
+        </section>
 
         <section class="block" id="live">
           <div class="block__head">
@@ -59,7 +74,7 @@
               <span class="step__n">1</span>
               <img src="/site/art/keys/balance.webp" alt="" />
               <h3>Chat on Kick</h3>
-              <p>Watch any live streamer below and chat like normal. Every message gives you a Kick Point for that streamer. Points roll over day to day, up to 1,000 each.</p>
+              <p>Watch any live streamer and chat like normal. Every message gives you a Kick Point for that streamer. Points roll over day to day, up to 1,000 each.</p>
             </div>
             <div class="plate step">
               <div class="screws"><i></i><i></i><i></i><i></i></div>
@@ -73,7 +88,7 @@
               <span class="step__n">3</span>
               <img src="/site/art/keys/fire.webp" alt="" />
               <h3>Watch it hit</h3>
-              <p>If they're in the city it happens to them live. If they're not, nothing is spent. Want your own stats and the chat-from-the-city link? Sign in with Kick.</p>
+              <p>If they're in the city it happens to them live. If they're not, nothing is spent.</p>
             </div>
           </div>
         </section>
@@ -90,12 +105,6 @@
           </div>
         </section>
       </section>
-
-      <!-- ============================================================ ME -->
-      <section class="page hidden" data-page="me">
-        <div class="me-head" id="me-head"></div>
-        <div class="me-grid" id="me-grid"></div>
-      </section>
     </main>
 
     <footer class="footer">
@@ -107,6 +116,6 @@
 
     <div class="toasts" id="toasts"></div>
     <script src="/site/icons.js?v=1"></script>
-    <script src="/site/site.js?v=1"></script>
+    <script src="/site/site.js?v=2"></script>
   </body>
 </html>

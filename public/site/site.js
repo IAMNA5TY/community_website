@@ -8,7 +8,7 @@
   const hue = (name) => { let h = 0; for (const c of String(name || '?')) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   const keyImg = (a) => `/site/art/keys/${a}.webp`;
 
-  const S = { me: null, partners: [], watch: null, chatTimer: null, words: [], tab: null, points: null };
+  const S = { me: null, partners: [], watch: null, chatTimer: null, words: [], tab: null, points: null, check: {} };
 
   async function api(path, opts = {}) {
     try {
@@ -35,7 +35,7 @@
   const month = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'numeric' }).format(new Date()));
   const season = SEASONS[month] || null;
   document.body.className = `season-${season ? season[0] : 'city'}`;
-  if (season) { $('#season-tag').textContent = season[1]; $('#step-key').src = keyImg(SEASON_KEY[season[0]]); }
+  if (season) $('#step-key').src = keyImg(SEASON_KEY[season[0]]);
 
   /* ---------------------------------------------------------------- who am I */
   const isKick = () => S.me && S.me.loggedIn && S.me.provider === 'kick';
@@ -54,9 +54,55 @@
       box.innerHTML = `<a class="btn kick sm" href="/auth/kick"><span class="k">K</span><span class="lbl">Sign in with Kick</span></a>`;
     }
     $('#footer-creator').classList.toggle('hidden', !isCreator());
-    $('#hero-cta').innerHTML = S.me && S.me.loggedIn
-      ? `<a class="btn kick" href="#me">${ic('user')} My stuff</a><a class="btn dark" href="#live">${ic('tv')} Watch who's live</a>`
-      : `<a class="btn kick" href="/auth/kick"><span class="k">K</span> Sign in with Kick</a><a class="btn dark" href="#live">${ic('tv')} Watch who's live</a>`;
+    const signed = Boolean(S.me && S.me.loggedIn);
+    document.body.classList.toggle('signed-in', signed);
+    $('#perks').classList.toggle('hidden', signed);
+    $('#me').classList.toggle('hidden', !signed);
+    document.querySelectorAll('.signed-only').forEach((el) => el.classList.toggle('hidden', !signed));
+    renderHero();
+  }
+
+  /* ---------------------------------------------------------------- hero: join card (visitors) or welcome + setup (signed in) */
+  const seasonTag = () => (season ? `<span class="season-tag">${esc(season[1])}</span>` : '');
+  function renderHero() {
+    const box = $('#hero-text');
+    if (!S.me || !S.me.loggedIn) {
+      box.innerHTML = `${seasonTag()}
+        <h1>Chat on Kick.<br>Hit streamers in the city.</h1>
+        <p>OnlyPixels streamers play live in our GTA city. Chat in their Kick chat to earn points, then type a word to send zombies, a blackout or fireworks their way.</p>
+        <div class="join">
+          <a class="btn kick big" href="/auth/kick"><span class="k">K</span> Sign in with Kick</a>
+          <p class="join__note">${ic('check')} Free &nbsp;${ic('check')} Takes 10 seconds &nbsp;${ic('check')} We never see your Kick password</p>
+          <div class="join__alt"><a href="#live">${ic('tv')} Just watch who's live</a><span>·</span><a href="/auth/twitch">Twitch instead</a></div>
+        </div>`;
+      return;
+    }
+    const p = S.me.profile || {};
+    const who = `<div class="welcome">${p.profileImage ? `<img src="${esc(p.profileImage)}" alt="">` : ''}<div><span class="welcome__hi">Welcome back</span><h1>@${esc(p.username || 'you')}</h1></div></div>`;
+    if (!isKick()) {
+      box.innerHTML = `${seasonTag()}${who}
+        <p>Points, chatting from the city and the Discord sub role all come from Kick chat, so they need a Kick sign-in.</p>
+        <div class="hero__cta"><a class="btn kick" href="/auth/kick"><span class="k">K</span> Sign in with Kick</a><a class="btn dark" href="#live">${ic('tv')} Watch who's live</a></div>`;
+      return;
+    }
+    const wallets = (S.points && S.points.wallets) || [];
+    const total = wallets.reduce((a, w) => a + Number(w.balance || 0), 0);
+    const c = S.check;
+    const items = [
+      ['done', 'Signed in with Kick', true, ''],
+      ['points', wallets.length ? `Earning points with ${wallets.length} streamer${wallets.length === 1 ? '' : 's'}` : 'Chat in a live streamer\'s Kick chat', wallets.length > 0, '#live'],
+      ['citychat', 'Chat from the city', c.citychat, '#card-citychat'],
+      ['discord', 'Discord sub role', c.discord, '#card-discord'],
+    ];
+    const done = items.filter((i) => i[2] === true).length;
+    box.innerHTML = `${seasonTag()}${who}
+      <div class="hero-points"><span class="hero-points__n">${fmt(total)}</span><span class="hero-points__l">Kick Points across ${wallets.length || 0} streamer${wallets.length === 1 ? '' : 's'}</span></div>
+      <div class="setup"><div class="setup__head"><b>Your setup</b><span>${done} of ${items.length} done</span></div>
+        <div class="setup__bar"><i style="width:${done / items.length * 100}%"></i></div>
+        ${items.map(([id, label, ok, href]) => `<a class="setup__item ${ok === true ? 'ok' : ''}" ${href ? `href="${href}"` : ''} data-set="${id}">
+          <span class="tick">${ok === true ? ic('check') : ''}</span><span>${esc(label)}</span>${ok === true || !href ? '' : `<span class="go">Set up ${ic('chevron-right')}</span>`}</a>`).join('')}
+      </div>
+      <div class="hero__cta"><a class="btn kick" href="#live">${ic('tv')} Watch who's live</a><a class="btn dark" href="#words">Words to type</a></div>`;
   }
 
   /* ---------------------------------------------------------------- live TVs + watch */
@@ -157,16 +203,8 @@
     return S.points;
   }
   async function renderMe() {
-    const head = $('#me-head'), grid = $('#me-grid');
-    if (!S.me || !S.me.loggedIn) {
-      head.innerHTML = '';
-      grid.innerHTML = `<div class="plate signin-plate wide"><div class="screws"><i></i><i></i><i></i><i></i></div>
-        <h2>Sign in to see your stuff</h2><p>Your Kick Points, chatting from the city and the Discord sub role all use your Kick account.</p>
-        <div class="row" style="justify-content:center"><a class="btn kick" href="/auth/kick"><span class="k">K</span> Sign in with Kick</a><a class="btn twitch sm" href="/auth/twitch">Twitch instead</a></div></div>`;
-      return;
-    }
-    const p = S.me.profile || {};
-    head.innerHTML = `${p.profileImage ? `<img src="${esc(p.profileImage)}" alt="">` : ''}<div><h1>@${esc(p.username || 'you')}</h1><p>Signed in with ${S.me.provider === 'kick' ? 'Kick' : 'Twitch'}</p></div>`;
+    const grid = $('#me-grid');
+    if (!S.me || !S.me.loggedIn) { grid.innerHTML = ''; return; }
     if (!isKick()) {
       grid.innerHTML = `<div class="plate wide"><div class="screws"><i></i><i></i><i></i><i></i></div><h3>Kick unlocks the rest</h3>
         <p>Points, chatting from the city and the Discord sub role come from Kick chat, so they need a Kick sign-in.</p>
@@ -175,8 +213,10 @@
     }
     grid.innerHTML = ['points', 'citychat', 'discord', 'partner', 'twitch'].map((id) => `<div class="plate ${id === 'points' ? 'wide' : ''}" id="card-${id}"><div class="screws"><i></i><i></i><i></i><i></i></div><p class="muted">Loading…</p></div>`).join('');
     renderPoints(await loadPoints());
+    renderHero();
     loadCityChat(); loadDiscord(); loadPartner(); loadTwitch();
   }
+  const setCheck = (k, v) => { if (S.check[k] !== v) { S.check[k] = v; renderHero(); } };
   const card = (id, html) => { const el = $(`#card-${id}`); if (el) el.innerHTML = `<div class="screws"><i></i><i></i><i></i><i></i></div>${html}`; };
   const title = (img, h, status) => `<div class="card-title"><img src="${keyImg(img)}" alt=""><h3>${h}</h3>${status || ''}</div>`;
 
@@ -193,6 +233,7 @@
     const { ok, data } = await api('/api/rewards/city-chat');
     if (!ok) { card('citychat', `${title('daily', 'Chat from the city')}<p class="muted">${esc(data.error || "Couldn't load this right now.")}</p>`); return; }
     const on = data.enabled;
+    setCheck('citychat', Boolean(on && data.gameLinked));
     card('citychat', `${title('daily', 'Chat from the city', on ? (data.gameLinked ? '<span class="status ok">On · linked</span>' : '<span class="status warn">On · not linked yet</span>') : '<span class="status">Off</span>')}
       <p>Send messages to a streamer's Kick chat from the Kick hub in the city, as yourself. Words still work, and the channel's mods and bans apply.</p>
       ${on ? (data.gameLinked ? '<p class="muted">You\'re all set. Open the Kick hub in the city and type under the chat.</p>'
@@ -208,6 +249,7 @@
     if (!ok) { card('discord', `${title('donate', 'Discord sub role')}<p class="muted">${esc(data.error || "Couldn't load this right now.")}</p>`); return; }
     if (!data.discordConfigured) { card('discord', `${title('donate', 'Discord sub role')}<p class="muted">Discord isn't set up on the site right now.</p>`); return; }
     const sub = data.activeSubscriber;
+    setCheck('discord', Boolean(data.linked));
     card('discord', `${title('donate', 'Discord sub role', data.linked ? `<span class="status ok">${esc(data.discordUsername || 'Linked')}</span>` : '<span class="status">Not linked</span>')}
       <p>Subscribed to na5ty on Kick? Get the sub role in the Discord.</p>
       <p class="muted">${sub ? 'You\'re a subscriber on record.' : 'No sub on record yet. If you just subbed, type once in na5ty\'s Kick chat and try again.'}</p>
@@ -282,19 +324,28 @@
   });
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.id === 'tw-name') ACT.twitch(); });
 
-  /* ---------------------------------------------------------------- pages */
+  /* ---------------------------------------------------------------- one page: links scroll, the nav follows what's on screen */
   const ME_ALIASES = ['me', 'discord', 'only-pixels', 'profile'];
-  function route() {
-    const h = (location.hash || '#home').slice(1).split('?')[0];
-    const me = ME_ALIASES.includes(h);
-    document.querySelector('[data-page="home"]').classList.toggle('hidden', me);
-    document.querySelector('[data-page="me"]').classList.toggle('hidden', !me);
-    document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === (me ? 'me' : (['live', 'how'].includes(h) ? h : 'home'))));
-    if (me) { window.scrollTo(0, 0); renderMe(); }
-    else if (['live', 'how', 'words'].includes(h)) { const t = document.getElementById(h); if (t) t.scrollIntoView({ behavior: 'smooth' }); }
-    else window.scrollTo(0, 0);
+  const NAV_IDS = ['home', 'me', 'live', 'how', 'words'];
+  const setNav = (id) => document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === id));
+  function route(smooth = true) {
+    let h = (location.hash || '#home').slice(1).split('?')[0];
+    if (ME_ALIASES.includes(h)) h = S.me && S.me.loggedIn ? 'me' : 'home';
+    const t = document.getElementById(h) || document.getElementById('home');
+    if (h === 'home') window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+    else t.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    if (NAV_IDS.includes(h)) setNav(h);
   }
-  window.addEventListener('hashchange', route);
+  window.addEventListener('hashchange', () => route(true));
+  if ('IntersectionObserver' in window) {
+    const seen = new Map();
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => seen.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0));
+      const best = NAV_IDS.filter((id) => (seen.get(id) || 0) > 0).sort((a, b) => seen.get(b) - seen.get(a))[0];
+      if (best) setNav(best);
+    }, { threshold: [0, .25, .5, .75], rootMargin: '-70px 0px -35% 0px' });
+    NAV_IDS.forEach((id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+  }
 
   (async () => {
     const q = new URLSearchParams(location.search);
@@ -302,8 +353,9 @@
     const { data } = await api('/api/me');
     S.me = data && typeof data === 'object' ? data : { loggedIn: false };
     renderAuth();
-    route();
-    loadLive(); loadWords(); loadPoints();
+    loadLive(); loadWords();
+    if (S.me.loggedIn) await renderMe();
+    route(false);
     setInterval(loadLive, 60000);
   })();
 })();

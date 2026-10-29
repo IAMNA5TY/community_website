@@ -200,3 +200,59 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px 16px 40px; }
     .btn { height: 42px; padding: 0 14px; }
     .auth .btn span.lbl { display: none; }
 }
+
+/* ---------------------------------------------------------------- one-page home: join card, perks, welcome + setup */
+.page { display: flex; flex-direction: column; }
+body.signed-in #how { order: 10; }                 /* signed in: your stuff and live first, the explainer last */
+.btn.big { height: 58px; padding: 0 28px; font-size: 19px; border-radius: 16px; box-shadow: 0 5px 0 rgba(0, 0, 0, .55), 0 0 26px rgba(83, 252, 24, .35); }
+.btn.big .k { width: 28px; height: 28px; font-size: 15px; border-radius: 8px; }
+.join { margin-top: 20px; }
+.join .btn.big { width: min(100%, 380px); }
+.join__note { margin: 12px 0 0 !important; font-size: 14px !important; color: var(--muted) !important; }
+.join__note svg.i { color: var(--kick); }
+.join__alt { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 15px; color: var(--muted); }
+.join__alt a { color: #e8e2f8; font-weight: 600; text-decoration: none; }
+.join__alt a:hover { text-decoration: underline; }
+
+.perks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.perk { text-align: center; padding: 22px 16px 18px; }
+.perk img { width: 76px; height: 76px; filter: drop-shadow(0 8px 8px rgba(0, 0, 0, .5)); }
+.perk h3 { font-size: 17px; margin-top: 4px; }
+.perk p { font-size: 14px; margin: 0; }
+.perks-cta { display: flex; justify-content: center; margin-top: 18px; }
+
+.welcome { display: flex; align-items: center; gap: 14px; margin: 6px 0 12px; }
+.welcome img { width: 62px; height: 62px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); box-shadow: 0 0 18px var(--accent-glow); background: #222; }
+.welcome__hi { font-size: 15px; color: var(--muted); font-weight: 600; }
+.welcome h1 { margin: 0 !important; font-size: clamp(26px, 3vw, 38px) !important; }
+.hero-points { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.hero-points__n { font-family: var(--display); font-size: 40px; line-height: 1; color: var(--gold); text-shadow: 0 3px 0 rgba(0, 0, 0, .6), 0 0 20px rgba(255, 201, 77, .35); }
+.hero-points__l { color: #cfc8e2; font-weight: 600; }
+.setup { padding: 14px; border-radius: 16px; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); max-width: 460px; }
+.setup__head { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 8px; }
+.setup__head span { color: var(--muted); }
+.setup__bar { height: 7px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-bottom: 8px; }
+.setup__bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--kick), var(--pop)); transition: width .4s; }
+.setup__item { display: flex; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; color: #e6e0f6; }
+a.setup__item[href]:hover { background: rgba(255, 255, 255, .06); }
+.setup__item .tick { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .25); display: grid; place-items: center; }
+.setup__item.ok { color: var(--muted); }
+.setup__item.ok .tick { border-color: var(--kick); background: var(--kick); color: #061500; }
+.setup__item.ok .tick svg.i { width: 14px; height: 14px; stroke-width: 3; }
+.setup__item .go { margin-left: auto; font-size: 13px; color: var(--accent); white-space: nowrap; }
+[id^="card-"] { scroll-margin-top: 90px; }
+
+@media (max-width: 900px) {
+    .perks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .welcome { justify-content: center; text-align: left; }
+    .hero-points { justify-content: center; }
+    .setup { margin: 0 auto; text-align: left; }
+    .join .btn.big { width: 100%; }
+    .join__alt { justify-content: center; }
+}
+@media (max-width: 480px) {
+    .perks { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .perk img { width: 60px; height: 60px; }
+    .hero-points__n { font-size: 32px; }
+}
+.nav a { white-space: nowrap; }
