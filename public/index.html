@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=44" />
+    <link rel="stylesheet" href="/styles.css?v=45" />
   </head>
   <body class="is-dashboard is-guest">
     <main class="page">
@@ -536,6 +536,22 @@
                 <button class="btn btn-twitch" type="submit">Save Twitch</button>
               </form>
               <p class="only-pixels-note" id="only-pixels-twitch-status"></p>
+            </div>
+
+            <div class="card panel only-pixels-register signed-in-only" id="city-chat-card" hidden>
+              <h2>Chat from the city</h2>
+              <p class="subtitle">
+                Type in a streamer's Kick chat from the Kick hub in OnlyPixels, as yourself. Words like
+                <code>pumpkin</code> still work. Messages go out as your Kick account, so the channel's mods and bans apply.
+              </p>
+              <p class="subtitle" id="city-chat-state"></p>
+              <button class="btn btn-kick" type="button" id="city-chat-toggle">Turn on</button>
+              <div class="only-pixels-code-box" id="city-chat-code-box" hidden>
+                <p class="eyebrow" style="margin-bottom:4px;">Your link code</p>
+                <div class="only-pixels-code" id="city-chat-code">------</div>
+                <p class="subtitle" style="margin:0;">In the city, open the Kick hub (<code>/kick</code> or the tablet's Streamer app), pick a channel and type this code under the chat.</p>
+              </div>
+              <p class="only-pixels-note" id="city-chat-status"></p>
             </div>
 
             <div class="card panel only-pixels-partners hidden" id="only-pixels-partners-panel">
@@ -1555,5 +1571,6 @@
     </main>
 
     <script src="/app.js?v=123"></script>
+    <script src="/city-chat.js?v=1" defer></script>
   </body>
 </html>

@@ -3312,3 +3312,8 @@ body.is-guest .city-layout {
   .city-row__meta { justify-content: flex-start; text-align: left; }
   .city-roster__summary { flex-wrap: wrap; }
 }
+
+/* Chat from the city card: hidden until /api/rewards/city-chat says you're signed in with Kick */
+#city-chat-card[hidden] {
+  display: none !important;
+}
