@@ -114,13 +114,19 @@
   }
   function renderWall() {
     const live = S.partners.filter((p) => p.isLive);
-    $('#live-count').textContent = live.length ? `${live.length} live right now · ${S.partners.length} streamers in OnlyPixels` : `${S.partners.length} streamers in OnlyPixels`;
+    const inCity = live.filter((p) => p.inCity).length;
+    $('#live-count').textContent = live.length
+      ? `${live.length} live right now${inCity ? ` · ${inCity} in the city` : ''} · ${S.partners.length} streamers in OnlyPixels`
+      : `${S.partners.length} streamers in OnlyPixels`;
     $('#tvwall').innerHTML = live.length ? live.map((p) => {
       const h = hue(p.displayName || p.slug);
-      return `<button class="tv ${S.watch === p.slug ? 'sel' : ''}" data-act="watch" data-slug="${esc(p.slug)}" title="Watch @${esc(p.slug)}">
-          <div class="screen"><div class="scr-bg" style="background:radial-gradient(circle at 50% 40%,hsl(${h},70%,42%),hsl(${(h + 40) % 360},70%,14%))"></div>
-            <div class="scr-name">${esc(p.displayName || p.slug)}</div><div class="scr-sub">tap to watch</div></div>
-          <img class="set" src="/site/art/props/tv_on.webp" alt=""><span class="badge">LIVE</span></button>`;
+      const thumb = p.thumbnail ? `<img class="scr-img" src="${esc(p.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+      return `<button class="tv ${S.watch === p.slug ? 'sel' : ''}" data-act="watch" data-slug="${esc(p.slug)}" title="${esc(p.title || `Watch @${p.slug}`)}">
+          <div class="tv-set"><div class="screen"><div class="scr-bg" style="background:radial-gradient(circle at 50% 40%,hsl(${h},70%,42%),hsl(${(h + 40) % 360},70%,14%))"></div>${thumb}
+            <div class="scr-play">${ic('play')}</div></div>
+          <img class="set" src="/site/art/props/tv_on.webp" alt=""><span class="badge">LIVE</span>${p.inCity ? '<span class="incity">IN CITY</span>' : ''}</div>
+          <div class="tv-cap"><b>${esc(p.displayName || p.slug)}</b>${p.viewers != null ? `<span class="viewers">${ic('eye')} ${fmt(p.viewers)}</span>` : ''}
+            ${p.category ? `<span class="cat">${esc(p.category)}</span>` : ''}</div></button>`;
     }).join('') : `<div class="wall-empty"><b>Nobody's live right now.</b><br>Streamers show up here the moment they go live on Kick. Check back soon, or follow <a href="https://kick.com/na5ty" target="_blank" rel="noopener">na5ty on Kick</a>.</div>`;
   }
   function openWatch(slug) {
@@ -170,6 +176,60 @@
     input.focus();
   }
 
+  /* ---------------------------------------------------------------- this week's leaderboard (from the city) */
+  async function loadBoard() {
+    const { ok, data } = await api('/api/rewards/leaderboard-week');
+    const box = $('#board');
+    const b = ok && data.board;
+    if (!b) { box.innerHTML = '<p class="muted">The leaderboard shows up once the city sends this week\'s numbers.</p>'; return; }
+    const me = myName().toLowerCase();
+    const col = (title, art, rows, val, empty) => `<div class="plate board-col"><div class="screws"><i></i><i></i><i></i><i></i></div>
+      <div class="card-title"><img src="${keyImg(art)}" alt=""><h3>${title}</h3></div>
+      ${rows.length ? `<ol class="ranks">${rows.map((r, i) => `<li class="${i < 3 ? `m${i + 1}` : ''} ${r.name === me ? 'me' : ''}">
+        <span class="rk">${i + 1}</span><b>@${esc(r.name)}</b><span class="v">${val(r)}</span></li>`).join('')}</ol>`
+        : `<p class="muted">${empty}</p>`}</div>`;
+    box.innerHTML = col('Top trollers', 'zombies', b.trollers || [], (r) => `${fmt(r.points)} pts<small>${fmt(r.plays)} plays</small>`, 'Nobody has trolled yet this week. Be first.')
+      + col('Pot fillers', 'tip', b.pots || [], (r) => `${fmt(r.points)} pts<small>${fmt(r.pots)} pot${r.pots === 1 ? '' : 's'}</small>`, 'No pots filled yet this week.')
+      + col('Top chatters', 'balance', b.chatters || [], (r) => `${fmt(r.messages)}<small>messages</small>`, 'No chat counted yet this week.');
+    $('#board-note').textContent = `Last ${b.days || 7} days · updates every few minutes`;
+  }
+
+  /* ---------------------------------------------------------------- happening in the city (same events the partners' overlay shows) */
+  S.feed = []; S.feedAfter = 0;
+  const ago = (t) => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : `${Math.floor(s / 3600)}h`; };
+  function feedLine(e) {
+    const who = `<b>@${esc(e.viewer || 'chat')}</b>`, ch = `<a href="#live" data-act="watch" data-slug="${esc(e.channel)}">@${esc(e.channel)}</a>`;
+    const label = `<em>${esc(e.label || e.action || '')}</em>`;
+    let text = '', cls = '';
+    if (e.kind === 'play') text = `${who} sent ${label} to ${ch}${e.price ? ` <span class="pts">${fmt(e.price)} pts</span>` : ''}`;
+    else if (e.kind === 'pot_open') text = `${who} started a ${label} pot on ${ch} <span class="pts">${fmt(e.filled)}/${fmt(e.price)}</span>`;
+    else if (e.kind === 'pot_fire') { text = `Chat filled the ${label} pot on ${ch}! <span class="pts">${fmt(e.contributors)} viewers</span>`; cls = 'big'; }
+    else if (e.kind === 'tip') text = `${who} tipped ${ch} <span class="pts">$${fmt(e.amount || 500)}</span>`;
+    else if (e.kind === 'donate') text = `${who} donated to ${ch} <span class="pts">$${fmt(e.amount || 25)}</span>`;
+    else if (e.kind === 'dailymech') text = `${who} sent mech parts to ${ch}`;
+    else return '';
+    const art = e.kind === 'tip' || e.kind === 'donate' || e.kind === 'dailymech' ? e.kind : e.action;
+    return `<div class="cf ${cls} ${e._new ? 'new' : ''}"><img src="${keyImg(art)}" alt="" onerror="this.onerror=null;this.src='${keyImg('fire')}'"><span>${text}</span><time>${ago(e.at)}</time></div>`;
+  }
+  function renderFeed() {
+    const box = $('#cityfeed');
+    if (!box) return;
+    box.innerHTML = S.feed.length ? S.feed.slice().reverse().map(feedLine).join('')
+      : '<p class="muted cf-empty">Quiet right now. Type a word in a live streamer\'s Kick chat and it shows up here.</p>';
+    S.feed.forEach((e) => { e._new = false; });
+  }
+  async function loadFeed() {
+    if (document.hidden) return;
+    const { ok, data } = await api(`/api/rewards/city-feed?after=${S.feedAfter}&limit=12`);
+    if (!ok) return;
+    if (data.last < S.feedAfter) { S.feedAfter = 0; S.feed = []; }      // site restarted
+    const fresh = data.events || [];
+    if (S.feedAfter > 0) fresh.forEach((e) => { e._new = true; });
+    S.feed = S.feed.concat(fresh).slice(-12);
+    S.feedAfter = data.last || S.feedAfter;
+    renderFeed();
+  }
+
   /* ---------------------------------------------------------------- words */
   const SEASON_TAGS = { halloween: 'Halloween', harvest: 'Thanksgiving', holiday: 'Holiday' };
   async function loadWords() {
@@ -190,9 +250,11 @@
   }
   function renderWords() {
     $('#word-tabs').innerHTML = (S.groups || []).map(([id, label, seasonal]) => `<button class="${S.tab === id ? 'on' : ''} ${seasonal ? 'seasonal' : ''}" data-act="tab" data-tab="${id}">${esc(label)}</button>`).join('');
-    const list = S.words.filter((w) => (S.tab === 'season' ? w.seasonal : !w.seasonal && w.group === S.tab && w.action !== 'untroll'));
+    const list = S.words.filter((w) => (S.tab === 'season' ? w.seasonal : !w.seasonal && w.group === S.tab && w.action !== 'untroll'))
+      .sort((a, b) => (a.cost ?? 1e9) - (b.cost ?? 1e9));
     $('#keys').innerHTML = list.map((w) => `<button class="key" data-act="copyWord" data-word="${esc(w.word)}" title="Copy &quot;${esc(w.word)}&quot;">
-        <img src="${keyImg(w.action)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${keyImg('fire')}'"><b>${esc(w.label)}</b><code>${esc(w.word)}</code></button>`).join('') || '<p class="muted">Nothing here right now.</p>';
+        <img src="${keyImg(w.action)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${keyImg('fire')}'"><b>${esc(w.label)}</b><code>${esc(w.word)}</code>
+        ${w.cost != null ? `<span class="price">${w.cost > 0 ? `${fmt(w.cost)} pts` : 'Free'}${w.pot ? '<span class="pot-chip">Split</span>' : ''}</span>` : ''}</button>`).join('') || '<p class="muted">Nothing here right now.</p>';
   }
 
   /* ---------------------------------------------------------------- my stuff */
@@ -333,7 +395,7 @@
 
   /* ---------------------------------------------------------------- one page: links scroll, the nav follows what's on screen */
   const ME_ALIASES = ['me', 'discord', 'only-pixels', 'profile'];
-  const NAV_IDS = ['home', 'me', 'live', 'how', 'words'];
+  const NAV_IDS = ['home', 'me', 'live', 'how', 'words', 'top'];
   const setNav = (id) => document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === id));
   function route(smooth = true) {
     let h = (location.hash || '#home').slice(1).split('?')[0];
@@ -360,7 +422,9 @@
     const { data } = await api('/api/me');
     S.me = data && typeof data === 'object' ? data : { loggedIn: false };
     renderAuth();
-    loadLive(); loadWords();
+    loadLive(); loadWords(); loadFeed(); loadBoard();
+    setInterval(loadBoard, 5 * 60000);
+    setInterval(loadFeed, 4000);
     if (S.me.loggedIn) await renderMe();
     route(false);
     setInterval(loadLive, 60000);

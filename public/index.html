@@ -6,7 +6,20 @@
     <title>NA5TY · Kick hub for OnlyPixels</title>
     <meta name="description" content="Chat on Kick, earn points, and hit OnlyPixels streamers live in the city with zombies, blackouts and fireworks." />
     <link rel="icon" href="/site/art/keys/fire.webp" />
-    <link rel="stylesheet" href="/site/site.css?v=2" />
+    <meta name="theme-color" content="#07040f" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NA5TY" />
+    <meta property="og:url" content="https://na5ty.com/" />
+    <meta property="og:title" content="NA5TY · Kick Hub for OnlyPixels" />
+    <meta property="og:description" content="Chat on Kick to earn points, then send zombies, blackouts and fireworks to OnlyPixels streamers live in the city." />
+    <meta property="og:image" content="https://na5ty.com/site/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NA5TY · Kick Hub for OnlyPixels" />
+    <meta name="twitter:description" content="Chat on Kick to earn points, then send zombies, blackouts and fireworks to OnlyPixels streamers live in the city." />
+    <meta name="twitter:image" content="https://na5ty.com/site/og.jpg" />
+    <link rel="stylesheet" href="/site/site.css?v=3" />
   </head>
   <body class="season-city">
     <div class="scene" aria-hidden="true"></div>
@@ -21,6 +34,7 @@
         <a href="#me" data-nav="me" class="signed-only hidden">Your stuff</a>
         <a href="#live" data-nav="live">Live</a>
         <a href="#words" data-nav="words">Words</a>
+        <a href="#top" data-nav="top">Top chat</a>
         <a href="#how" data-nav="how">How it works</a>
       </nav>
       <div class="auth" id="auth"></div>
@@ -62,7 +76,14 @@
             <h2><i class="lamp"></i> On air now</h2>
             <p class="muted" id="live-count">Checking who's live…</p>
           </div>
-          <div class="tvwall" id="tvwall"></div>
+          <div class="live-grid">
+            <div class="tvwall" id="tvwall"></div>
+            <aside class="plate cityfeed" id="cityfeed-box">
+              <div class="screws"><i></i><i></i><i></i><i></i></div>
+              <h3><span class="dot"></span> Happening in the city</h3>
+              <div class="cityfeed__list" id="cityfeed"><p class="muted">Listening for chat…</p></div>
+            </aside>
+          </div>
           <div class="watch plate hidden" id="watch"></div>
         </section>
 
@@ -101,8 +122,13 @@
           <div class="plate keys-plate">
             <div class="screws"><i></i><i></i><i></i><i></i></div>
             <div class="keys" id="keys"><p class="muted">Loading words…</p></div>
-            <p class="plate-hint">Tap a key to copy its word. Prices show in the city's Kick hub (<code>/kick</code>).</p>
+            <p class="plate-hint">Tap a key to copy its word, then send it on its own in a live streamer's Kick chat. <span class="pot-chip">Split</span> words can be paid by everyone together.</p>
           </div>
+        </section>
+
+        <section class="block" id="top">
+          <div class="block__head"><h2>This week's top chat</h2><p class="muted" id="board-note">Resets every week.</p></div>
+          <div class="board" id="board"><p class="muted">Loading…</p></div>
         </section>
       </section>
     </main>
@@ -116,6 +142,6 @@
 
     <div class="toasts" id="toasts"></div>
     <script src="/site/icons.js?v=1"></script>
-    <script src="/site/site.js?v=2"></script>
+    <script src="/site/site.js?v=3"></script>
   </body>
 </html>
